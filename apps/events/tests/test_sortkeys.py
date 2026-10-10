@@ -55,3 +55,15 @@ def test_どこに差し込んでも順序が保たれ重複しない(positions)
         keys.insert(i, k)
     assert keys == sorted(keys)
     assert len(set(keys)) == len(keys)
+
+
+def test_DBの並び順はPythonのバイト順と一致する(user):
+    # PostgreSQL の照合（en_US.UTF-8 など）では "Zz" と "a0" の順が逆になる。列を "C" 照合にしていることを確かめる
+    from apps.spaces.services import personal_space
+
+    space = personal_space(user)
+    keys = ["Zz", "a0", "a1", "Zy", "a0V", "b00"]
+    for i, k in enumerate(keys):
+        Event.objects.create(space=space, name=str(i), emoji="⭐", color="sky", sort_key=k)
+    in_db = list(Event.objects.filter(space=space).order_by("sort_key").values_list("sort_key", flat=True))
+    assert in_db == sorted(keys)
