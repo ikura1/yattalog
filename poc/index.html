@@ -210,6 +210,30 @@ input[type=date],input[type=time]{width:100%;min-width:0;border:1px solid var(--
 .tipping .sval{opacity:0}
 .season-tip{position:absolute;top:0;transform:translate(-50%,-100%);background:var(--toast);color:var(--toast-fg);font-size:12px;font-weight:700;padding:3px 8px;border-radius:8px;white-space:nowrap;pointer-events:none;font-variant-numeric:tabular-nums}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* badges */
+.badgepop{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:45;display:flex;align-items:center;gap:10px;
+  background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:8px 18px 8px 10px;box-shadow:0 10px 30px rgba(0,0,0,.18);animation:drop .5s cubic-bezier(.3,1.5,.5,1)}
+@keyframes drop{from{transform:translate(-50%,-30px);opacity:0}}
+.badgepop .be{font-size:28px}
+.badgepop small{display:block;font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.04em}
+.badgepop b{font-family:var(--f-display);font-size:16px}
+.badges{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.badges li{display:flex;gap:10px;align-items:center;background:var(--bg);border-radius:14px;padding:10px;min-width:0}
+.badges li div{min-width:0}
+.badges .be{font-size:28px;flex:none}
+.badges b{display:block;font-size:14px}
+.badges small{display:block;font-size:11.5px;color:var(--muted);line-height:1.4}
+.badges small.when{color:var(--accent);font-weight:700;margin-top:2px}
+.badges li.locked .be{filter:grayscale(1);opacity:.35}
+.badges li.locked b{color:var(--muted)}
+/* settings */
+select{width:100%;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:12px;padding:10px 12px;font:inherit;font-size:16px}
+.meter{height:10px;border-radius:5px;background:var(--bg);overflow:hidden;border:1px solid var(--line)}
+.meter span{display:block;height:100%;background:var(--accent)}
+#exportBox{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.quitlist{margin:0 0 10px;padding-left:20px}
+.banner{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin-bottom:10px;font-size:13.5px}
+.banner span{flex:1;min-width:12em}
 /* share */
 .share-prev{display:grid;place-items:center;margin-bottom:10px}
 .share-prev img{width:min(260px,70%);aspect-ratio:1080/1350;border-radius:14px;box-shadow:var(--shadow);background:var(--bg)}
@@ -249,8 +273,10 @@ a.btn{display:block;text-align:center;text-decoration:none;color:var(--fg)}
     <button class="pill" id="editBtn" type="button">編集</button>
     <button class="iconbtn" id="menuBtn" type="button" aria-label="メニュー">⋯</button>
   </header>
-  <p class="poc-note">PoC v0.7 ・ データはこの端末のブラウザにだけ保存されます</p>
+  <p class="poc-note">PoC v0.8 ・ データはこの端末のブラウザにだけ保存されます</p>
   <p class="edit-hint" id="editHint" hidden>ドラッグで並べ替え ・ タップで詳細 ・ ×でアーカイブ／削除</p>
+  <div class="banner" id="netBanner" hidden role="status">オフラインです。つながると記録できます</div>
+  <div class="banner" id="tzBanner" hidden role="status"></div>
   <nav class="tabs" id="tabs" role="tablist" aria-label="カテゴリ"></nav>
   <ul class="grid" id="grid" role="tabpanel"></ul>
   <p class="empty tab-empty" id="tabEmpty" hidden></p>
@@ -259,7 +285,8 @@ a.btn{display:block;text-align:center;text-decoration:none;color:var(--fg)}
 
 <script>
 (() => {
-const TZ = "Asia/Tokyo";
+let TZ = "Asia/Tokyo";
+const DEVICE_TZ = (()=>{ try{ return Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Tokyo"; }catch(_){ return "Asia/Tokyo"; } })();
 const COLORS = ["tomato","tangerine","sun","leaf","teal","sky","grape","pink"];
 const EMOJIS = ["🛏️","✂️","🌀","🚲","🧗","🦷","🚗","🪴","📞","🏋️","🧺","🧹","🍳","💊","🐈","🛁","🧴","🔋","📚","🎸","🏃","💇","🧽","🗑️"];
 const TEMPLATES = [
@@ -286,7 +313,7 @@ function load(){
   try{ const raw = localStorage.getItem(KEY); if(raw) d = JSON.parse(raw); }catch(e){}
   return migrate(d || fresh(false));
 }
-function fresh(onboarded){ return {events:[],logs:[],categories:[],meta:{onboarded,hintShown:false,tab:"all"}}; }
+function fresh(onboarded){ return {events:[],logs:[],categories:[],meta:{onboarded,hintShown:false,tab:"all",tz:(typeof TZ!=="undefined"?TZ:"Asia/Tokyo"),badges:{}}}; }
 function migrate(d){ d.categories ||= []; d.meta ||= {}; d.meta.tab ||= "all"; d.events.forEach(e=>{ if(e.categoryId===undefined) e.categoryId=null; if(!e.streakUnit) e.streakUnit="day"; }); return d;
 }
 function save(){
@@ -297,8 +324,8 @@ const uid = () => Math.random().toString(36).slice(2,10)+Date.now().toString(36)
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
-/* ---- dates (Asia/Tokyo calendar days) ---- */
-const dfmt = new Intl.DateTimeFormat("en-CA",{timeZone:TZ,year:"numeric",month:"2-digit",day:"2-digit"});
+/* ---- dates (ユーザーのタイムゾーンでの暦日) ---- */
+let dfmt = new Intl.DateTimeFormat("en-CA",{timeZone:TZ,year:"numeric",month:"2-digit",day:"2-digit"});
 const dayKey = ms => dfmt.format(new Date(ms));                // "2026-10-10"
 const dayNum = ms => { const [y,m,d] = dayKey(ms).split("-").map(Number); return Date.UTC(y,m-1,d)/864e5; };
 const daysSince = ms => dayNum(Date.now()) - dayNum(ms);
@@ -306,10 +333,18 @@ function parts(ms){ const o={}; new Intl.DateTimeFormat("en-US",{timeZone:TZ,yea
 function fmtWhen(ms, noTime=false){ const p=parts(ms), now=parts(Date.now()); return (p.year===now.year?"":p.year+"/")+`${p.month}/${p.day}`+(noTime?"":` ${p.hour}:${p.minute}`); }
 const todayKey = () => dayKey(Date.now());
 function shiftDay(key, n){ const [y,m,d]=key.split("-").map(Number); const t=new Date(Date.UTC(y,m-1,d+n)); return t.toISOString().slice(0,10); }
-const noonOf = key => new Date(key+"T12:00:00+09:00").getTime();
+// タイムゾーン TZ での壁時計の時刻 → UTC ミリ秒
+function zonedMs(y,mo,d,hh=12,mi=0){ const guess=Date.UTC(y,mo-1,d,hh,mi); const p=parts(guess);
+  const wall=Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute); return guess-(wall-guess); }
+const noonOf = key => { const [y,m,d]=key.split("-").map(Number); return zonedMs(y,m,d,12,0); };
+function setTZ(tz){
+  TZ = tz; dfmt = new Intl.DateTimeFormat("en-CA",{timeZone:TZ,year:"numeric",month:"2-digit",day:"2-digit"});
+  // 時刻なしの記録は「日付」で持っているので、新しいタイムゾーンでその日の正午に置き直す
+  S.logs.forEach(l=>{ if(l.noTime && l.date) l.doneAt = noonOf(l.date); });
+}
 function relDayLabel(key){ const t=todayKey(); if(key===t) return "今日"; if(key===shiftDay(t,-1)) return "昨日"; if(key===shiftDay(t,-2)) return "一昨日"; return `${+key.slice(5,7)}月${+key.slice(8)}日`; }
 function toLocalInput(ms){ const p=parts(ms); return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`; }
-function fromLocalInput(v){ return new Date(v+":00+09:00").getTime(); }
+function fromLocalInput(v){ const [d,t]=v.split("T"); const [y,m,dd]=d.split("-").map(Number); const [hh,mi]=t.split(":").map(Number); return zonedMs(y,m,dd,hh,mi); }
 function agoParts(ms){
   if(ms==null) return null;
   const d = daysSince(ms);
@@ -366,7 +401,7 @@ function addEvent(t, front=true){
   S.events.push(ev); return ev;
 }
 function addLog(eventId, doneAt=Date.now(), comment="", photo=null, noTime=false){
-  const l = {id:uid(),eventId,doneAt,comment,photo,noTime}; S.logs.push(l); return l;
+  const l = {id:uid(),eventId,doneAt,comment,photo,noTime,createdAt:Date.now()}; if(noTime) l.date = dayKey(doneAt); S.logs.push(l); return l;
 }
 
 /* ---- grid ---- */
@@ -380,6 +415,7 @@ function tileHTML(ev){
     ${showSt?`<span class="streak${st.cur?"":" pending"}" aria-hidden="true"><span class="fire">🔥</span>${st.n}${st.unit==="day"?"":`<small>${UNITS[st.unit].unit}</small>`}</span>`:""}<span class="emo" aria-hidden="true">${esc(ev.emoji)}</span><span class="name">${esc(ev.name)}</span>${ago}</button></li>`;
 }
 function renderGrid(){
+  if(S.meta.onboarded) checkBadges(false);
   const g = $("#grid");
   const t = curTab(), list = visible();
   g.innerHTML = list.map(tileHTML).join("") + `<li><button class="tile add" type="button" id="addTile"><span class="emo">＋</span>追加</button></li>`;
@@ -473,6 +509,7 @@ function endDrag(p){ p.drag.ghost.remove(); save(); renderGrid(); }
 
 /* ---- record ---- */
 function quickRecord(id){
+  if(!navigator.onLine){ showToast("オフラインです。つながると記録できます"); return; }
   const before = streakOf(id);
   const l = addLog(id); save(); renderGrid();
   const after = streakOf(id); const grew = after.n>before.n && after.n>=STREAK_MIN;
@@ -577,7 +614,7 @@ function openRecordSheet(eventId, logId=null, presetDay=null){
         else { when = noonOf(d); noTime = true; }
       }
       const comment = sh.querySelector("#recComment").value.trim();
-      if(log){ Object.assign(log,{doneAt:when,noTime,comment,photo}); } else addLog(eventId, when, comment, photo, noTime);
+      if(log){ Object.assign(log,{doneAt:when,noTime,comment,photo}); if(noTime) log.date=dayKey(when); else delete log.date; } else addLog(eventId, when, comment, photo, noTime);
       if(!save()) return; closeSheet(); renderGrid(); refreshDetail();
       showToast(log?"記録を更新しました":`${ev.emoji} ${mode==="now"?"":relDayLabel(dayKey(when))+"の分を"}記録しました`);
     };
@@ -749,6 +786,7 @@ function openShareSheet(logId){
     sh.querySelector("#optMemo").onchange = e => { opt.memo=e.target.checked; redraw(); };
     sh.querySelector("#optPhoto").onchange = e => { opt.photo=e.target.checked; redraw(); };
     await redraw();
+    sh.querySelector("#xIntent").addEventListener("click", ()=>window.__ylShared());
     sh.querySelector("#doShare").onclick = async () => {
       const note = sh.querySelector("#shareNote");
       try{
@@ -756,6 +794,7 @@ function openShareSheet(logId){
         const file = new File([blob], "yattalog.png", {type:"image/png"});
         if(!navigator.canShare || !navigator.canShare({files:[file]})) throw new Error("unsupported");
         await navigator.share({files:[file], text:shareText(info)});
+        S.meta.shared=true; save(); checkBadges(false);
       }catch(err){
         if(err && err.name==="AbortError") return;
         note.hidden=false; note.textContent="この環境では共有シートを開けませんでした。本番（ホーム画面に追加した PWA）では、スマホの共有シートからインスタや X に画像を渡せます。PoC では上のプレビューで見た目を確認してください。";
@@ -780,10 +819,114 @@ function openLogin(){
   P.querySelector("#gLogin").onclick = ()=>{ P.remove(); showToast("ログインしました（モック）"); };
 }
 
+/* ---- achievements ---- */
+const TIERS = {day:[7,30,100], week:[4,12,52], month:[3,6,12]};
+function longestRun(id, unit){ const ps=[...new Set(S.logs.filter(l=>l.eventId===id).map(l=>periodOf(l.doneAt,unit)))].sort((a,b)=>a-b);
+  let best=0, run=0, prev=null; ps.forEach(p=>{ run = (prev!==null && p===prev+1) ? run+1 : 1; best=Math.max(best,run); prev=p; }); return best; }
+function streakTier(){ let t=0; S.events.forEach(e=>{ const u=e.streakUnit||"day"; if(u==="none") return; const r=longestRun(e.id,u); TIERS[u].forEach((th,i)=>{ if(r>=th) t=Math.max(t,i+1); }); }); return t; }
+function badgeCtx(){
+  const per = {}; S.logs.forEach(l=>per[l.eventId]=(per[l.eventId]||0)+1);
+  const byDay = {}; S.logs.forEach(l=>{ const k=dayKey(l.doneAt); (byDay[k] ||= new Set()).add(l.eventId); });
+  let longGap=false; S.events.forEach(e=>{ const ds=S.logs.filter(l=>l.eventId===e.id).map(l=>dayNum(l.doneAt)).sort((a,b)=>a-b); for(let i=1;i<ds.length;i++) if(ds[i]-ds[i-1]>=365) longGap=true; });
+  return { total:S.logs.length, maxPer:Math.max(0,...Object.values(per)), events:S.events.length, tier:streakTier(),
+    past:S.logs.some(l=>l.createdAt && dayKey(l.doneAt)<dayKey(l.createdAt)), memo:S.logs.filter(l=>l.comment).length,
+    photo:S.logs.filter(l=>l.photo).length, shared:!!S.meta.shared, longGap, busy:Object.values(byDay).some(x=>x.size>=5) };
+}
+const BADGES = [
+  {id:"first",  e:"🌱", n:"はじめの一歩",      c:"初めて記録した",                         t:x=>x.total>=1},
+  {id:"t10",    e:"🔟", n:"じゅっかい",        c:"全イベントの合計で10回記録",              t:x=>x.total>=10},
+  {id:"t100",   e:"💯", n:"ひゃっかい",        c:"合計100回記録",                          t:x=>x.total>=100},
+  {id:"t1000",  e:"🏔️", n:"せんかい",          c:"合計1000回記録",                         t:x=>x.total>=1000},
+  {id:"s1",     e:"🔥", n:"つづいてる",        c:"連続記録 毎日7日／毎週4週／毎月3か月",     t:x=>x.tier>=1},
+  {id:"s2",     e:"☄️", n:"かなりつづいてる",  c:"連続記録 毎日30日／毎週12週／毎月6か月",   t:x=>x.tier>=2},
+  {id:"s3",     e:"👑", n:"ずっとつづいてる",  c:"連続記録 毎日100日／毎週52週／毎月12か月", t:x=>x.tier>=3},
+  {id:"e50",    e:"🎯", n:"おなじみ",          c:"1つのイベントを50回記録",                 t:x=>x.maxPer>=50},
+  {id:"e100",   e:"🥋", n:"たつじん",          c:"1つのイベントを100回記録",                t:x=>x.maxPer>=100},
+  {id:"col",    e:"🗂️", n:"コレクター",        c:"イベントを10個作った",                    t:x=>x.events>=10},
+  {id:"past",   e:"🕰️", n:"思い出した",        c:"過去の日付で記録した",                    t:x=>x.past},
+  {id:"memo",   e:"📝", n:"メモ魔",            c:"メモ付きで10回記録",                      t:x=>x.memo>=10},
+  {id:"photo",  e:"📷", n:"フォトログ",        c:"写真付きで10回記録",                      t:x=>x.photo>=10},
+  {id:"share",  e:"📣", n:"シェアデビュー",    c:"初めてシェアした",                        t:x=>x.shared},
+  {id:"gap",    e:"👋", n:"ひさしぶり",        c:"前回から365日以上空けて記録した",          t:x=>x.longGap},
+  {id:"busy",   e:"🐝", n:"大忙し",            c:"1日に5種類のイベントを記録した",           t:x=>x.busy},
+];
+function checkBadges(silent){
+  S.meta.badges ||= {}; const x = badgeCtx(); const got=[];
+  BADGES.forEach(b=>{ if(!S.meta.badges[b.id] && b.t(x)){ S.meta.badges[b.id]=Date.now(); got.push(b); } });
+  if(got.length){ save(); if(!silent) badgePop(got); }
+}
+function badgePop(got){
+  document.querySelector(".badgepop")?.remove();
+  const el=document.createElement("button"); el.type="button"; el.className="badgepop"; el.setAttribute("role","status");
+  el.innerHTML=`<span class="be" aria-hidden="true">${got[0].e}</span><span><small>実績解除</small><b>${esc(got[0].n)}</b>${got.length>1?`<small> ほか${got.length-1}件</small>`:""}</span>`;
+  el.onclick=()=>{ el.remove(); openBadges(); }; document.body.appendChild(el); setTimeout(()=>el.remove(), 4200);
+}
+function openBadges(){
+  const have = S.meta.badges||{}; const n = BADGES.filter(b=>have[b.id]).length;
+  openSheet(`<h2>実績 <small class="season-n">${n}/${BADGES.length}</small></h2>
+    <ul class="badges">${BADGES.map(b=>{ const at=have[b.id];
+      return `<li class="${at?"got":"locked"}"><span class="be" aria-hidden="true">${b.e}</span><div><b>${esc(b.n)}</b><small>${esc(b.c)}</small>${at?`<small class="when">${fmtWhen(at,true)} に解除</small>`:""}</div></li>`; }).join("")}</ul>`);
+}
+
+/* ---- settings ---- */
+const TZ_LIST = ["Asia/Tokyo","Asia/Seoul","Asia/Taipei","Asia/Bangkok","Asia/Singapore","Europe/London","Europe/Paris","America/New_York","America/Chicago","America/Los_Angeles","Pacific/Honolulu","Australia/Sydney"];
+function photoBytes(){ return S.logs.reduce((a,l)=>a+(l.photo?Math.round((l.photo.length-23)*0.75):0),0); }
+function fmtBytes(b){ return b<1024*1024 ? `${(b/1024).toFixed(0)}KB` : b<1024**3 ? `${(b/1024/1024).toFixed(1)}MB` : `${(b/1024**3).toFixed(2)}GB`; }
+function csvCell(v){ v=String(v??""); return /[",\n]/.test(v) ? `"${v.replace(/"/g,'""')}"` : v; }
+function buildLogsCsv(){
+  const rows=[["イベント","カテゴリ","日付","時刻","タイムゾーン","メモ","写真","記録元"]];
+  [...S.logs].sort((a,b)=>a.doneAt-b.doneAt).forEach(l=>{ const e=S.events.find(x=>x.id===l.eventId); if(!e) return; const p=parts(l.doneAt);
+    rows.push([e.name, S.categories.find(c=>c.id===e.categoryId)?.name||"", l.noTime&&l.date?l.date:`${p.year}-${p.month}-${p.day}`, l.noTime?"":`${p.hour}:${p.minute}`, TZ, l.comment, l.photo?`photos/${l.id}.webp`:"", "アプリ"]); });
+  return rows.map(r=>r.map(csvCell).join(",")).join("\n");
+}
+function openSettings(){
+  const used = photoBytes(), cap = 1024**3, pct = Math.min(100, used/cap*100);
+  const opts = [...new Set([TZ, DEVICE_TZ, ...TZ_LIST])];
+  openSheet(`<h2>設定</h2>
+    <div class="field"><label for="tzSel">タイムゾーン</label><select id="tzSel">${opts.map(z=>`<option value="${z}" ${z===TZ?"selected":""}>${z}${z===DEVICE_TZ?"（この端末）":""}</option>`).join("")}</select>
+      <span class="whenNote">日付の区切り（経過日数・連続記録・統計）に使います。時刻なしの記録は、日付がずれません。</span></div>
+    <div class="field"><span class="lbl">写真の使用量</span><div class="meter"><span style="width:${Math.max(pct,0.5)}%"></span></div>
+      <span class="whenNote">${fmtBytes(used)} / 1GB（${S.logs.filter(l=>l.photo).length}枚）</span></div>
+    <div class="field"><span class="lbl">データの書き出し</span><button class="btn" type="button" id="doExport">データを書き出す</button>
+      <div id="exportBox" hidden><span class="whenNote">本番では ZIP（logs.csv・events.csv・data.json・写真）を作り、ここからダウンロードします。PoC では logs.csv の中身を表示します。</span>
+      <textarea id="csvOut" readonly rows="6" style="font-size:12px;font-family:ui-monospace,monospace"></textarea><button class="btn small" type="button" id="csvCopy">コピー</button></div></div>
+    <div class="field"><span class="lbl">利用規約・プライバシーポリシー</span><span class="whenNote">本番では /terms と /privacy に表示します（ドラフトはリポジトリの docs/legal/ にあります）。</span></div>
+    <div class="row" style="margin-top:6px"><button class="btn" type="button" id="doLogout">ログアウト</button><button class="btn danger" type="button" id="doQuit">退会する</button></div>`, sh => {
+    sh.querySelector("#tzSel").onchange = e => { const z=e.target.value; S.meta.tz=z; setTZ(z); save(); renderGrid(); refreshDetail(); showToast(`タイムゾーンを ${z} にしました`); };
+    sh.querySelector("#doExport").onclick = () => { const box=sh.querySelector("#exportBox"); box.hidden=false; sh.querySelector("#csvOut").value="﻿"+buildLogsCsv(); };
+    sh.querySelector("#csvCopy").onclick = async () => { const ta=sh.querySelector("#csvOut"); try{ await navigator.clipboard.writeText(ta.value); showToast("コピーしました"); }catch(_){ ta.select(); showToast("選択しました。コピーしてください"); } };
+    sh.querySelector("#doLogout").onclick = () => { closeSheet(); openLogin(); };
+    sh.querySelector("#doQuit").onclick = openQuit;
+  });
+}
+function openQuit(){
+  const n = S.logs.length, ph = S.logs.filter(l=>l.photo).length, bd = Object.keys(S.meta.badges||{}).length;
+  openSheet(`<h2>退会する</h2>
+    <p>退会すると、次のデータがすべて削除され、元に戻せません。</p>
+    <ul class="quitlist"><li>イベント ${S.events.length}件</li><li>記録 ${n}件</li><li>写真 ${ph}枚</li><li>実績 ${bd}個</li><li>AI 連携（接続中のアプリ）</li></ul>
+    <p class="whenNote">先に「データを書き出す」で保存しておくのがおすすめです。Google 側の連携は、Google アカウントの設定から解除できます。</p>
+    <label class="check"><input type="checkbox" id="quitOk"> すべてのデータが削除され、元に戻せないことを理解しました</label>
+    <div class="row"><button class="btn" type="button" id="quitBack">戻る</button><button class="btn danger" type="button" id="quitGo" disabled>退会する</button></div>`, sh => {
+    sh.querySelector("#quitOk").onchange = e => sh.querySelector("#quitGo").disabled = !e.target.checked;
+    sh.querySelector("#quitBack").onclick = openSettings;
+    sh.querySelector("#quitGo").onclick = () => { S=fresh(false); save(); closeSheet(); closeDetail(); renderGrid(); openLogin(); showToast("退会しました（PoC：データを消去しました）"); };
+  });
+}
+function tzBanner(){
+  const b = $("#tzBanner"); if(!b) return;
+  const show = DEVICE_TZ!==TZ && S.meta.tzKeep!==DEVICE_TZ; b.hidden = !show; if(!show) return;
+  b.innerHTML = `<span>端末のタイムゾーン（${esc(DEVICE_TZ)}）に切り替えますか？</span><button type="button" class="btn small primary" id="tzYes">切り替える</button><button type="button" class="btn small" id="tzNo">このまま</button>`;
+  b.querySelector("#tzYes").onclick = ()=>{ S.meta.tz=DEVICE_TZ; setTZ(DEVICE_TZ); save(); renderGrid(); tzBanner(); showToast(`タイムゾーンを ${DEVICE_TZ} にしました`); };
+  b.querySelector("#tzNo").onclick = ()=>{ S.meta.tzKeep=DEVICE_TZ; save(); tzBanner(); };
+}
+function netBanner(){ const b=$("#netBanner"); if(b) b.hidden = navigator.onLine; }
+
 function openMenu(){
   const arch = S.events.filter(e=>e.archived);
   openSheet(`<h2>メニュー</h2>
     <ul class="menu">
+      <li><button type="button" id="mBadge">実績</button></li>
+      <li><button type="button" id="mSet">設定</button></li>
       <li><button type="button" id="mCat">カテゴリを管理</button></li>
       <li><button type="button" id="mLogin">ログイン画面を見る（モック）</button></li>
       <li><button type="button" id="mTpl">テンプレートから追加</button></li>
@@ -792,11 +935,13 @@ function openMenu(){
     </ul>
     <h2 style="margin-top:16px;font-size:16px">アーカイブ（${arch.length}）</h2>
     ${arch.length?arch.map(e=>`<div class="arch"><span aria-hidden="true">${esc(e.emoji)}</span><span style="flex:1;min-width:0">${esc(e.name)}</span><button class="btn small" type="button" data-un="${e.id}">戻す</button></div>`).join(""):`<p class="empty">アーカイブしたイベントはありません</p>`}
-    <p class="empty" style="margin-top:16px">PoC v0.7。ステップ3（画面一覧）以降の確認用です。</p>`, sh => {
+    <p class="empty" style="margin-top:16px">PoC v0.8。ステップ3（画面一覧）以降の確認用です。</p>`, sh => {
     sh.querySelector("#mTpl").onclick = ()=>openOnboarding(false);
     sh.querySelector("#mCat").onclick = openCatSheet;
+    sh.querySelector("#mBadge").onclick = openBadges;
+    sh.querySelector("#mSet").onclick = openSettings;
     sh.querySelector("#mLogin").onclick = ()=>{ closeSheet(); openLogin(); };
-    sh.querySelector("#mSample").onclick = ()=>{ seedSample(); closeSheet(); renderGrid(); showToast("お試しデータを入れました"); };
+    sh.querySelector("#mSample").onclick = ()=>{ seedSample(); checkBadges(true); closeSheet(); renderGrid(); showToast("お試しデータを入れました"); };
     sh.querySelector("#mReset").onclick = ()=>{ S=fresh(false); save(); closeSheet(); renderGrid(); openOnboarding(true); };
     sh.addEventListener("click", e=>{ const b=e.target.closest("[data-un]"); if(!b) return; const ev=S.events.find(x=>x.id===b.dataset.un); ev.archived=false; ev.order=Math.min(0,...S.events.map(x=>x.order))-1; save(); renderGrid(); openMenu(); });
   });
@@ -977,7 +1122,13 @@ function renderDetail(){
 /* ---- boot ---- */
 $("#editBtn").onclick = ()=>{ editing=!editing; renderGrid(); };
 $("#menuBtn").onclick = openMenu;
-renderGrid();
+// 起動：時刻なしの記録に日付を付ける（旧データの移行）→ タイムゾーンを適用
+S.logs.forEach(l=>{ if(l.noTime && !l.date) l.date = dayKey(l.doneAt); });
+S.meta.tz ||= DEVICE_TZ; setTZ(S.meta.tz);
+window.__ylShared = () => { S.meta.shared=true; save(); checkBadges(false); };
+window.addEventListener("online", netBanner); window.addEventListener("offline", netBanner);
+checkBadges(true);
+renderGrid(); tzBanner(); netBanner();
 if(!S.meta.onboarded) openOnboarding(true);
 setInterval(renderGrid, 60000);
 })();
