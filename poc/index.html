@@ -83,6 +83,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,.tile:focus-visi
 .tile .ago small{font-size:12px;font-weight:700;margin-left:1px}
 .tile .ago.never{font-size:14px;opacity:.6}
 .tile.today .ago{color:var(--accent)}
+.streak{position:absolute;top:7px;right:8px;font-family:var(--f-display);font-weight:800;font-size:13px;line-height:1;padding:4px 7px 4px 5px;border-radius:999px;background:var(--surface);color:var(--fg);box-shadow:var(--shadow);font-variant-numeric:tabular-nums}
+.streak.pending{opacity:.55}
+.streak.burst{animation:burst .6s cubic-bezier(.3,1.8,.5,1)}
+@keyframes burst{0%{transform:scale(.4) rotate(-15deg)}60%{transform:scale(1.35) rotate(6deg)}100%{transform:scale(1)}}
 .tile.pressing{transform:scale(.93)}
 .tile.pop{animation:pop .42s cubic-bezier(.3,1.6,.5,1)}
 @keyframes pop{0%{transform:scale(.9)}100%{transform:scale(1)}}
@@ -200,7 +204,7 @@ input[type=date],input[type=time]{width:100%;min-width:0;border:1px solid var(--
     <button class="pill" id="editBtn" type="button">編集</button>
     <button class="iconbtn" id="menuBtn" type="button" aria-label="メニュー">⋯</button>
   </header>
-  <p class="poc-note">PoC v0.3 ・ データはこの端末のブラウザにだけ保存されます</p>
+  <p class="poc-note">PoC v0.4 ・ データはこの端末のブラウザにだけ保存されます</p>
   <p class="edit-hint" id="editHint" hidden>ドラッグで並べ替え ・ タップで詳細 ・ ×でアーカイブ／削除</p>
   <nav class="tabs" id="tabs" role="tablist" aria-label="カテゴリ"></nav>
   <ul class="grid" id="grid" role="tabpanel"></ul>
@@ -221,7 +225,7 @@ const TEMPLATES = [
   {name:"洗車",cat:"身の回り",emoji:"🚗",color:"tangerine",every:30},
   {name:"換気扇の掃除",cat:"家事",emoji:"🧽",color:"sun",every:90},
   {name:"布団を干す",cat:"家事",emoji:"🧺",color:"leaf",every:10},
-  {name:"植物の水やり",cat:"家事",emoji:"🪴",color:"leaf",every:3},
+  {name:"植物の水やり",cat:"家事",emoji:"🪴",color:"leaf",every:1},
   {name:"実家に連絡",cat:"身の回り",emoji:"📞",color:"tomato",every:14},
   {name:"ジム",cat:"趣味",emoji:"🏋️",color:"tangerine",every:3},
   {name:"自転車のチェーン注油",cat:"趣味",emoji:"🚲",color:"teal",every:21},
@@ -285,6 +289,16 @@ const curTab = () => (S.meta.tab==="all" || S.categories.some(c=>c.id===S.meta.t
 const visible = () => { const t=curTab(); return t==="all" ? active() : active().filter(e=>e.categoryId===t); };
 function ensureCat(name){ let c=S.categories.find(x=>x.name===name); if(!c){ c={id:uid(),name,order:S.categories.length}; S.categories.push(c);} return c.id; }
 const lastOf = id => { const l = logsOf(id)[0]; return l ? l.doneAt : null; };
+// 連続記録：今日（まだなら昨日）から遡って、記録がある日が何日続いているか
+function streakOf(id){
+  const days = new Set(S.logs.filter(l=>l.eventId===id).map(l=>dayNum(l.doneAt)));
+  const today = dayNum(Date.now());
+  let d = days.has(today) ? today : (days.has(today-1) ? today-1 : null);
+  if(d===null) return {n:0, today:false};
+  let n=0; while(days.has(d)){ n++; d--; }
+  return {n, today:days.has(today)};
+}
+const STREAK_MIN = 2;
 function addEvent(t, front=true){
   const minOrder = Math.min(0,...S.events.map(e=>e.order));
   const categoryId = t.categoryId!==undefined ? t.categoryId : (t.cat ? ensureCat(t.cat) : null);
@@ -299,10 +313,11 @@ function addLog(eventId, doneAt=Date.now(), comment="", photo=null, noTime=false
 function tileHTML(ev){
   const last = lastOf(ev.id), a = agoParts(last);
   const ago = a ? `<span class="ago">${a.n}${a.u?`<small>${a.u}</small>`:""}</span>` : `<span class="ago never">まだ</span>`;
-  const label = `${ev.name}、${a ? (a.u? `前回から${a.n}${a.u}` : "今日やった") : "まだ記録なし"}`;
+  const st = streakOf(ev.id); const showSt = st.n>=STREAK_MIN;
+  const label = `${ev.name}、${a ? (a.u? `前回から${a.n}${a.u}` : "今日やった") : "まだ記録なし"}${showSt?`、${st.n}日連続${st.today?"":"（今日はまだ）"}`:""}`;
   return `<li><button class="tile${a&&a.n==="今日"?" today":""}" type="button" data-id="${ev.id}" style="--tc:var(--t-${ev.color})" aria-label="${esc(label)}">
     <span class="x" data-x="${ev.id}" role="button" aria-label="${esc(ev.name)}をアーカイブまたは削除">×</span>
-    <span class="emo" aria-hidden="true">${esc(ev.emoji)}</span><span class="name">${esc(ev.name)}</span>${ago}</button></li>`;
+    ${showSt?`<span class="streak${st.today?"":" pending"}" aria-hidden="true">🔥${st.n}</span>`:""}<span class="emo" aria-hidden="true">${esc(ev.emoji)}</span><span class="name">${esc(ev.name)}</span>${ago}</button></li>`;
 }
 function renderGrid(){
   const g = $("#grid");
@@ -398,10 +413,13 @@ function endDrag(p){ p.drag.ghost.remove(); save(); renderGrid(); }
 
 /* ---- record ---- */
 function quickRecord(id){
+  const before = streakOf(id);
   const l = addLog(id); save(); renderGrid();
+  const after = streakOf(id); const grew = after.n>before.n && after.n>=STREAK_MIN;
+  if(grew){ const b=document.querySelector(`.tile[data-id="${id}"] .streak`); b && b.classList.add("burst"); }
   const t = document.querySelector(`.tile[data-id="${id}"]`); if(t){ t.classList.add("pop"); }
   const ev = S.events.find(e=>e.id===id);
-  showToast(`${ev.emoji} 記録しました`, [
+  showToast(grew ? `🔥 ${after.n}日連続！` : `${ev.emoji} 記録しました`, [
     {label:"取り消す", fn:()=>{ S.logs = S.logs.filter(x=>x.id!==l.id); save(); renderGrid(); showToast("取り消しました"); }},
     {label:"メモを足す", fn:()=>openRecordSheet(id, l.id)}
   ]);
@@ -598,7 +616,7 @@ function openMenu(){
     </ul>
     <h2 style="margin-top:16px;font-size:16px">アーカイブ（${arch.length}）</h2>
     ${arch.length?arch.map(e=>`<div class="arch"><span aria-hidden="true">${esc(e.emoji)}</span><span style="flex:1;min-width:0">${esc(e.name)}</span><button class="btn small" type="button" data-un="${e.id}">戻す</button></div>`).join(""):`<p class="empty">アーカイブしたイベントはありません</p>`}
-    <p class="empty" style="margin-top:16px">PoC v0.3。ステップ3（画面一覧）以降の確認用です。</p>`, sh => {
+    <p class="empty" style="margin-top:16px">PoC v0.4。ステップ3（画面一覧）以降の確認用です。</p>`, sh => {
     sh.querySelector("#mTpl").onclick = ()=>openOnboarding(false);
     sh.querySelector("#mCat").onclick = openCatSheet;
     sh.querySelector("#mSample").onclick = ()=>{ seedSample(); closeSheet(); renderGrid(); showToast("お試しデータを入れました"); };
@@ -619,6 +637,11 @@ function seedSample(){
   ["家事","身の回り","趣味"].forEach(ensureCat);
   TEMPLATES.forEach((t,i)=>{ const ev=addEvent(t,false); ev.order=i; pastLogs(ev,t.every); });
   const ev = addEvent({name:"パスポート更新",emoji:"📚",color:"grape",categoryId:null},false); ev.order=99;
+  // 連続記録のお試し：水やりは今日まで7日連続、ジムは昨日まで3日連続（今日はまだ）
+  const streakDemo = (name, from, to) => { const e=S.events.find(x=>x.name===name); if(!e) return;
+    S.logs = S.logs.filter(l=>!(l.eventId===e.id && daysSince(l.doneAt)<=to+1));
+    for(let d=from; d<=to; d++) addLog(e.id, noonOf(shiftDay(todayKey(),-d)), "", null, true); };
+  streakDemo("植物の水やり", 0, 6); streakDemo("ジム", 1, 3);
   save();
 }
 function openOnboarding(first){
@@ -667,7 +690,7 @@ function renderDetail(){
     <header class="bar"><button class="iconbtn" type="button" id="dBack" aria-label="ホームに戻る">←</button><span style="flex:1"></span>
       <button class="pill" type="button" id="dEdit">編集</button><button class="iconbtn" type="button" id="dMore" aria-label="アーカイブ・削除">⋯</button></header>
     <section class="hero" style="--tc:var(--t-${ev.color})"><span class="emo" aria-hidden="true">${esc(ev.emoji)}</span>
-      <div style="min-width:0"><h2>${esc(ev.name)}</h2><div class="sub">${ev.categoryId?esc(S.categories.find(c=>c.id===ev.categoryId)?.name)+" ・ ":""}${last?"前回 "+fmtWhen(last, logs[0].noTime):"まだ記録がありません"}</div></div>
+      <div style="min-width:0"><h2>${esc(ev.name)}</h2><div class="sub">${(()=>{const st=streakOf(ev.id);return st.n>=STREAK_MIN?`🔥 ${st.n}日連続${st.today?"":"（今日はまだ）"} ・ `:""})()}${ev.categoryId?esc(S.categories.find(c=>c.id===ev.categoryId)?.name)+" ・ ":""}${last?"前回 "+fmtWhen(last, logs[0].noTime):"まだ記録がありません"}</div></div>
       <div class="big">${a?`${a.n}${a.u?`<small>${a.u}</small>`:""}`:"—"}</div></section>
     <div class="stats">
       <div class="stat"><div class="k">記録回数</div><div class="v">${logs.length}<small>回</small></div></div>
