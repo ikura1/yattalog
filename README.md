@@ -44,9 +44,6 @@ uv run ruff check . && uv run ruff format --check .
 | `apps/web/` | 画面（Django テンプレート＋htmx）。処理はサービス層を呼ぶだけ（決定 027） |
 | `templates/`、`static/` | テンプレート、CSS、JS |
 
-## デプロイ（Render）
+## デプロイ（Cloud Run ＋ Neon）
 
-1. Render の Dashboard で「New → Blueprint」を選び、このリポジトリを指定する（`render.yaml` から Web と PostgreSQL が作られる）
-2. 環境変数 `GOOGLE_CLIENT_ID` と `GOOGLE_CLIENT_SECRET` を設定する
-3. Google の OAuth クライアントに、承認済みのリダイレクト URI として `https://<Render のホスト名>/accounts/google/login/callback/` を追加する
-4. 管理画面の URL は `DJANGO_ADMIN_URL`（自動生成）になる
+試験運用はほぼ0円の構成で動かす。手順は [deploy/README.md](deploy/README.md)。main にマージすると GitHub Actions が自動でデプロイする。

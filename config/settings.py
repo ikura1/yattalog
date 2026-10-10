@@ -94,6 +94,8 @@ DATABASES = {
     )
 }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+# Neon のコネクションプーラー（PgBouncer のトランザクションモード）ではサーバー側カーソルが使えない
+DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
 
 AUTH_USER_MODEL = "accounts.User"
 AUTHENTICATION_BACKENDS = [
