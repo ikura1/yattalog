@@ -41,10 +41,16 @@
 | 016 | [ログインは Google アカウントのみにする](016-google-login-only.md) | 決定 |
 | 017 | [SNS へのシェアは「シェア画像＋共有シート」で行う](017-share-image-via-share-sheet.md) | 決定 |
 | 018 | [イベント詳細に「よくやる時期」（月別の棒グラフ）を追加する](018-seasonal-chart.md) | 決定 |
-| 019 | [API を前提に作り、MCP サーバーは v1.x で公開する](019-api-first-mcp-later.md) | 決定 |
+| 019 | [API を前提に作り、MCP サーバーは v1.x で公開する](019-api-first-mcp-later.md) | 決定（027 で具体化） |
 | 020 | [実績バッジを入れる（失うものは作らない）](020-achievements.md) | 決定 |
 | 021 | [データの書き出し（ZIP）と退会時の完全削除に対応する](021-export-and-deletion.md) | 決定 |
 | 022 | [v1 ではオフラインでの記録に対応しない](022-no-offline-logging-in-v1.md) | 決定 |
-| 023 | [タイムゾーンはユーザーごとに持ち、時刻なしの記録は日付で保存する](023-per-user-timezone.md) | 決定 |
-| 024 | [写真は端末で縮小し、1ユーザー1GBまでとする](024-photo-limits.md) | 決定 |
+| 023 | [タイムゾーンはユーザーごとに持ち、時刻なしの記録は日付で保存する](023-per-user-timezone.md) | 決定（保存形式は 026 で置き換え） |
+| 024 | [写真は端末で縮小し、1ユーザー1GBまでとする](024-photo-limits.md) | 決定（029 で補強） |
 | 025 | [サーバーは Django（＋ Django Ninja）で作る](025-tech-stack-django.md) | 決定 |
+| 026 | [すべての記録に「記録した日の日付」を持たせ、後から変えない](026-log-local-date.md) | 決定 |
+| 027 | [処理はサービス層にまとめ、画面と API の両方から呼ぶ](027-service-layer.md) | 決定 |
+| 028 | [記録は端末で ID を作って送り、画面は先に更新する](028-optimistic-logging.md) | 決定 |
+| 029 | [写真はサーバーでも検証して作り直し、書き出しの CSV は無害化する](029-server-side-validation.md) | 決定 |
+| 030 | [α・β・一般公開の3段階でリリースする](030-staged-release.md) | 決定 |
+| 031 | [ホーム画面への追加（PWA）を案内する](031-pwa-install-guide.md) | 決定 |
