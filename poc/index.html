@@ -32,6 +32,7 @@
   --tile-fg:#EEF1F6; --dot:#5CC9A7; color-scheme:dark;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{height:100%}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.6;-webkit-tap-highlight-color:transparent}
 button{font:inherit;color:inherit;cursor:pointer}
@@ -102,6 +103,15 @@ textarea{min-height:84px;resize:vertical}
 .btn.danger{color:var(--danger)}
 .btn.small{flex:0 0 auto;min-width:0;padding:7px 12px;font-size:13px}
 .links{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.seg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.seg button{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:9px 4px;font-weight:700;font-size:14px}
+.seg button[aria-checked=true]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.pickbox{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:8px;margin-top:8px}
+.pf{display:flex;flex-direction:column;gap:4px;min-width:0}
+.pf label{font-size:12px;color:var(--muted);font-weight:700}
+input[type=date],input[type=time]{width:100%;min-width:0;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:12px;padding:10px 12px;font:inherit;font-size:16px}
+.whenNote{font-size:12.5px;color:var(--muted);margin:4px 0 0}
+.cal button:disabled{opacity:.3;cursor:default}
 .photo-prev{max-height:160px;border-radius:12px;display:block;margin-top:6px}
 .emojis{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px}
 .emojis button{border:1px solid transparent;background:var(--bg);border-radius:10px;font-size:22px;aspect-ratio:1;padding:0}
@@ -167,7 +177,7 @@ textarea{min-height:84px;resize:vertical}
     <button class="pill" id="editBtn" type="button">編集</button>
     <button class="iconbtn" id="menuBtn" type="button" aria-label="メニュー">⋯</button>
   </header>
-  <p class="poc-note">PoC v0.1 ・ データはこの端末のブラウザにだけ保存されます</p>
+  <p class="poc-note">PoC v0.2 ・ データはこの端末のブラウザにだけ保存されます</p>
   <p class="edit-hint" id="editHint" hidden>ドラッグで並べ替え ・ タップで詳細 ・ ×でアーカイブ／削除</p>
   <ul class="grid" id="grid"></ul>
 </div>
@@ -215,7 +225,11 @@ const dayKey = ms => dfmt.format(new Date(ms));                // "2026-10-10"
 const dayNum = ms => { const [y,m,d] = dayKey(ms).split("-").map(Number); return Date.UTC(y,m-1,d)/864e5; };
 const daysSince = ms => dayNum(Date.now()) - dayNum(ms);
 function parts(ms){ const o={}; new Intl.DateTimeFormat("en-US",{timeZone:TZ,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false}).formatToParts(new Date(ms)).forEach(p=>o[p.type]=p.value); if(o.hour==="24")o.hour="00"; return o; }
-function fmtWhen(ms){ const p=parts(ms), now=parts(Date.now()); return (p.year===now.year?"":p.year+"/")+`${p.month}/${p.day} ${p.hour}:${p.minute}`; }
+function fmtWhen(ms, noTime=false){ const p=parts(ms), now=parts(Date.now()); return (p.year===now.year?"":p.year+"/")+`${p.month}/${p.day}`+(noTime?"":` ${p.hour}:${p.minute}`); }
+const todayKey = () => dayKey(Date.now());
+function shiftDay(key, n){ const [y,m,d]=key.split("-").map(Number); const t=new Date(Date.UTC(y,m-1,d+n)); return t.toISOString().slice(0,10); }
+const noonOf = key => new Date(key+"T12:00:00+09:00").getTime();
+function relDayLabel(key){ const t=todayKey(); if(key===t) return "今日"; if(key===shiftDay(t,-1)) return "昨日"; if(key===shiftDay(t,-2)) return "一昨日"; return `${+key.slice(5,7)}月${+key.slice(8)}日`; }
 function toLocalInput(ms){ const p=parts(ms); return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`; }
 function fromLocalInput(v){ return new Date(v+":00+09:00").getTime(); }
 function agoParts(ms){
@@ -243,8 +257,8 @@ function addEvent(t, front=true){
   const ev = {id:uid(),name:t.name,emoji:t.emoji,color:t.color,archived:false,createdAt:Date.now(),order:front?minOrder-1:Date.now()};
   S.events.push(ev); return ev;
 }
-function addLog(eventId, doneAt=Date.now(), comment="", photo=null){
-  const l = {id:uid(),eventId,doneAt,comment,photo}; S.logs.push(l); return l;
+function addLog(eventId, doneAt=Date.now(), comment="", photo=null, noTime=false){
+  const l = {id:uid(),eventId,doneAt,comment,photo,noTime}; S.logs.push(l); return l;
 }
 
 /* ---- grid ---- */
@@ -375,13 +389,26 @@ function resizePhoto(file){
   });
 }
 
-function openRecordSheet(eventId, logId=null){
+function openRecordSheet(eventId, logId=null, presetDay=null){
   const ev = S.events.find(e=>e.id===eventId); const log = logId ? S.logs.find(l=>l.id===logId) : null;
   let photo = log?.photo || null;
+  const tk = todayKey();
+  // 初期状態：新規は「今」、日付指定（カレンダーから）や編集は日付モード
+  let mode = "now", dVal = tk, tVal = "";
+  if(presetDay){ mode="pick"; dVal=presetDay; }
+  if(log){ mode="pick"; dVal=dayKey(log.doneAt); const p=parts(log.doneAt); tVal = log.noTime?"":`${p.hour}:${p.minute}`; }
+  const chip = (w,label) => `<button type="button" data-w="${w}" role="radio">${label}</button>`;
   openSheet(`
     <h2><span aria-hidden="true">${esc(ev.emoji)}</span>${esc(ev.name)}</h2>
     <form id="recForm">
-      <div class="field"><label for="recWhen">やった日時</label><input type="datetime-local" id="recWhen" value="${toLocalInput(log?log.doneAt:Date.now())}" max="${toLocalInput(Date.now())}" required></div>
+      <div class="field"><span class="lbl" id="whenL">いつやった？</span>
+        <div class="seg" role="radiogroup" aria-labelledby="whenL">${chip("now","今")}${chip("y1","昨日")}${chip("y2","一昨日")}${chip("pick","日付を選ぶ")}</div>
+        <div class="pickbox" id="pickBox">
+          <div class="pf"><label for="recDate">日付</label><input type="date" id="recDate" value="${dVal}" max="${tk}"></div>
+          <div class="pf"><label for="recTime">時刻（わかれば）</label><input type="time" id="recTime" value="${tVal}"></div>
+        </div>
+        <p class="whenNote" id="whenNote"></p>
+      </div>
       <div class="field"><label for="recComment">メモ</label><textarea id="recComment" placeholder="例：新しい洗剤を試した">${esc(log?.comment)}</textarea></div>
       <div class="field"><label for="recPhoto">写真（1枚）</label><input type="file" id="recPhoto" accept="image/*"><div id="photoBox">${photo?`<img class="photo-prev" src="${photo}" alt="添付した写真"><button type="button" class="btn small" id="rmPhoto">写真を外す</button>`:""}</div></div>
       <p class="empty" id="recErr" hidden></p>
@@ -395,15 +422,32 @@ function openRecordSheet(eventId, logId=null){
     sh.querySelector("#recPhoto").onchange = async e => { const f=e.target.files[0]; if(!f) return;
       try{ photo = await resizePhoto(f); box.innerHTML=`<img class="photo-prev" src="${photo}" alt="添付した写真"><button type="button" class="btn small" id="rmPhoto">写真を外す</button>`; bindRm(); }
       catch(_){ showToast("この画像は読み込めませんでした。JPEG か PNG を選んでください"); } };
+    const dI = sh.querySelector("#recDate"), tI = sh.querySelector("#recTime"), pb = sh.querySelector("#pickBox"), note = sh.querySelector("#whenNote");
+    const sync = () => {
+      sh.querySelectorAll("[data-w]").forEach(b=>b.setAttribute("aria-checked", b.dataset.w===mode));
+      pb.hidden = mode==="now";
+      note.textContent = mode==="now" ? "今の時刻で記録します" : `${relDayLabel(dI.value||tk)}${tI.value?" "+tI.value:"（時刻なし）"} として記録します`;
+    };
+    sh.querySelector(".seg").onclick = e => { const b=e.target.closest("[data-w]"); if(!b) return; mode=b.dataset.w;
+      if(mode==="y1") dI.value=shiftDay(tk,-1); if(mode==="y2") dI.value=shiftDay(tk,-2); if(mode==="pick" && !dI.value) dI.value=tk; sync(); };
+    dI.oninput = () => { const v=dI.value; mode = v===shiftDay(tk,-1)?"y1": v===shiftDay(tk,-2)?"y2":"pick"; sync(); };
+    tI.oninput = sync;
+    if(!log && !presetDay){ /* now */ } else if(dVal===shiftDay(tk,-1)) mode="y1"; else if(dVal===shiftDay(tk,-2)) mode="y2";
+    sync();
     sh.querySelector("#recForm").onsubmit = e => { e.preventDefault();
-      const when = fromLocalInput(sh.querySelector("#recWhen").value);
-      const err = sh.querySelector("#recErr");
-      if(isNaN(when)){ err.hidden=false; err.textContent="日時を入力してください"; return; }
-      if(when > Date.now()+60000){ err.hidden=false; err.textContent="未来の日時は記録できません。今より前の日時にしてください"; return; }
+      const err = sh.querySelector("#recErr"); const fail = m => { err.hidden=false; err.textContent=m; };
+      let when, noTime=false;
+      if(mode==="now"){ when = Date.now(); }
+      else {
+        const d = dI.value; if(!d) return fail("日付を選んでください");
+        if(d > tk) return fail("未来の日付は記録できません。今日より前の日付を選んでください");
+        if(tI.value){ when = fromLocalInput(`${d}T${tI.value}`); if(when > Date.now()+60000) return fail("まだ来ていない時刻です。時刻を直すか、空欄にしてください"); }
+        else { when = noonOf(d); noTime = true; }
+      }
       const comment = sh.querySelector("#recComment").value.trim();
-      if(log){ log.doneAt=when; log.comment=comment; log.photo=photo; } else addLog(eventId, when, comment, photo);
+      if(log){ Object.assign(log,{doneAt:when,noTime,comment,photo}); } else addLog(eventId, when, comment, photo, noTime);
       if(!save()) return; closeSheet(); renderGrid(); refreshDetail();
-      showToast(log?"記録を更新しました":`${ev.emoji} ${ev.name} を記録しました`);
+      showToast(log?"記録を更新しました":`${ev.emoji} ${mode==="now"?"":relDayLabel(dayKey(when))+"の分を"}記録しました`);
     };
     sh.querySelector("#toDetail")?.addEventListener("click", ()=>{ closeSheet(); openDetail(eventId); });
     sh.querySelector("#toEdit")?.addEventListener("click", ()=>openEventSheet(eventId));
@@ -419,6 +463,7 @@ function openEventSheet(eventId=null){
       <div class="field"><label for="evName">名前</label><input type="text" id="evName" maxlength="40" value="${esc(ev?.name)}" placeholder="例：シーツ交換" required></div>
       <div class="field"><span class="lbl" id="emoL">アイコン</span><div class="emojis" role="group" aria-labelledby="emoL">${EMOJIS.map(x=>`<button type="button" data-e="${x}" aria-pressed="${x===emoji}">${x}</button>`).join("")}</div></div>
       <div class="field"><span class="lbl" id="colL">色</span><div class="colors" role="group" aria-labelledby="colL">${COLORS.map(c=>`<button type="button" data-c="${c}" style="background:var(--t-${c})" aria-label="${c}" aria-pressed="${c===color}"></button>`).join("")}</div></div>
+      ${ev?"":`<div class="field"><label for="evLast">前回やった日（わかれば）</label><input type="date" id="evLast" max="${todayKey()}"><span class="whenNote">入れておくと、最初から「前回から○日」が出ます</span></div>`}
       <div class="row"><button class="btn primary" type="submit">${ev?"保存する":"追加する"}</button></div>
       ${ev?"":`<div class="links"><button class="btn" type="button" id="fromTpl">テンプレートから選ぶ</button></div>`}
     </form>`, sh => {
@@ -427,7 +472,9 @@ function openEventSheet(eventId=null){
     sh.querySelector("#fromTpl")?.addEventListener("click", ()=>openOnboarding(false));
     sh.querySelector("#evForm").onsubmit = e => { e.preventDefault();
       const name = sh.querySelector("#evName").value.trim(); if(!name) return;
-      if(ev){ Object.assign(ev,{name,emoji,color}); } else addEvent({name,emoji,color});
+      if(ev){ Object.assign(ev,{name,emoji,color}); }
+      else { const ne = addEvent({name,emoji,color}); const last = sh.querySelector("#evLast").value;
+        if(last && last <= todayKey()) addLog(ne.id, noonOf(last), "", null, true); }
       save(); closeSheet(); renderGrid(); refreshDetail(); showToast(ev?"保存しました":"追加しました"); };
   });
 }
@@ -454,7 +501,7 @@ function openMenu(){
     </ul>
     <h2 style="margin-top:16px;font-size:16px">アーカイブ（${arch.length}）</h2>
     ${arch.length?arch.map(e=>`<div class="arch"><span aria-hidden="true">${esc(e.emoji)}</span><span style="flex:1;min-width:0">${esc(e.name)}</span><button class="btn small" type="button" data-un="${e.id}">戻す</button></div>`).join(""):`<p class="empty">アーカイブしたイベントはありません</p>`}
-    <p class="empty" style="margin-top:16px">PoC v0.1。ステップ3（画面一覧）以降の確認用です。</p>`, sh => {
+    <p class="empty" style="margin-top:16px">PoC v0.2。ステップ3（画面一覧）以降の確認用です。</p>`, sh => {
     sh.querySelector("#mTpl").onclick = ()=>openOnboarding(false);
     sh.querySelector("#mSample").onclick = ()=>{ seedSample(); closeSheet(); renderGrid(); showToast("お試しデータを入れました"); };
     sh.querySelector("#mReset").onclick = ()=>{ S={events:[],logs:[],meta:{onboarded:false,hintShown:false}}; save(); closeSheet(); renderGrid(); openOnboarding(true); };
@@ -514,13 +561,13 @@ function renderDetail(){
   let cal = ["日","月","火","水","木","金","土"].map(d=>`<span class="dow">${d}</span>`).join("");
   for(let i=0;i<dow0;i++) cal += `<span class="pad"></span>`;
   for(let d=1; d<=dim; d++){ const k=`${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-    cal += `<button type="button" data-day="${k}" class="${marks.has(k)?"has":""} ${k===todayK?"today":""} ${detail.sel===k?"sel":""}" aria-label="${m}月${d}日${marks.has(k)?"、記録あり":""}">${d}</button>`; }
+    cal += `<button type="button" data-day="${k}" ${k>todayK?"disabled":""} class="${marks.has(k)?"has":""} ${k===todayK?"today":""} ${detail.sel===k?"sel":""}" aria-label="${m}月${d}日${marks.has(k)?"、記録あり":""}">${d}</button>`; }
   const shown = detail.sel ? logs.filter(l=>dayKey(l.doneAt)===detail.sel) : logs;
   const html = `<div class="panel" role="dialog" aria-modal="true" aria-label="${esc(ev.name)}の詳細"><div class="in">
     <header class="bar"><button class="iconbtn" type="button" id="dBack" aria-label="ホームに戻る">←</button><span style="flex:1"></span>
       <button class="pill" type="button" id="dEdit">編集</button><button class="iconbtn" type="button" id="dMore" aria-label="アーカイブ・削除">⋯</button></header>
     <section class="hero" style="--tc:var(--t-${ev.color})"><span class="emo" aria-hidden="true">${esc(ev.emoji)}</span>
-      <div style="min-width:0"><h2>${esc(ev.name)}</h2><div class="sub">${last?"前回 "+fmtWhen(last):"まだ記録がありません"}</div></div>
+      <div style="min-width:0"><h2>${esc(ev.name)}</h2><div class="sub">${last?"前回 "+fmtWhen(last, logs[0].noTime):"まだ記録がありません"}</div></div>
       <div class="big">${a?`${a.n}${a.u?`<small>${a.u}</small>`:""}`:"—"}</div></section>
     <div class="stats">
       <div class="stat"><div class="k">記録回数</div><div class="v">${logs.length}<small>回</small></div></div>
@@ -531,8 +578,9 @@ function renderDetail(){
     <section class="card"><div class="cal-head"><button class="iconbtn" type="button" id="calPrev" aria-label="前の月">‹</button><strong>${y}年${m}月</strong><button class="iconbtn" type="button" id="calNext" aria-label="次の月">›</button></div>
       <div class="cal" id="cal">${cal}</div></section>
     <section class="card"><h3>${detail.sel?`${+detail.sel.slice(5,7)}月${+detail.sel.slice(8)}日の記録 <button class="btn small" type="button" id="clrSel">すべて表示</button>`:"記録の履歴"}</h3>
-      ${shown.length?`<ul class="logs">${shown.map(l=>`<li><span class="when">${fmtWhen(l.doneAt)}</span><div class="body"><div class="c ${l.comment?"":"empty"}">${l.comment?esc(l.comment):"メモなし"}</div>${l.photo?`<img src="${l.photo}" alt="記録の写真">`:""}</div>
-        <div class="ops"><button class="btn small" type="button" data-le="${l.id}">編集</button><button class="btn small danger" type="button" data-ld="${l.id}" aria-label="この記録を削除">削除</button></div></li>`).join("")}</ul>`:`<p class="empty">記録はまだありません</p>`}
+      ${shown.length?`<ul class="logs">${shown.map(l=>`<li><span class="when">${fmtWhen(l.doneAt, l.noTime)}</span><div class="body"><div class="c ${l.comment?"":"empty"}">${l.comment?esc(l.comment):"メモなし"}</div>${l.photo?`<img src="${l.photo}" alt="記録の写真">`:""}</div>
+        <div class="ops"><button class="btn small" type="button" data-le="${l.id}">編集</button><button class="btn small danger" type="button" data-ld="${l.id}" aria-label="この記録を削除">削除</button></div></li>`).join("")}</ul>`:`<p class="empty">${detail.sel?"この日の記録はありません":"記録はまだありません"}</p>`}
+      ${detail.sel?`<div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="recOnDay">${relDayLabel(detail.sel)}に記録する</button></div>`:`<p class="whenNote" style="margin-top:8px">カレンダーの日付をタップすると、その日の分を記録できます</p>`}
     </section></div></div>`;
   const old = document.querySelector(".panel"); const sc = old?.scrollTop||0; old?.remove();
   document.body.insertAdjacentHTML("beforeend", html);
@@ -544,6 +592,7 @@ function renderDetail(){
   P.querySelector("#calPrev").onclick = ()=>{ detail.m--; if(detail.m<1){detail.m=12;detail.y--;} renderDetail(); };
   P.querySelector("#calNext").onclick = ()=>{ detail.m++; if(detail.m>12){detail.m=1;detail.y++;} renderDetail(); };
   P.querySelector("#clrSel")?.addEventListener("click", ()=>{ detail.sel=null; renderDetail(); });
+  P.querySelector("#recOnDay")?.addEventListener("click", ()=>openRecordSheet(ev.id, null, detail.sel));
   P.querySelector("#cal").onclick = e => { const b=e.target.closest("[data-day]"); if(!b) return; detail.sel = detail.sel===b.dataset.day?null:b.dataset.day; renderDetail(); };
   P.addEventListener("click", e => {
     const le=e.target.closest("[data-le]"); if(le) return openRecordSheet(ev.id, le.dataset.le);
