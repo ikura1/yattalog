@@ -1,0 +1,5 @@
+{% extends "web/base.html" %}
+{% block title %}{{ event.name }} - Yattalog{% endblock %}
+{% block body %}
+<div class="app detail-page" id="detail" data-detail-url="{{ request.path }}">{% include "web/_detail.html" %}</div>
+{% endblock %}

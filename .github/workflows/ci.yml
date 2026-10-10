@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: yattalog
+          POSTGRES_PASSWORD: yattalog
+          POSTGRES_DB: yattalog
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U yattalog" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DJANGO_DEBUG: "1"
+      DATABASE_URL: postgres://yattalog:yattalog@localhost:5432/yattalog
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv python install
+      - run: uv sync --frozen
+      - name: Lint
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: Migrations are up to date
+        run: uv run python manage.py makemigrations --check --dry-run
+      - name: Test (PostgreSQL)
+        run: uv run pytest
+      - name: Deploy check
+        env:
+          DJANGO_DEBUG: "0"
+          DJANGO_SECRET_KEY: ci-only-not-secret-${{ github.run_id }}-0123456789abcdefghijklmnopqrstuvwxyz
+          DJANGO_ALLOWED_HOSTS: example.com
+        run: uv run python manage.py check --deploy --fail-level WARNING

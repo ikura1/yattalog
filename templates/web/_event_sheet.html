@@ -1,0 +1,32 @@
+{% load yl %}
+<h2>{% if event %}イベントを編集{% else %}イベントを追加{% endif %}</h2>
+<form {% if event %}hx-post="{% url 'web:event_edit' event.id %}"{% else %}hx-post="{% url 'web:event_new' %}"{% endif %} hx-swap="none" class="ev-form">
+  <div class="field"><label for="evName">名前</label>
+    <input type="text" id="evName" name="name" maxlength="40" required placeholder="例：シーツ交換"
+           value="{% if form %}{{ form.name }}{% elif event %}{{ event.name }}{% endif %}"></div>
+  {% with cur_emoji=form.emoji|default:event.emoji|default:emojis.0 cur_color=form.color|default:event.color|default:'sky' cur_unit=form.streak_unit|default:event.streak_unit|default:'day' %}
+  <fieldset class="field"><legend class="lbl">アイコン</legend>
+    <div class="emojis">{% for e in emojis %}<label class="emo-opt"><input type="radio" name="emoji" value="{{ e }}" {% if e == cur_emoji %}checked{% endif %}><span>{{ e }}</span></label>{% endfor %}</div>
+  </fieldset>
+  <fieldset class="field"><legend class="lbl">色</legend>
+    <div class="colors">{% for c in colors %}<label class="color-opt c-{{ c }}"><input type="radio" name="color" value="{{ c }}" aria-label="{{ c }}" {% if c == cur_color %}checked{% endif %}><span></span></label>{% endfor %}</div>
+  </fieldset>
+  <fieldset class="field"><legend class="lbl">連続記録の単位</legend>
+    <div class="seg seg-radio">{% for v, l in units %}<label><input type="radio" name="streak_unit" value="{{ v }}" {% if v == cur_unit %}checked{% endif %}><span>{{ l }}</span></label>{% endfor %}</div>
+    <p class="note">期間に1回以上やると、🔥がつながります（期限や通知はありません）</p>
+  </fieldset>
+  {% endwith %}
+  <fieldset class="field"><legend class="lbl">カテゴリ</legend>
+    <div class="chips">
+      <label><input type="radio" name="category" value="" {% if not selected_category %}checked{% endif %}><span>なし</span></label>
+      {% for c in categories %}<label><input type="radio" name="category" value="{{ c.id }}" {% if selected_category == c.id|stringformat:'s' %}checked{% endif %}><span>{{ c.name }}</span></label>{% endfor %}
+    </div>
+  </fieldset>
+  {% if not event %}
+  <div class="field"><label for="evLast">前回やった日（わかれば）</label>
+    <input type="date" id="evLast" name="last_done" max="{{ today|iso }}" value="{{ form.last_done|default:'' }}">
+    <span class="note">入れておくと、最初から「前回から○日」が出ます</span></div>
+  {% endif %}
+  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+  <div class="row"><button class="btn primary" type="submit">{% if event %}保存する{% else %}追加する{% endif %}</button></div>
+</form>

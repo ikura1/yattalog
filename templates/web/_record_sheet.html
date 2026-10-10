@@ -1,0 +1,37 @@
+{% load yl %}
+<h2><span aria-hidden="true">{{ event.emoji }}</span>{{ event.name }}</h2>
+<form id="recForm" class="rec-form"
+      {% if log %}hx-post="{% url 'web:log_edit' log.id %}"{% else %}hx-post="{% url 'web:record_sheet' event.id %}"{% endif %}
+      hx-swap="none" data-today="{{ today|iso }}">
+  {% if not log %}<input type="hidden" name="log_id" value="{{ form.log_id|default:new_log_id }}">{% endif %}
+  {% with mode=form.when|default:'' %}
+  <div class="field"><span class="lbl" id="whenL">いつやった？</span>
+    <div class="seg" role="radiogroup" aria-labelledby="whenL" data-when-seg
+         data-initial="{% if mode %}{{ mode }}{% elif log or preset %}pick{% else %}now{% endif %}">
+      <button type="button" role="radio" data-w="now">今</button>
+      <button type="button" role="radio" data-w="y1">昨日</button>
+      <button type="button" role="radio" data-w="y2">一昨日</button>
+      <button type="button" role="radio" data-w="pick">日付を選ぶ</button>
+    </div>
+    <input type="hidden" name="when" value="{% if log or preset %}pick{% else %}now{% endif %}">
+    <div class="pickbox" data-pickbox>
+      <div class="pf"><label for="recDate">日付</label>
+        <input type="date" id="recDate" name="date" max="{{ today|iso }}"
+               value="{% if form.date %}{{ form.date }}{% elif log %}{{ log.local_date|iso }}{% elif preset %}{{ preset }}{% else %}{{ today|iso }}{% endif %}"></div>
+      <div class="pf"><label for="recTime">時刻（わかれば）</label>
+        <input type="time" id="recTime" name="time" value="{% if form.time %}{{ form.time }}{% elif log and log.occurred_at %}{{ log|log_when:today|slice:'-5:' }}{% endif %}"></div>
+    </div>
+    <p class="note" data-when-note></p>
+  </div>
+  {% endwith %}
+  <div class="field"><label for="recMemo">メモ</label>
+    <textarea id="recMemo" name="memo" maxlength="1000" placeholder="例：新しい洗剤を試した">{% if form %}{{ form.memo }}{% elif log %}{{ log.memo }}{% endif %}</textarea></div>
+  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+  <div class="row"><button class="btn primary" type="submit">{% if log %}保存する{% else %}やった！を記録{% endif %}</button></div>
+</form>
+{% if not log %}
+<div class="links">
+  <a class="btn" href="{% url 'web:event_detail' event.id %}">履歴・統計を見る</a>
+  <button class="btn" type="button" hx-get="{% url 'web:event_edit' event.id %}" hx-target="#sheet-body">イベントを編集</button>
+</div>
+{% endif %}

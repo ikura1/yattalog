@@ -1,0 +1,7 @@
+<h2><span aria-hidden="true">{{ event.emoji }}</span>{{ event.name }}</h2>
+<p>アーカイブすると、ホームには出なくなりますが、記録は残ります。メニューからいつでも戻せます。</p>
+<form hx-post="{% url 'web:event_remove' event.id %}" hx-swap="none"><input type="hidden" name="action" value="archive">
+  <div class="row"><button class="btn primary" type="submit">アーカイブする</button></div></form>
+<p class="gap">削除すると、このイベントと<b>{{ event.log_count }}件の記録</b>がすべて消え、元に戻せません。</p>
+<form hx-post="{% url 'web:event_remove' event.id %}" hx-swap="none"><input type="hidden" name="action" value="delete">
+  <div class="row"><button class="btn danger" type="submit">削除する</button></div></form>

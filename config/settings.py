@@ -177,7 +177,7 @@ SECURE_CSP = {
     "object-src": [CSP.NONE],
 }
 
-ADMIN_URL = os.environ.get("DJANGO_ADMIN_URL", "admin/")
+ADMIN_URL = os.environ.get("DJANGO_ADMIN_URL", "admin").strip("/") + "/"  # 本番では推測しにくい値にする（レビュー S10）
 
 LOGGING = {
     "version": 1,
@@ -187,4 +187,5 @@ LOGGING = {
 }
 
 # email はログイン ID ではない（識別は Google の sub）ため、一意制約を付けていない
-SILENCED_SYSTEM_CHECKS = ["auth.W004"]
+# HSTS preload はドメインが決まるまで有効にしない（取り消しに時間がかかるため）
+SILENCED_SYSTEM_CHECKS = ["auth.W004", "security.W021"]
