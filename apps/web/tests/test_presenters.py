@@ -48,3 +48,39 @@ def test_カレンダーは日曜始まりで未来の日が分かる():
 def test_月の移動は年をまたぐ():
     assert shift_month(2026, 1, -1) == (2025, 12)
     assert shift_month(2026, 12, 1) == (2027, 1)
+
+
+# --- タイルの読み上げ（アクセシビリティの約束、レビュー2回目 #9） --------------------------------
+
+from datetime import timedelta  # noqa: E402
+
+from apps.events.models import Event  # noqa: E402
+from apps.events.services.dates import period_index  # noqa: E402
+from apps.web.presenters import tile  # noqa: E402
+
+
+def make_event(**kw) -> Event:
+    defaults = dict(name="シーツ交換", emoji="🛏️", color="sky", streak_unit="day", last_local_date=None)
+    return Event(**{**defaults, **kw})
+
+
+def test_読み上げにはダブルタップで記録できることが含まれる():
+    assert tile(make_event(), TODAY).aria_label.endswith("ダブルタップで記録")
+
+
+def test_一度も記録していないイベントの読み上げ():
+    assert tile(make_event(), TODAY).aria_label.startswith("シーツ交換、まだ記録なし")
+
+
+def test_今日やったイベントの読み上げ():
+    assert "今日やった" in tile(make_event(last_local_date=TODAY), TODAY).aria_label
+
+
+def test_経過日数の読み上げ():
+    assert "前回から5日" in tile(make_event(last_local_date=TODAY - timedelta(5)), TODAY).aria_label
+
+
+def test_今日はまだの連続記録も読み上げる():
+    yesterday = TODAY - timedelta(1)
+    e = make_event(last_local_date=yesterday, streak_count=3, streak_period=period_index(yesterday, "day"))
+    assert "3日連続（今日はまだ）" in tile(e, TODAY).aria_label

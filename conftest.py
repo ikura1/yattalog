@@ -2,31 +2,22 @@ import os
 
 os.environ.setdefault("DJANGO_DEBUG", "1")
 
-from datetime import UTC, date, datetime  # noqa: E402
-
 import freezegun  # noqa: E402
 import pytest  # noqa: E402
 
-from apps.accounts.models import User  # noqa: E402
-from apps.spaces.services import ensure_personal_space  # noqa: E402
+from apps.core.testing import NOW, new_user  # noqa: E402
 
-# テストの時計は1つだけ（レビュー 5）。日本時間 2026-10-10（土）12:00 に固定する
-NOW = datetime(2026, 10, 10, 3, 0, tzinfo=UTC)
-TODAY = date(2026, 10, 10)
-
-freezegun.configure(extend_ignore_list=["hypothesis"])
+freezegun.configure(extend_ignore_list=["hypothesis", "playwright", "greenlet", "asyncio"])
 
 
 @pytest.fixture(autouse=True)
-def frozen_clock():
+def frozen_clock(request):
+    """時計を NOW に固定する。ブラウザを動かす E2E テスト（e2e マーク）では固定しない。"""
+    if request.node.get_closest_marker("e2e"):
+        yield
+        return
     with freezegun.freeze_time(NOW):
         yield
-
-
-def new_user(email="a@example.com", tz="Asia/Tokyo") -> User:
-    user = User.objects.create_user(email=email, timezone=tz)
-    ensure_personal_space(user)
-    return user
 
 
 @pytest.fixture

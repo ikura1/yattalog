@@ -6,12 +6,12 @@ from datetime import date
 import pytest
 from django.core.exceptions import ValidationError
 
+from apps.core.testing import TODAY
 from apps.events.models import Category, Event
 from apps.events.services import events as ev_svc
 from apps.events.services import logs as log_svc
 from apps.events.services import stats
 from apps.events.services.logs import When
-from conftest import TODAY
 
 
 def names(user, category=None):
@@ -128,3 +128,12 @@ def test_記録がある日が1日だけならペースは出さない(user):
     log_svc.record(user, e.id, uuid.uuid7(), When(date=date(2026, 1, 1)))
     e.refresh_from_db()
     assert stats.event_stats(e, TODAY).pace is None
+
+
+def test_壊れたソートキーが入っていても並べ替えは入力エラーになる(user):
+    # DB を手で直したときなどに、不正なキーで 500 にならないようにする（レビュー2回目 #10）
+    a = make(user, "a")
+    b = make(user, "b")
+    Event.objects.filter(id=a.id).update(sort_key="!!")
+    with pytest.raises(ValidationError):
+        ev_svc.move_event(user, b.id, after_id=a.id)

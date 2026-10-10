@@ -57,12 +57,25 @@ def test_どこに差し込んでも順序が保たれ重複しない(positions)
     assert len(set(keys)) == len(keys)
 
 
+def test_ソートキーの列はフィールド自身が照合を知っている():
+    # マイグレーションの SQL ではなくモデルに照合を持たせ、Django が生成するマイグレーションでも消えないようにする
+    from django.db import connection
+
+    from apps.events.models import SortKeyField
+
+    for model in (Event, Category):
+        field = model._meta.get_field("sort_key")
+        assert isinstance(field, SortKeyField)
+        expected = "C" if connection.vendor == "postgresql" else None
+        assert field.db_parameters(connection).get("collation") == expected
+
+
 def test_DBの並び順はPythonのバイト順と一致する(user):
     # PostgreSQL の照合（en_US.UTF-8 など）では "Zz" と "a0" の順が逆になる。列を "C" 照合にしていることを確かめる
     from apps.spaces.services import personal_space
 
     space = personal_space(user)
-    keys = ["Zz", "a0", "a1", "Zy", "a0V", "b00"]
+    keys = ["Zz", "a0", "a1", "Zy", "a0V", "b01"]  # どれもアルゴリズムが作りうる形
     for i, k in enumerate(keys):
         Event.objects.create(space=space, name=str(i), emoji="⭐", color="sky", sort_key=k)
     in_db = list(Event.objects.filter(space=space).order_by("sort_key").values_list("sort_key", flat=True))

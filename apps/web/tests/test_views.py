@@ -210,3 +210,15 @@ def test_タイムゾーンを設定できる(client_in, user):
 
 def test_正しくないタイムゾーンは400(client_in, user):
     assert client_in.post("/timezone/", {"tz": "Not/AZone"}).status_code == 400
+
+
+def test_DBのソートキーが壊れていても並べ替えは500ではなく422(client_in, user, event):
+    other = ev_svc.create_event(user, name="散髪", emoji="✂️", color="grape")
+    Event.objects.filter(id=other.id).update(sort_key="!!")
+    assert client_in.post(f"/events/{event.id}/move/", {"after": str(other.id)}).status_code == 422
+
+
+@pytest.mark.parametrize("path", ["/events/{id}/", "/events/{id}/edit/", "/events/{id}/restore/", "/logs/{id}/edit/"])
+def test_存在しないIDは404(client_in, path):
+    method = client_in.post if path.endswith("restore/") else client_in.get
+    assert method(path.format(id=uuid.uuid4())).status_code == 404

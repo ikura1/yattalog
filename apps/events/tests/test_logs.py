@@ -1,19 +1,20 @@
 """記録の追加・取り消し・編集（決定 026・028）。"""
 
 import uuid
-from datetime import time, timedelta
+from datetime import datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
 import pytest
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
+from apps.core.testing import NOW, TODAY, new_user
 from apps.events.models import Event, Log
 from apps.events.services import events as ev_svc
 from apps.events.services import logs as log_svc
 from apps.events.services.logs import When
-from conftest import NOW, TODAY, new_user
 
 
 @pytest.fixture
@@ -105,11 +106,8 @@ def test_編集で日付と時刻とメモを変えられる(user, event):
     r = log_svc.record(user, event.id, uuid.uuid7())
     log_svc.edit(user, r.log.id, When(date=TODAY - timedelta(3), time=time(9, 30)), "メモ")
     r.log.refresh_from_db()
-    assert (r.log.local_date, r.log.occurred_at.hour, r.log.memo) == (
-        TODAY - timedelta(3),
-        0,
-        "メモ",
-    )  # 9:30 JST = 0:30 UTC
+    expected = datetime(2026, 10, 7, 9, 30, tzinfo=ZoneInfo("Asia/Tokyo"))
+    assert (r.log.local_date, r.log.occurred_at, r.log.memo) == (TODAY - timedelta(3), expected, "メモ")
 
 
 def test_編集で今を選ぶと時刻ありの記録になる(user, event):
@@ -130,7 +128,7 @@ def test_前回やった日を入れてイベントを作ると時刻なしの�
 
 
 def test_DBの制約で時刻とタイムゾーンは必ず一緒に入る(user, event):
-    with pytest.raises(IntegrityError):
+    with pytest.raises(IntegrityError), transaction.atomic():
         Log.objects.create(id=uuid.uuid7(), space=event.space, event=event, local_date=TODAY, occurred_at=NOW)
 
 
@@ -154,3 +152,50 @@ def test_追加と取り消しを繰り返してもキャッシュは一から�
     log_svc.refresh_event_cache(event)
     event.refresh_from_db()
     assert cached == (event.log_count, event.last_local_date, event.streak_count, event.streak_period)
+
+
+# --- 「🔥 N日連続！」を出すかどうか（RecordResult.streak_grew） -----------------------------
+
+
+@pytest.fixture
+def daily(user):
+    return ev_svc.create_event(user, name="ジム", emoji="🏋️", color="sun", streak_unit="day")
+
+
+def record_on(user, event, days_ago: int | None = None):
+    when = When() if days_ago is None else When(date=TODAY - timedelta(days_ago))
+    return log_svc.record(user, event.id, uuid.uuid7(), when)
+
+
+def test_初めての記録では連続の演出は出ない(user, daily):
+    assert record_on(user, daily).streak_grew is False  # 連続1回目は2未満
+
+
+def test_昨日に続けて今日記録すると連続の演出が出る(user, daily):
+    record_on(user, daily, 1)
+    assert record_on(user, daily).streak_grew is True
+
+
+def test_今日2回目の記録では連続の演出は出ない(user, daily):
+    record_on(user, daily, 1)
+    record_on(user, daily)
+    assert record_on(user, daily).streak_grew is False
+
+
+def test_抜けていた日を後から埋めると連続の演出が出る(user, daily):
+    record_on(user, daily)
+    record_on(user, daily, 2)
+    assert record_on(user, daily, 1).streak_grew is True  # 今日・昨日・一昨日がつながる
+
+
+def test_同じIDの再送では連続の演出は出ない(user, daily):
+    record_on(user, daily, 1)
+    lid = uuid.uuid7()
+    log_svc.record(user, daily.id, lid)
+    assert log_svc.record(user, daily.id, lid).streak_grew is False
+
+
+def test_連続記録の単位がなしなら演出は出ない(user):
+    e = ev_svc.create_event(user, name="歯医者", emoji="🦷", color="pink", streak_unit="none")
+    record_on(user, e, 1)
+    assert record_on(user, e).streak_grew is False

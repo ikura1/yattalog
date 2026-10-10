@@ -51,6 +51,32 @@ jobs:
           DJANGO_ALLOWED_HOSTS: example.com
         run: uv run python manage.py check --deploy --fail-level WARNING
 
+  e2e:
+    # ブラウザで JS の振る舞い（楽観的更新・取り消し・失敗時の巻き戻し）を確かめる（レビュー2回目 #4）
+    runs-on: ubuntu-latest
+    env:
+      DJANGO_DEBUG: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv python install
+      - run: uv sync --frozen
+      - run: uv run playwright install chromium --with-deps
+      - name: E2E
+        run: |
+          set -o pipefail
+          uv run pytest -m e2e -rfE --tracing retain-on-failure 2>&1 | tee pytest.log
+      - name: Report test failures as annotations
+        if: failure()
+        run: grep -E "^(FAILED|ERROR) |^E  " pytest.log | head -40 | sed 's/^/::error title=e2e::/' || true
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: test-results/
+
   docker:
     runs-on: ubuntu-latest
     steps:

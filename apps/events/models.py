@@ -8,6 +8,25 @@ from apps.spaces.models import Space
 COLORS = ["tomato", "tangerine", "sun", "leaf", "teal", "sky", "grape", "pink"]
 
 
+class SortKeyField(models.CharField):
+    """並び順のキー（分数インデックス）の列。
+
+    キーは ASCII のバイト順で比較する前提なので、PostgreSQL では列を "C" 照合にする。
+    照合をフィールド自身に持たせることで、Django が生成するマイグレーションでも照合が保たれる。
+    SQLite の既定（BINARY）はもともとバイト順なので何もしない。
+    """
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("max_length", 64)
+        super().__init__(*args, **kwargs)
+
+    def db_parameters(self, connection):
+        params = super().db_parameters(connection)
+        if connection.vendor == "postgresql":
+            params["collation"] = "C"
+        return params
+
+
 class StreakUnit(models.TextChoices):
     NONE = "none", "なし"
     DAY = "day", "毎日"
@@ -18,7 +37,7 @@ class StreakUnit(models.TextChoices):
 class Category(BaseModel):
     space = models.ForeignKey(Space, on_delete=models.CASCADE, related_name="categories")
     name = models.CharField(max_length=20)
-    sort_key = models.CharField(max_length=64)
+    sort_key = SortKeyField()
 
     class Meta:
         verbose_name = "カテゴリ"
@@ -38,7 +57,7 @@ class Event(BaseModel):
     emoji = models.CharField(max_length=16)
     color = models.CharField(max_length=16, choices=[(c, c) for c in COLORS], default="sky")
     streak_unit = models.CharField(max_length=8, choices=StreakUnit.choices, default=StreakUnit.DAY)
-    sort_key = models.CharField(max_length=64)
+    sort_key = SortKeyField()
     is_archived = models.BooleanField(default=False)
     archived_at = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)

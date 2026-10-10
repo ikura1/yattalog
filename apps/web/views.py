@@ -1,5 +1,6 @@
 """画面（Django テンプレート＋htmx）。処理はすべてサービス層に任せる（決定 027）。"""
 
+import functools
 import json
 import uuid
 from datetime import date, time
@@ -58,18 +59,32 @@ def _today(request: HttpRequest) -> date:
     return today_in(request.user.timezone, clock.now())
 
 
+NOT_YOURS = (Event.DoesNotExist, Log.DoesNotExist, Category.DoesNotExist)
+
+
+def owned_or_404(view):
+    """存在しない・他人のイベント／記録／カテゴリは、どの経路で見つからなくても 404 にする（レビュー S4、2回目 #8）。
+
+    サービス層は持ち主でなければ DoesNotExist を投げる。ビューごとに try/except を書くと書き忘れが 500 になるので、
+    ID を受け取るビューにはこれを付ける。
+    """
+
+    @functools.wraps(view)
+    def wrapped(request, *args, **kwargs):
+        try:
+            return view(request, *args, **kwargs)
+        except NOT_YOURS:
+            raise Http404 from None
+
+    return wrapped
+
+
 def _event(request: HttpRequest, event_id) -> Event:
-    try:
-        return access.event_for(request.user, event_id)
-    except Event.DoesNotExist:
-        raise Http404 from None
+    return access.event_for(request.user, event_id)
 
 
 def _log(request: HttpRequest, log_id) -> Log:
-    try:
-        return access.log_for(request.user, log_id)
-    except Log.DoesNotExist:
-        raise Http404 from None
+    return access.log_for(request.user, log_id)
 
 
 def _categories(request: HttpRequest):
@@ -206,6 +221,7 @@ def _tile_html(request, event: Event) -> str:
 
 
 @login_required
+@owned_or_404
 @require_POST
 def record(request: HttpRequest, event_id) -> JsonResponse:
     try:
@@ -216,8 +232,6 @@ def record(request: HttpRequest, event_id) -> JsonResponse:
             parse_when(request.POST),
             request.POST.get("memo", ""),
         )
-    except Event.DoesNotExist:
-        raise Http404 from None
     except PermissionDenied as e:
         return JsonResponse({"error": str(e)}, status=409)
     except ValidationError as e:
@@ -235,6 +249,7 @@ def record(request: HttpRequest, event_id) -> JsonResponse:
 
 
 @login_required
+@owned_or_404
 @require_POST
 def undo(request: HttpRequest, log_id) -> JsonResponse:
     event = log_svc.undo(request.user, log_id)
@@ -258,6 +273,7 @@ def _record_ctx(request, event: Event, log: Log | None = None, **extra) -> dict:
 
 
 @login_required
+@owned_or_404
 def record_sheet(request: HttpRequest, event_id) -> HttpResponse:
     event = _event(request, event_id)
     if request.method == "POST":
@@ -287,6 +303,7 @@ def record_sheet(request: HttpRequest, event_id) -> HttpResponse:
 
 
 @login_required
+@owned_or_404
 def log_edit_sheet(request: HttpRequest, log_id) -> HttpResponse:
     log = _log(request, log_id)
     if request.method == "POST":
@@ -301,6 +318,7 @@ def log_edit_sheet(request: HttpRequest, log_id) -> HttpResponse:
 
 
 @login_required
+@owned_or_404
 @require_POST
 def log_delete(request: HttpRequest, log_id) -> HttpResponse:
     _log(request, log_id)  # 他人の記録は 404
@@ -356,6 +374,7 @@ def event_new(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
+@owned_or_404
 def event_edit(request: HttpRequest, event_id) -> HttpResponse:
     event = _event(request, event_id)
     if request.method == "POST":
@@ -377,6 +396,7 @@ def event_edit(request: HttpRequest, event_id) -> HttpResponse:
 
 
 @login_required
+@owned_or_404
 def event_remove(request: HttpRequest, event_id) -> HttpResponse:
     event = _event(request, event_id)
     if request.method == "POST":
@@ -389,16 +409,15 @@ def event_remove(request: HttpRequest, event_id) -> HttpResponse:
 
 
 @login_required
+@owned_or_404
 @require_POST
 def event_restore(request: HttpRequest, event_id) -> HttpResponse:
-    try:
-        ev_svc.set_archived(request.user, event_id, False)
-    except Event.DoesNotExist:
-        raise Http404 from None
+    ev_svc.set_archived(request.user, event_id, False)
     return _refresh(HttpResponse(status=204), "ホームに戻しました")
 
 
 @login_required
+@owned_or_404
 @require_POST
 def event_move(request: HttpRequest, event_id) -> HttpResponse:
     try:
@@ -408,8 +427,6 @@ def event_move(request: HttpRequest, event_id) -> HttpResponse:
             before_id=request.POST.get("before") or None,
             after_id=request.POST.get("after") or None,
         )
-    except Event.DoesNotExist:
-        raise Http404 from None
     except ValidationError:
         return HttpResponse(status=422)
     return HttpResponse(status=204)
@@ -419,6 +436,7 @@ def event_move(request: HttpRequest, event_id) -> HttpResponse:
 
 
 @login_required
+@owned_or_404
 def categories(request: HttpRequest) -> HttpResponse:
     error = None
     if request.method == "POST":
@@ -436,8 +454,6 @@ def categories(request: HttpRequest) -> HttpResponse:
                     ev_svc.shift_category(request.user, p.get("id"), -1 if action == "up" else 1)
                 case _:
                     return HttpResponse(status=400)
-        except Category.DoesNotExist:
-            raise Http404 from None
         except ValidationError as e:
             error = " ".join(e.messages)
     rows = [(c, c.events.filter(is_archived=False).count()) for c in _categories(request)]
@@ -469,6 +485,7 @@ def _int_param(request, name: str, default: int, lo: int, hi: int) -> int:
 
 
 @login_required
+@owned_or_404
 @require_GET
 def event_detail(request: HttpRequest, event_id) -> HttpResponse:
     event = _event(request, event_id)

@@ -39,6 +39,13 @@ uv run pytest
 uv run ruff check . && uv run ruff format --check .
 ```
 
+ブラウザを動かす E2E テスト（`e2e/`）は通常の `pytest` では動かない。別に実行する。
+
+```sh
+uv run playwright install chromium   # 初回だけ
+uv run pytest -m e2e
+```
+
 ## 構成
 
 | 場所 | 中身 |

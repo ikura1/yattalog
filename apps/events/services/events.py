@@ -67,6 +67,14 @@ def _neighbor_keys(qs, before_id, after_id) -> tuple[str | None, str | None]:
     return lo, hi
 
 
+def _key_between(lo: str | None, hi: str | None) -> str:
+    """ソートキーを作る。DB に不正なキーが入っていた場合も 500 にせず、入力エラーとして扱う（レビュー2回目 #10）。"""
+    try:
+        return sortkeys.key_between(lo, hi)
+    except ValueError:
+        raise ValidationError("並び順を決められませんでした。もう一度お試しください", code="sort_key") from None
+
+
 def _first_key(qs) -> str | None:
     return qs.order_by("sort_key").values_list("sort_key", flat=True).first()
 
@@ -93,7 +101,7 @@ def create_event(
         color=color,
         streak_unit=streak_unit,
         category=_category_or_none(user, category_id),
-        sort_key=sortkeys.key_first(_first_key(Event.objects.filter(space=space))),
+        sort_key=_key_between(None, _first_key(Event.objects.filter(space=space))),
         created_by=user,
     )
     if last_done is not None:
@@ -125,7 +133,7 @@ def set_archived(user, event_id, archived: bool, now: datetime | None = None) ->
     event.archived_at = (now or now_utc()) if archived else None
     if not archived:
         # アーカイブから戻したイベントは先頭に置く
-        event.sort_key = sortkeys.key_first(_first_key(Event.objects.filter(space=event.space).exclude(id=event.id)))
+        event.sort_key = _key_between(None, _first_key(Event.objects.filter(space=event.space).exclude(id=event.id)))
     event.save()
     return event
 
@@ -144,7 +152,7 @@ def move_event(user, event_id, *, before_id=None, after_id=None) -> Event:
     """
     event = event_for(user, event_id, lock=True)
     qs = Event.objects.filter(space=event.space).exclude(id=event.id)
-    event.sort_key = sortkeys.key_between(*_neighbor_keys(qs, before_id, after_id))
+    event.sort_key = _key_between(*_neighbor_keys(qs, before_id, after_id))
     event.save(update_fields=["sort_key", "updated_at"])
     return event
 
@@ -159,7 +167,7 @@ def create_category(user, name: str) -> Category:
     if existing := Category.objects.filter(space=space, name=name).first():
         return existing
     last = Category.objects.filter(space=space).order_by("-sort_key").values_list("sort_key", flat=True).first()
-    return Category.objects.create(space=space, name=name, sort_key=sortkeys.key_last(last))
+    return Category.objects.create(space=space, name=name, sort_key=_key_between(last, None))
 
 
 @transaction.atomic
@@ -183,7 +191,7 @@ def delete_category(user, category_id) -> None:
 def move_category(user, category_id, *, before_id=None, after_id=None) -> Category:
     cat = category_for(user, category_id)
     qs = Category.objects.filter(space=cat.space).exclude(id=cat.id)
-    cat.sort_key = sortkeys.key_between(*_neighbor_keys(qs, before_id, after_id))
+    cat.sort_key = _key_between(*_neighbor_keys(qs, before_id, after_id))
     cat.save(update_fields=["sort_key", "updated_at"])
     return cat
 

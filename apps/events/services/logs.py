@@ -10,7 +10,7 @@ from django.db import IntegrityError, transaction
 from apps.events.models import Event, Log
 from apps.events.services.access import event_for, log_for
 from apps.events.services.dates import now_utc, zone
-from apps.events.services.streaks import compute_streak
+from apps.events.services.streaks import STREAK_MIN, compute_streak
 
 MEMO_MAX = 1000
 FUTURE_GRACE = timedelta(seconds=60)  # 端末とサーバーの時計のずれを許す幅
@@ -67,8 +67,7 @@ class RecordResult:
 
     @property
     def streak_grew(self) -> bool:
-        from apps.events.services.streaks import STREAK_MIN
-
+        """「🔥 N日連続！」の演出を出すか。新しく記録して連続回数が増え、2回以上になったとき。"""
         return self.created and self.event.streak_count > self.streak_before and self.event.streak_count >= STREAK_MIN
 
 
