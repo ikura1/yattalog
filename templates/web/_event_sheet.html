@@ -4,7 +4,6 @@
   <div class="field"><label for="evName">名前</label>
     <input type="text" id="evName" name="name" maxlength="40" required placeholder="例：シーツ交換"
            value="{% if form %}{{ form.name }}{% elif event %}{{ event.name }}{% endif %}"></div>
-  {% with cur_emoji=form.emoji|default:event.emoji|default:emojis.0 cur_color=form.color|default:event.color|default:'sky' cur_unit=form.streak_unit|default:event.streak_unit|default:'day' %}
   <fieldset class="field"><legend class="lbl">アイコン</legend>
     <div class="emojis">{% for e in emojis %}<label class="emo-opt"><input type="radio" name="emoji" value="{{ e }}" {% if e == cur_emoji %}checked{% endif %}><span>{{ e }}</span></label>{% endfor %}</div>
   </fieldset>
@@ -15,7 +14,6 @@
     <div class="seg seg-radio">{% for v, l in units %}<label><input type="radio" name="streak_unit" value="{{ v }}" {% if v == cur_unit %}checked{% endif %}><span>{{ l }}</span></label>{% endfor %}</div>
     <p class="note">期間に1回以上やると、🔥がつながります（期限や通知はありません）</p>
   </fieldset>
-  {% endwith %}
   <fieldset class="field"><legend class="lbl">カテゴリ</legend>
     <div class="chips">
       <label><input type="radio" name="category" value="" {% if not selected_category %}checked{% endif %}><span>なし</span></label>

@@ -1,18 +1,19 @@
+"""記録の追加・取り消し・編集（決定 026・028）。"""
+
 import uuid
-from datetime import UTC, date, datetime, time, timedelta
+from datetime import time, timedelta
 
 import pytest
 from django.core.exceptions import PermissionDenied, ValidationError
-from hypothesis import HealthCheck, given, settings
+from django.db import IntegrityError
+from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from apps.events.models import Event, Log
 from apps.events.services import events as ev_svc
 from apps.events.services import logs as log_svc
 from apps.events.services.logs import When
-
-NOW = datetime(2026, 10, 10, 3, 0, tzinfo=UTC)  # 日本時間 12:00
-TODAY = date(2026, 10, 10)
+from conftest import NOW, TODAY, new_user
 
 
 @pytest.fixture
@@ -20,103 +21,131 @@ def event(user):
     return ev_svc.create_event(user, name="シーツ交換", emoji="🛏️", color="sky", streak_unit="week")
 
 
-def test_record_now_uses_users_timezone(user, event):
-    r = log_svc.record(user, event.id, uuid.uuid7(), now=NOW)
-    assert r.created and r.log.local_date == TODAY and r.log.timezone == "Asia/Tokyo"
+def test_今の記録はユーザーのタイムゾーンでの日付と時刻を持つ(user, event):
+    r = log_svc.record(user, event.id, uuid.uuid7())
+    assert (r.log.local_date, r.log.occurred_at, r.log.timezone) == (TODAY, NOW, "Asia/Tokyo")
+
+
+def test_記録するとイベントの最終記録日と回数が更新される(user, event):
+    log_svc.record(user, event.id, uuid.uuid7())
     event.refresh_from_db()
-    assert event.last_local_date == TODAY and event.log_count == 1
+    assert (event.last_local_date, event.log_count) == (TODAY, 1)
 
 
-def test_record_is_idempotent(user, event):
+def test_同じIDで2回送っても記録は1件(user, event):
     lid = uuid.uuid7()
-    a = log_svc.record(user, event.id, lid, now=NOW)
-    b = log_svc.record(user, event.id, lid, now=NOW)
-    assert a.created and not b.created
+    first = log_svc.record(user, event.id, lid)
+    second = log_svc.record(user, event.id, lid)
+    assert (first.created, second.created) == (True, False)
     assert Log.objects.count() == 1
 
 
-def test_cannot_reuse_another_users_log_id(user, other_user, event):
-    other_event = ev_svc.create_event(other_user, name="散髪", emoji="✂️", color="grape")
+def test_同じIDを自分の別のイベントで使うと拒否される(user, event):
+    other = ev_svc.create_event(user, name="散髪", emoji="✂️", color="grape")
     lid = uuid.uuid7()
-    log_svc.record(other_user, other_event.id, lid, now=NOW)
+    log_svc.record(user, event.id, lid)
     with pytest.raises(PermissionDenied):
-        log_svc.record(user, event.id, lid, now=NOW)
+        log_svc.record(user, other.id, lid)
 
 
-def test_cannot_record_to_another_users_event(user, other_user):
-    other_event = ev_svc.create_event(other_user, name="散髪", emoji="✂️", color="grape")
-    with pytest.raises(Event.DoesNotExist):
-        log_svc.record(user, other_event.id, uuid.uuid7(), now=NOW)
-
-
-def test_cannot_undo_another_users_log(user, other_user):
-    other_event = ev_svc.create_event(other_user, name="散髪", emoji="✂️", color="grape")
+def test_他人の記録IDとぶつかってもIDの存在は分からない(user, other_user, event):
+    theirs = ev_svc.create_event(other_user, name="散髪", emoji="✂️", color="grape")
     lid = uuid.uuid7()
-    log_svc.record(other_user, other_event.id, lid, now=NOW)
+    log_svc.record(other_user, theirs.id, lid)
+    with pytest.raises(Event.DoesNotExist):  # 「イベントが見つからない」と同じ扱い（レビュー 14）
+        log_svc.record(user, event.id, lid)
+
+
+def test_他人のイベントには記録できない(user, other_user):
+    theirs = ev_svc.create_event(other_user, name="散髪", emoji="✂️", color="grape")
+    with pytest.raises(Event.DoesNotExist):
+        log_svc.record(user, theirs.id, uuid.uuid7())
+
+
+def test_他人の記録は取り消せない(user, other_user):
+    theirs = ev_svc.create_event(other_user, name="散髪", emoji="✂️", color="grape")
+    lid = uuid.uuid7()
+    log_svc.record(other_user, theirs.id, lid)
     assert log_svc.undo(user, lid) is None
     assert Log.objects.filter(id=lid).exists()
 
 
-def test_past_date_without_time(user, event):
-    r = log_svc.record(user, event.id, uuid.uuid7(), When(date=TODAY - timedelta(1)), now=NOW)
-    assert r.log.local_date == TODAY - timedelta(1) and r.log.occurred_at is None and r.log.timezone == ""
+def test_過去の日付だけを指定すると時刻なしの記録になる(user, event):
+    r = log_svc.record(user, event.id, uuid.uuid7(), When(date=TODAY - timedelta(1)))
+    assert (r.log.local_date, r.log.occurred_at, r.log.timezone) == (TODAY - timedelta(1), None, "")
 
 
-def test_future_date_is_rejected(user, event):
+def test_未来の日付は記録できない(user, event):
     with pytest.raises(ValidationError):
-        log_svc.record(user, event.id, uuid.uuid7(), When(date=TODAY + timedelta(1)), now=NOW)
+        log_svc.record(user, event.id, uuid.uuid7(), When(date=TODAY + timedelta(1)))
 
 
-def test_future_time_today_is_rejected(user, event):
+def test_今日のまだ来ていない時刻は記録できない(user, event):
     with pytest.raises(ValidationError):
-        log_svc.record(user, event.id, uuid.uuid7(), When(date=TODAY, time=time(23, 0)), now=NOW)
+        log_svc.record(user, event.id, uuid.uuid7(), When(date=TODAY, time=time(23, 0)))
 
 
-def test_local_date_does_not_change_when_timezone_changes(user, event):
-    r = log_svc.record(user, event.id, uuid.uuid7(), now=NOW)
+def test_タイムゾーンを変えても記録の日付は変わらない(user, event):
+    r = log_svc.record(user, event.id, uuid.uuid7())
     user.timezone = "America/Los_Angeles"
     user.save()
     r.log.refresh_from_db()
     assert r.log.local_date == TODAY  # 決定 026
 
 
-def test_undo_recomputes_cache(user, event):
-    a = log_svc.record(user, event.id, uuid.uuid7(), When(date=TODAY - timedelta(7)), now=NOW)
-    b = log_svc.record(user, event.id, uuid.uuid7(), now=NOW)
+def test_取り消すと最終記録日と連続記録が計算し直される(user, event):
+    log_svc.record(user, event.id, uuid.uuid7(), When(date=TODAY - timedelta(7)))
+    latest = log_svc.record(user, event.id, uuid.uuid7())
+    log_svc.undo(user, latest.log.id)
     event.refresh_from_db()
-    assert event.streak_count == 2 and b.streak_after == 2 and a.created
-    log_svc.undo(user, b.log.id)
-    event.refresh_from_db()
-    assert event.log_count == 1 and event.last_local_date == TODAY - timedelta(7) and event.streak_count == 1
+    assert (event.log_count, event.last_local_date, event.streak_count) == (1, TODAY - timedelta(7), 1)
 
 
-def test_edit_changes_date(user, event):
-    r = log_svc.record(user, event.id, uuid.uuid7(), now=NOW)
-    log_svc.edit(user, r.log.id, When(date=TODAY - timedelta(3), time=time(9, 30)), "メモ", now=NOW)
+def test_編集で日付と時刻とメモを変えられる(user, event):
+    r = log_svc.record(user, event.id, uuid.uuid7())
+    log_svc.edit(user, r.log.id, When(date=TODAY - timedelta(3), time=time(9, 30)), "メモ")
     r.log.refresh_from_db()
-    assert r.log.local_date == TODAY - timedelta(3) and r.log.memo == "メモ" and r.log.occurred_at is not None
+    assert (r.log.local_date, r.log.occurred_at.hour, r.log.memo) == (
+        TODAY - timedelta(3),
+        0,
+        "メモ",
+    )  # 9:30 JST = 0:30 UTC
 
 
-def test_memo_too_long(user, event):
+def test_編集で今を選ぶと時刻ありの記録になる(user, event):
+    r = log_svc.record(user, event.id, uuid.uuid7(), When(date=TODAY - timedelta(2)))
+    log_svc.edit(user, r.log.id, When(), "")
+    r.log.refresh_from_db()
+    assert (r.log.local_date, r.log.occurred_at) == (TODAY, NOW)
+
+
+def test_メモは1000文字まで(user, event):
     with pytest.raises(ValidationError):
-        log_svc.record(user, event.id, uuid.uuid7(), memo="あ" * 1001, now=NOW)
+        log_svc.record(user, event.id, uuid.uuid7(), memo="あ" * 1001)
 
 
-def test_create_event_with_last_done(user):
+def test_前回やった日を入れてイベントを作ると時刻なしの記録が1件できる(user):
     e = ev_svc.create_event(user, name="散髪", emoji="✂️", color="grape", last_done=TODAY - timedelta(32))
-    assert e.last_local_date == TODAY - timedelta(32) and e.log_count == 1
+    assert (e.last_local_date, e.log_count) == (TODAY - timedelta(32), 1)
 
 
-@settings(max_examples=25, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture])
+def test_DBの制約で時刻とタイムゾーンは必ず一緒に入る(user, event):
+    with pytest.raises(IntegrityError):
+        Log.objects.create(id=uuid.uuid7(), space=event.space, event=event, local_date=TODAY, occurred_at=NOW)
+
+
+@pytest.mark.django_db
+@settings(max_examples=25, deadline=None)
 @given(st.lists(st.tuples(st.booleans(), st.integers(min_value=0, max_value=60)), min_size=1, max_size=25))
-def test_cache_matches_recompute(user, ops):
-    """追加と取り消しをランダムに繰り返しても、キャッシュは一から計算した値と一致する。"""
+def test_追加と取り消しを繰り返してもキャッシュは一から計算した値と一致する(ops):
+    # 例ごとに新しいユーザーを作り、例どうしで状態を共有しない（レビュー 6）
+    user = new_user(email=f"{uuid.uuid4()}@example.com")
     event = ev_svc.create_event(user, name="ジム", emoji="🏋️", color="sun", streak_unit="day")
     ids: list[uuid.UUID] = []
     for add, back in ops:
         if add or not ids:
             lid = uuid.uuid7()
-            log_svc.record(user, event.id, lid, When(date=TODAY - timedelta(back)), now=NOW)
+            log_svc.record(user, event.id, lid, When(date=TODAY - timedelta(back)))
             ids.append(lid)
         else:
             log_svc.undo(user, ids.pop(back % len(ids)))

@@ -1,14 +1,17 @@
 """イベントとカテゴリの作成・編集・並べ替え（SPEC 3.1・3.4、決定 008・013）。"""
 
 import unicodedata
+import uuid
+from datetime import date, datetime
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.utils import timezone
 
 from apps.events.models import COLORS, Category, Event, StreakUnit
 from apps.events.services import sortkeys
-from apps.events.services.logs import When, record
+from apps.events.services.access import category_for, event_for
+from apps.events.services.dates import now_utc
+from apps.events.services.logs import When, record, refresh_event_cache
 from apps.spaces.services import personal_space
 
 
@@ -35,13 +38,37 @@ def _check(color: str, unit: str) -> None:
         raise ValidationError("連続記録の単位を選んでください", code="unit")
 
 
-def category_for(user, category_id) -> Category | None:
+def _category_or_none(user, category_id) -> Category | None:
     if not category_id:
         return None
     try:
-        return Category.objects.get(id=category_id, space__members__user=user)
-    except Category.DoesNotExist, ValueError, ValidationError:
+        return category_for(user, category_id)
+    except Category.DoesNotExist:
         raise ValidationError("カテゴリが見つかりません", code="category") from None
+
+
+def _neighbor_keys(qs, before_id, after_id) -> tuple[str | None, str | None]:
+    """並べ替えの前後のキー。指定された ID が見つからなければエラーにする（黙って無視しない、レビュー 2）。"""
+
+    def key_of(neighbor_id) -> str:
+        key = qs.filter(id=neighbor_id).values_list("sort_key", flat=True).first()
+        if key is None:
+            raise ValidationError("並べ替えの位置が見つかりません", code="neighbor")
+        return key
+
+    lo = key_of(before_id) if before_id else None
+    hi = key_of(after_id) if after_id else None
+    if lo is not None and hi is None:
+        hi = qs.filter(sort_key__gt=lo).order_by("sort_key").values_list("sort_key", flat=True).first()
+    elif hi is not None and lo is None:
+        lo = qs.filter(sort_key__lt=hi).order_by("-sort_key").values_list("sort_key", flat=True).first()
+    if lo is not None and hi is not None and lo >= hi:
+        raise ValidationError("並び順の指定が正しくありません", code="order")
+    return lo, hi
+
+
+def _first_key(qs) -> str | None:
+    return qs.order_by("sort_key").values_list("sort_key", flat=True).first()
 
 
 @transaction.atomic
@@ -53,43 +80,38 @@ def create_event(
     color: str,
     streak_unit: str = StreakUnit.DAY,
     category_id=None,
-    last_done=None,
-    log_id=None,
+    last_done: date | None = None,
+    now: datetime | None = None,
 ) -> Event:
     """イベントを先頭に作る。last_done（前回やった日）があれば、時刻なしの記録を1件作る（SPEC 3.2.1）。"""
     space = personal_space(user)
     _check(color, streak_unit)
-    first = Event.objects.filter(space=space).order_by("sort_key").values_list("sort_key", flat=True).first()
     event = Event.objects.create(
         space=space,
         name=_clean_name(name, 40, "名前"),
         emoji=_clean_emoji(emoji),
         color=color,
         streak_unit=streak_unit,
-        category=category_for(user, category_id),
-        sort_key=sortkeys.key_first(first),
+        category=_category_or_none(user, category_id),
+        sort_key=sortkeys.key_first(_first_key(Event.objects.filter(space=space))),
         created_by=user,
     )
     if last_done is not None:
-        import uuid
-
-        record(user, event.id, log_id or uuid.uuid7(), When(date=last_done))
+        record(user, event.id, uuid.uuid7(), When(date=last_done), now=now or now_utc())
         event.refresh_from_db()
     return event
 
 
 @transaction.atomic
 def update_event(user, event_id, *, name: str, emoji: str, color: str, streak_unit: str, category_id=None) -> Event:
-    from apps.events.services.logs import get_event_for, refresh_event_cache
-
-    event = get_event_for(user, event_id)
+    event = event_for(user, event_id, lock=True)
     _check(color, streak_unit)
     unit_changed = event.streak_unit != streak_unit
     event.name = _clean_name(name, 40, "名前")
     event.emoji = _clean_emoji(emoji)
     event.color = color
     event.streak_unit = streak_unit
-    event.category = category_for(user, category_id)
+    event.category = _category_or_none(user, category_id)
     event.save()
     if unit_changed:
         refresh_event_cache(event)
@@ -97,30 +119,20 @@ def update_event(user, event_id, *, name: str, emoji: str, color: str, streak_un
 
 
 @transaction.atomic
-def set_archived(user, event_id, archived: bool) -> Event:
-    from apps.events.services.logs import get_event_for
-
-    event = get_event_for(user, event_id)
+def set_archived(user, event_id, archived: bool, now: datetime | None = None) -> Event:
+    event = event_for(user, event_id, lock=True)
     event.is_archived = archived
-    event.archived_at = timezone.now() if archived else None
+    event.archived_at = (now or now_utc()) if archived else None
     if not archived:
         # アーカイブから戻したイベントは先頭に置く
-        first = (
-            Event.objects.filter(space=event.space, is_archived=False)
-            .order_by("sort_key")
-            .values_list("sort_key", flat=True)
-            .first()
-        )
-        event.sort_key = sortkeys.key_first(first)
+        event.sort_key = sortkeys.key_first(_first_key(Event.objects.filter(space=event.space).exclude(id=event.id)))
     event.save()
     return event
 
 
 @transaction.atomic
 def delete_event(user, event_id) -> None:
-    from apps.events.services.logs import get_event_for
-
-    get_event_for(user, event_id).delete()  # 記録も CASCADE で消える
+    event_for(user, event_id).delete()  # 記録も CASCADE で消える
 
 
 @transaction.atomic
@@ -130,20 +142,9 @@ def move_event(user, event_id, *, before_id=None, after_id=None) -> Event:
     カテゴリのタブで並べ替えた場合も、画面上の前後のイベントを渡せば、
     そのカテゴリ内の順番だけが入れ替わり、他のイベントの位置は変わらない（決定 013）。
     """
-    from apps.events.services.logs import get_event_for
-
-    event = get_event_for(user, event_id)
+    event = event_for(user, event_id, lock=True)
     qs = Event.objects.filter(space=event.space).exclude(id=event.id)
-    lo = qs.filter(id=before_id).values_list("sort_key", flat=True).first() if before_id else None
-    hi = qs.filter(id=after_id).values_list("sort_key", flat=True).first() if after_id else None
-    if lo is not None and hi is None:
-        # before の直後に入れる：before と、全体での次のキーの間
-        hi = qs.filter(sort_key__gt=lo).order_by("sort_key").values_list("sort_key", flat=True).first()
-    elif hi is not None and lo is None:
-        lo = qs.filter(sort_key__lt=hi).order_by("-sort_key").values_list("sort_key", flat=True).first()
-    if lo is not None and hi is not None and lo >= hi:
-        raise ValidationError("並び順の指定が正しくありません", code="order")
-    event.sort_key = sortkeys.key_between(lo, hi)
+    event.sort_key = sortkeys.key_between(*_neighbor_keys(qs, before_id, after_id))
     event.save(update_fields=["sort_key", "updated_at"])
     return event
 
@@ -155,8 +156,7 @@ def move_event(user, event_id, *, before_id=None, after_id=None) -> Event:
 def create_category(user, name: str) -> Category:
     space = personal_space(user)
     name = _clean_name(name, 20, "カテゴリ名")
-    existing = Category.objects.filter(space=space, name=name).first()
-    if existing:
+    if existing := Category.objects.filter(space=space, name=name).first():
         return existing
     last = Category.objects.filter(space=space).order_by("-sort_key").values_list("sort_key", flat=True).first()
     return Category.objects.create(space=space, name=name, sort_key=sortkeys.key_last(last))
@@ -183,12 +183,20 @@ def delete_category(user, category_id) -> None:
 def move_category(user, category_id, *, before_id=None, after_id=None) -> Category:
     cat = category_for(user, category_id)
     qs = Category.objects.filter(space=cat.space).exclude(id=cat.id)
-    lo = qs.filter(id=before_id).values_list("sort_key", flat=True).first() if before_id else None
-    hi = qs.filter(id=after_id).values_list("sort_key", flat=True).first() if after_id else None
-    if lo is not None and hi is None:
-        hi = qs.filter(sort_key__gt=lo).order_by("sort_key").values_list("sort_key", flat=True).first()
-    elif hi is not None and lo is None:
-        lo = qs.filter(sort_key__lt=hi).order_by("-sort_key").values_list("sort_key", flat=True).first()
-    cat.sort_key = sortkeys.key_between(lo, hi)
+    cat.sort_key = sortkeys.key_between(*_neighbor_keys(qs, before_id, after_id))
     cat.save(update_fields=["sort_key", "updated_at"])
     return cat
+
+
+@transaction.atomic
+def shift_category(user, category_id, direction: int) -> Category:
+    """カテゴリを1つ上（-1）または下（+1）へ動かす。端なら何もしない。"""
+    cat = category_for(user, category_id)
+    siblings = list(Category.objects.filter(space=cat.space).order_by("sort_key"))
+    i = next(i for i, c in enumerate(siblings) if c.id == cat.id)
+    j = i + direction
+    if not 0 <= j < len(siblings):
+        return cat
+    if direction < 0:
+        return move_category(user, cat.id, after_id=siblings[j].id)
+    return move_category(user, cat.id, before_id=siblings[j].id)

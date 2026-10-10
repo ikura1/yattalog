@@ -45,15 +45,15 @@
   <div class="season-chart" data-season>
     <span class="season-tip" hidden></span>
     <svg viewBox="0 0 320 150" role="img" aria-label="月別の記録回数">
-      {% for g in season_bars.grid %}<line x1="{{ season_bars.left }}" x2="{{ season_bars.right }}" y1="{{ g.y }}" y2="{{ g.y }}" class="sgrid{% if g.v == 0 %} base{% endif %}"/><text x="{{ season_bars.left|add:-6 }}" y="{{ g.y|add:3 }}" class="sax" text-anchor="end">{{ g.v }}</text>{% endfor %}
-      {% for b in season_bars.bars %}
-        {% if b.c %}<rect class="sbar{% if b.peak %} peak{% endif %}" x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" rx="3" data-m="{{ b.m }}" data-v="{{ b.c }}"/>{% if b.peak %}<text x="{{ b.cx }}" y="{{ b.y|add:-5 }}" class="sval" text-anchor="middle">{{ b.c }}</text>{% endif %}{% endif %}
-        <text x="{{ b.cx }}" y="{{ season_bars.label_y }}" class="sax{% if b.future %} fut{% endif %}" text-anchor="middle">{{ b.m }}</text>
-        <rect class="shit" x="{{ b.slot_x }}" y="0" width="{{ b.slot_w }}" height="150" data-m="{{ b.m }}" data-v="{{ b.c }}" tabindex="0" aria-label="{{ b.m }}月 {{ b.c }}回"/>
+      {% for v, gy in chart.gridlines %}<line x1="{{ chart.left }}" x2="{{ chart.right }}" y1="{{ gy }}" y2="{{ gy }}" class="sgrid{% if v == 0 %} base{% endif %}"/><text x="{{ chart.left|add:-6 }}" y="{{ gy|add:3 }}" class="sax" text-anchor="end">{{ v }}</text>{% endfor %}
+      {% for b in chart.bars %}
+        {% if b.count %}<rect class="sbar{% if b.is_peak %} peak{% endif %}" x="{{ b.x }}" y="{{ b.y }}" width="{{ b.width }}" height="{{ b.height }}" rx="3" data-m="{{ b.month }}" data-v="{{ b.count }}"/>{% if b.is_peak %}<text x="{{ b.center }}" y="{{ b.y|add:-5 }}" class="sval" text-anchor="middle">{{ b.count }}</text>{% endif %}{% endif %}
+        <text x="{{ b.center }}" y="{{ chart.label_y }}" class="sax{% if b.is_future %} fut{% endif %}" text-anchor="middle">{{ b.month }}</text>
+        <rect class="shit" x="{{ b.slot_x }}" y="0" width="{{ b.slot_width }}" height="150" data-m="{{ b.month }}" data-v="{{ b.count }}" tabindex="0" aria-label="{{ b.month }}月 {{ b.count }}回"/>
       {% endfor %}
     </svg>
   </div>
-  <table class="sr-only"><caption>月別の記録回数</caption><tr><th>月</th><th>回数</th></tr>{% for b in season_bars.bars %}<tr><td>{{ b.m }}月</td><td>{{ b.c }}</td></tr>{% endfor %}</table>
+  <table class="sr-only"><caption>月別の記録回数</caption><tr><th>月</th><th>回数</th></tr>{% for b in chart.bars %}<tr><td>{{ b.month }}月</td><td>{{ b.count }}</td></tr>{% endfor %}</table>
 </section>
 {% endif %}
 
@@ -65,10 +65,10 @@
   </div>
   <div class="cal">
     {% for w in "日月火水木金土" %}<span class="dow">{{ w }}</span>{% endfor %}
-    {% for week in cal_weeks %}{% for d, inmonth, has, future in week %}
-      {% if not inmonth %}<span class="pad"></span>
-      {% elif future %}<span class="day future">{{ d.day }}</span>
-      {% else %}<a class="day{% if has %} has{% endif %}{% if d == today %} today{% endif %}{% if d == sel_date %} sel{% endif %}" href="?y={{ cal_y }}&m={{ cal_m }}&day={{ d|iso }}" hx-get="?y={{ cal_y }}&m={{ cal_m }}&day={{ d|iso }}" hx-target="#detail" aria-label="{{ d.month }}月{{ d.day }}日{% if has %}、記録あり{% endif %}">{{ d.day }}</a>{% endif %}
+    {% for week in cal_weeks %}{% for c in week %}
+      {% if not c.in_month %}<span class="pad"></span>
+      {% elif c.is_future %}<span class="day future">{{ c.date.day }}</span>
+      {% else %}<a class="day{% if c.has_log %} has{% endif %}{% if c.date == today %} today{% endif %}{% if c.date == sel_date %} sel{% endif %}" href="?y={{ cal_y }}&m={{ cal_m }}&day={{ c.date|iso }}" hx-get="?y={{ cal_y }}&m={{ cal_m }}&day={{ c.date|iso }}" hx-target="#detail" aria-label="{{ c.date.month }}月{{ c.date.day }}日{% if c.has_log %}、記録あり{% endif %}">{{ c.date.day }}</a>{% endif %}
     {% endfor %}{% endfor %}
   </div>
 </section>

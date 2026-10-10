@@ -18,7 +18,13 @@ uv run python manage.py migrate
 uv run python manage.py runserver
 ```
 
-開発では SQLite を使う。PostgreSQL で動かすときは `DATABASE_URL=postgres://...` を設定する。
+既定では SQLite で動く。ただし SQLite は文字数の上限などの制約を検査しないので、**テストは本番と同じ PostgreSQL で回すのがおすすめ**（CI は PostgreSQL で回している）。
+
+```sh
+docker compose up -d
+export DATABASE_URL=postgres://yattalog:yattalog@localhost:5432/yattalog
+uv run pytest
+```
 
 ### Google ログインを手元で試す
 

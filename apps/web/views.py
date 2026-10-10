@@ -1,6 +1,5 @@
 """画面（Django テンプレート＋htmx）。処理はすべてサービス層に任せる（決定 027）。"""
 
-import calendar
 import json
 import uuid
 from datetime import date, time
@@ -11,18 +10,17 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
-from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
+from apps.core import clock
 from apps.events.models import COLORS, Category, Event, Log, StreakUnit
+from apps.events.services import access, stats
 from apps.events.services import events as ev_svc
 from apps.events.services import logs as log_svc
-from apps.events.services import stats
-from apps.events.services.dates import today_in, zone
+from apps.events.services.dates import is_valid_timezone, today_in
 from apps.events.services.logs import When
-from apps.events.services.streaks import STREAK_MIN
 from apps.spaces.services import personal_space
-from apps.web.presenters import tile
+from apps.web.presenters import calendar_weeks, season_chart, shift_month, tile
 
 EMOJIS = [
     "🛏️",
@@ -57,19 +55,19 @@ UNITS = [(u.value, u.label) for u in StreakUnit]
 
 
 def _today(request: HttpRequest) -> date:
-    return today_in(request.user.timezone)
+    return today_in(request.user.timezone, clock.now())
 
 
 def _event(request: HttpRequest, event_id) -> Event:
     try:
-        return Event.objects.select_related("category").get(id=event_id, space__members__user=request.user)
-    except Event.DoesNotExist, ValueError, ValidationError:
+        return access.event_for(request.user, event_id)
+    except Event.DoesNotExist:
         raise Http404 from None
 
 
 def _log(request: HttpRequest, log_id) -> Log:
     try:
-        return log_svc.get_log_for(request.user, log_id)
+        return access.log_for(request.user, log_id)
     except Log.DoesNotExist:
         raise Http404 from None
 
@@ -99,17 +97,38 @@ def _form_error(request, template, ctx, err: ValidationError) -> HttpResponse:
     return resp
 
 
-def _parse_when(post) -> When:
-    mode = post.get("when", "now")
-    if mode == "now":
+def parse_when(post) -> When:
+    """フォームの「いつやった？」を When にする。壊れた値は ValidationError（500 にしない、レビュー 3）。"""
+    if post.get("when", "now") == "now":
         return When()
     try:
         d = date.fromisoformat(post.get("date", ""))
     except ValueError:
-        raise ValidationError("日付を選んでください") from None
-    t_raw = (post.get("time") or "").strip()
-    t = time.fromisoformat(t_raw) if t_raw else None
+        raise ValidationError("日付を選んでください", code="date") from None
+    raw = (post.get("time") or "").strip()
+    if not raw:
+        return When(date=d)
+    try:
+        t = time.fromisoformat(raw)
+    except ValueError:
+        raise ValidationError("時刻の形式が正しくありません", code="time") from None
     return When(date=d, time=t)
+
+
+def parse_date_or_none(raw: str | None) -> date | None:
+    if not raw:
+        return None
+    try:
+        return date.fromisoformat(raw)
+    except ValueError:
+        raise ValidationError("日付の形式が正しくありません", code="date") from None
+
+
+def parse_uuid(raw: str | None) -> uuid.UUID:
+    try:
+        return uuid.UUID(raw or "")
+    except ValueError:
+        raise ValidationError("ID の形式が正しくありません", code="id") from None
 
 
 # --- ログイン・ホーム -------------------------------------------------------------
@@ -130,16 +149,10 @@ def logout_view(request: HttpRequest) -> HttpResponse:
     return resp
 
 
-@login_required
-@require_GET
-def home(request: HttpRequest) -> HttpResponse:
-    return render(request, "web/home.html", _home_ctx(request))
-
-
 def _home_ctx(request: HttpRequest) -> dict:
     space = personal_space(request.user)
     today = _today(request)
-    events = Event.objects.filter(space=space, is_archived=False).select_related("category").order_by("sort_key")
+    events = list(Event.objects.filter(space=space, is_archived=False).select_related("category").order_by("sort_key"))
     cats = list(_categories(request))
     counts = {c.id: 0 for c in cats}
     for e in events:
@@ -156,6 +169,12 @@ def _home_ctx(request: HttpRequest) -> dict:
 
 @login_required
 @require_GET
+def home(request: HttpRequest) -> HttpResponse:
+    return render(request, "web/home.html", _home_ctx(request))
+
+
+@login_required
+@require_GET
 def grid(request: HttpRequest) -> HttpResponse:
     """ホームのグリッドとタブだけを返す（htmx で差し替える）。"""
     return render(request, "web/_grid.html", _home_ctx(request))
@@ -166,21 +185,15 @@ def grid(request: HttpRequest) -> HttpResponse:
 def set_timezone(request: HttpRequest) -> HttpResponse:
     """端末のタイムゾーンを設定する。初回はそのまま設定し、以降は「切り替える／このまま」の結果を受ける（決定 023）。"""
     tz = request.POST.get("tz", "")
-    action = request.POST.get("action", "set")
+    if not is_valid_timezone(tz):
+        return JsonResponse({"error": "タイムゾーンが正しくありません"}, status=400)
     user = request.user
-    try:
-        zone(tz)
-        from zoneinfo import ZoneInfo
-
-        ZoneInfo(tz)
-    except Exception:
-        return HttpResponse(status=400)
-    if action == "keep":
+    if request.POST.get("action") == "keep":
         user.timezone_kept_for = tz
     else:
         user.timezone = tz
     if user.onboarded_at is None:
-        user.onboarded_at = timezone.now()
+        user.onboarded_at = clock.now()
     user.save(update_fields=["timezone", "timezone_kept_for", "onboarded_at"])
     return JsonResponse({"timezone": user.timezone})
 
@@ -188,8 +201,7 @@ def set_timezone(request: HttpRequest) -> HttpResponse:
 # --- 記録（タップ・取り消し）。端末で作った ID を受け取る（決定 028） ---------------------------
 
 
-def _tile_html(request, event) -> str:
-    event.refresh_from_db()
+def _tile_html(request, event: Event) -> str:
     return render_to_string("web/_tile.html", {"t": tile(event, _today(request))}, request=request)
 
 
@@ -197,26 +209,26 @@ def _tile_html(request, event) -> str:
 @require_POST
 def record(request: HttpRequest, event_id) -> JsonResponse:
     try:
-        log_id = uuid.UUID(request.POST.get("log_id", ""))
-    except ValueError:
-        return JsonResponse({"error": "記録 ID が正しくありません"}, status=400)
-    try:
-        result = log_svc.record(request.user, event_id, log_id, _parse_when(request.POST), request.POST.get("memo", ""))
+        result = log_svc.record(
+            request.user,
+            event_id,
+            parse_uuid(request.POST.get("log_id")),
+            parse_when(request.POST),
+            request.POST.get("memo", ""),
+        )
     except Event.DoesNotExist:
         raise Http404 from None
-    except PermissionDenied:
-        return JsonResponse({"error": "この記録はできません"}, status=409)
+    except PermissionDenied as e:
+        return JsonResponse({"error": str(e)}, status=409)
     except ValidationError as e:
         return JsonResponse({"error": " ".join(e.messages)}, status=422)
-    event = result.log.event
-    grew = result.streak_after > result.streak_before and result.streak_after >= STREAK_MIN
-    t = tile(Event.objects.get(id=event.id), _today(request))
+    t = tile(result.event, _today(request))  # タイルは1回だけ作る（レビュー 11）
     return JsonResponse(
         {
             "log_id": str(result.log.id),
             "created": result.created,
-            "tile_html": _tile_html(request, event),
-            "streak_grew": grew,
+            "tile_html": render_to_string("web/_tile.html", {"t": t}, request=request),
+            "streak_grew": result.streak_grew,
             "streak_text": t.streak.text if t.streak else "",
         }
     )
@@ -226,55 +238,72 @@ def record(request: HttpRequest, event_id) -> JsonResponse:
 @require_POST
 def undo(request: HttpRequest, log_id) -> JsonResponse:
     event = log_svc.undo(request.user, log_id)
-    if event is None:
-        return JsonResponse({"tile_html": None})
-    return JsonResponse({"tile_html": _tile_html(request, event)})
+    return JsonResponse({"tile_html": _tile_html(request, event) if event else None})
 
 
-# --- 長押しシート（詳しく記録） ---------------------------------------------------------
+# --- 長押しシート（詳しく記録）・記録の編集 -------------------------------------------------
+
+
+def _record_ctx(request, event: Event, log: Log | None = None, **extra) -> dict:
+    today = _today(request)
+    return {
+        "event": event,
+        "log": log,
+        "today": today,
+        "yesterday": date.fromordinal(today.toordinal() - 1),
+        "day_before": date.fromordinal(today.toordinal() - 2),
+        "new_log_id": uuid.uuid7(),
+        **extra,
+    }
 
 
 @login_required
 def record_sheet(request: HttpRequest, event_id) -> HttpResponse:
     event = _event(request, event_id)
-    today = _today(request)
-    ctx = {
-        "event": event,
-        "today": today,
-        "preset": request.GET.get("date", ""),
-        "log": None,
-        "new_log_id": uuid.uuid7(),
-    }
     if request.method == "POST":
         try:
-            log_id = uuid.UUID(request.POST["log_id"])
-            log_svc.record(request.user, event.id, log_id, _parse_when(request.POST), request.POST.get("memo", ""))
-        except (ValidationError, ValueError, KeyError) as e:
-            err = e if isinstance(e, ValidationError) else ValidationError("入力を確認してください")
-            ctx["form"] = request.POST
-            return _form_error(request, "web/_record_sheet.html", ctx, err)
+            log_svc.record(
+                request.user,
+                event.id,
+                parse_uuid(request.POST.get("log_id")),
+                parse_when(request.POST),
+                request.POST.get("memo", ""),
+            )
+        except PermissionDenied as e:
+            return _form_error(
+                request,
+                "web/_record_sheet.html",
+                _record_ctx(request, event, form=request.POST),
+                ValidationError(str(e)),
+            )
+        except ValidationError as e:
+            return _form_error(request, "web/_record_sheet.html", _record_ctx(request, event, form=request.POST), e)
         return _refresh(HttpResponse(status=204), "やった！ 記録しました")
-    return render(request, "web/_record_sheet.html", ctx)
+    try:
+        preset = parse_date_or_none(request.GET.get("date"))
+    except ValidationError:
+        preset = None
+    return render(request, "web/_record_sheet.html", _record_ctx(request, event, preset=preset))
 
 
 @login_required
 def log_edit_sheet(request: HttpRequest, log_id) -> HttpResponse:
     log = _log(request, log_id)
-    ctx = {"event": log.event, "today": _today(request), "log": log, "preset": ""}
     if request.method == "POST":
         try:
-            log_svc.edit(request.user, log.id, _parse_when(request.POST), request.POST.get("memo", ""))
-        except (ValidationError, ValueError) as e:
-            err = e if isinstance(e, ValidationError) else ValidationError("入力を確認してください")
-            ctx["form"] = request.POST
-            return _form_error(request, "web/_record_sheet.html", ctx, err)
+            log_svc.edit(request.user, log.id, parse_when(request.POST), request.POST.get("memo", ""))
+        except ValidationError as e:
+            return _form_error(
+                request, "web/_record_sheet.html", _record_ctx(request, log.event, log, form=request.POST), e
+            )
         return _refresh(HttpResponse(status=204), "記録を更新しました")
-    return render(request, "web/_record_sheet.html", ctx)
+    return render(request, "web/_record_sheet.html", _record_ctx(request, log.event, log))
 
 
 @login_required
 @require_POST
 def log_delete(request: HttpRequest, log_id) -> HttpResponse:
+    _log(request, log_id)  # 他人の記録は 404
     log_svc.undo(request.user, log_id)
     return _refresh(HttpResponse(status=204), "記録を削除しました")
 
@@ -282,10 +311,20 @@ def log_delete(request: HttpRequest, log_id) -> HttpResponse:
 # --- イベントの追加・編集・削除・並べ替え -------------------------------------------------
 
 
-def _event_form_ctx(request, event=None, **extra) -> dict:
+def _event_form_ctx(request, event=None, form=None, **extra) -> dict:
+    """フォームの初期値は、送られた値 → 編集中のイベント → 既定値 の順で決める（テンプレートでは決めない）。"""
     tab = request.GET.get("category") or request.POST.get("category") or ""
+    form = form or {}
+
+    def pick(name, default):
+        return form.get(name) or (getattr(event, name) if event else None) or default
+
     return {
         "event": event,
+        "form": form,
+        "cur_emoji": pick("emoji", EMOJIS[0]),
+        "cur_color": pick("color", "sky"),
+        "cur_unit": pick("streak_unit", StreakUnit.DAY),
         "emojis": EMOJIS,
         "colors": COLORS,
         "units": UNITS,
@@ -301,7 +340,6 @@ def event_new(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         p = request.POST
         try:
-            last = date.fromisoformat(p["last_done"]) if p.get("last_done") else None
             ev_svc.create_event(
                 request.user,
                 name=p.get("name", ""),
@@ -309,11 +347,10 @@ def event_new(request: HttpRequest) -> HttpResponse:
                 color=p.get("color", ""),
                 streak_unit=p.get("streak_unit", StreakUnit.DAY),
                 category_id=p.get("category") or None,
-                last_done=last,
+                last_done=parse_date_or_none(p.get("last_done")),
             )
-        except (ValidationError, ValueError) as e:
-            err = e if isinstance(e, ValidationError) else ValidationError("入力を確認してください")
-            return _form_error(request, "web/_event_sheet.html", _event_form_ctx(request, form=p), err)
+        except ValidationError as e:
+            return _form_error(request, "web/_event_sheet.html", _event_form_ctx(request, form=p), e)
         return _refresh(HttpResponse(status=204), "追加しました")
     return render(request, "web/_event_sheet.html", _event_form_ctx(request))
 
@@ -354,7 +391,10 @@ def event_remove(request: HttpRequest, event_id) -> HttpResponse:
 @login_required
 @require_POST
 def event_restore(request: HttpRequest, event_id) -> HttpResponse:
-    ev_svc.set_archived(request.user, event_id, False)
+    try:
+        ev_svc.set_archived(request.user, event_id, False)
+    except Event.DoesNotExist:
+        raise Http404 from None
     return _refresh(HttpResponse(status=204), "ホームに戻しました")
 
 
@@ -383,8 +423,9 @@ def categories(request: HttpRequest) -> HttpResponse:
     error = None
     if request.method == "POST":
         p = request.POST
+        action = p.get("action")
         try:
-            match p.get("action"):
+            match action:
                 case "create":
                     ev_svc.create_category(request.user, p.get("name", ""))
                 case "rename":
@@ -392,19 +433,15 @@ def categories(request: HttpRequest) -> HttpResponse:
                 case "delete":
                     ev_svc.delete_category(request.user, p.get("id"))
                 case "up" | "down":
-                    cats = list(_categories(request))
-                    i = next(i for i, c in enumerate(cats) if str(c.id) == p.get("id"))
-                    j = i - 1 if p["action"] == "up" else i + 1
-                    if 0 <= j < len(cats):
-                        if p["action"] == "up":
-                            ev_svc.move_category(request.user, cats[i].id, after_id=cats[j].id)
-                        else:
-                            ev_svc.move_category(request.user, cats[i].id, before_id=cats[j].id)
+                    ev_svc.shift_category(request.user, p.get("id"), -1 if action == "up" else 1)
+                case _:
+                    return HttpResponse(status=400)
+        except Category.DoesNotExist:
+            raise Http404 from None
         except ValidationError as e:
             error = " ".join(e.messages)
-    space = personal_space(request.user)
     rows = [(c, c.events.filter(is_archived=False).count()) for c in _categories(request)]
-    resp = render(request, "web/_categories_sheet.html", {"rows": rows, "error": error, "space": space})
+    resp = render(request, "web/_categories_sheet.html", {"rows": rows, "error": error})
     if request.method == "POST" and not error:
         resp["HX-Trigger"] = json.dumps({"yl:changed": True})
     return resp
@@ -423,39 +460,31 @@ def menu(request: HttpRequest) -> HttpResponse:
 # --- イベント詳細 ---------------------------------------------------------------------
 
 
+def _int_param(request, name: str, default: int, lo: int, hi: int) -> int:
+    try:
+        v = int(request.GET.get(name, default))
+    except ValueError:
+        return default
+    return v if lo <= v <= hi else default
+
+
 @login_required
 @require_GET
 def event_detail(request: HttpRequest, event_id) -> HttpResponse:
     event = _event(request, event_id)
     today = _today(request)
-    try:
-        y = int(request.GET.get("y", today.year))
-        m = int(request.GET.get("m", today.month))
-        if not 1 <= m <= 12:
-            raise ValueError
-    except ValueError:
-        y, m = today.year, today.month
-    sel = request.GET.get("day")
-    sel_date = None
-    if sel:
-        try:
-            sel_date = date.fromisoformat(sel)
-        except ValueError:
-            sel_date = None
+    y = _int_param(request, "y", today.year, 1900, 9999)
+    m = _int_param(request, "m", today.month, 1, 12)
     season_all = request.GET.get("season") == "all"
+    season_year = _int_param(request, "sy", today.year, 1900, 9999)
     try:
-        season_year = int(request.GET.get("sy", today.year))
-    except ValueError:
-        season_year = today.year
+        sel_date = parse_date_or_none(request.GET.get("day"))
+    except ValidationError:
+        sel_date = None
     season = stats.season(event, None if season_all else season_year)
     logs = event.logs.all()
     if sel_date:
         logs = logs.filter(local_date=sel_date)
-    marks = stats.calendar_days(event, y, m)
-    cal = calendar.Calendar(firstweekday=6).monthdatescalendar(y, m)
-    prev_m = (y, m - 1) if m > 1 else (y - 1, 12)
-    next_m = (y, m + 1) if m < 12 else (y + 1, 1)
-    top = max(season.counts) if season.counts else 0
     ctx = {
         "event": event,
         "t": tile(event, today),
@@ -463,50 +492,15 @@ def event_detail(request: HttpRequest, event_id) -> HttpResponse:
         "season": season,
         "season_all": season_all,
         "season_year": season_year,
-        "season_bars": _season_bars(season.counts, today, None if season_all else season_year),
-        "season_top": top,
-        "cal_weeks": [[(d, d.month == m, d in marks, d > today) for d in week] for week in cal],
+        "chart": season_chart(season.counts, today, None if season_all else season_year),
+        "cal_weeks": calendar_weeks(y, m, stats.calendar_days(event, y, m), today),
         "cal_y": y,
         "cal_m": m,
-        "prev_m": prev_m,
-        "next_m": next_m,
+        "prev_m": shift_month(y, m, -1),
+        "next_m": shift_month(y, m, 1),
         "sel_date": sel_date,
         "today": today,
         "logs": logs[:200],
     }
     template = "web/_detail.html" if request.htmx and not request.htmx.boosted else "web/detail.html"
     return render(request, template, ctx)
-
-
-def _season_bars(counts: list[int], today: date, year: int | None) -> list[dict]:
-    """棒グラフ用の座標（SVG viewBox 320×150）。"""
-    top = max(counts) if counts else 0
-    step = 1 if top <= 4 else 2 if top <= 10 else 5 if top <= 20 else 10 if top <= 50 else 20
-    ceiling = max(step, -(-top // step) * step)
-    w, h, left, right, t, b = 320, 150, 22, 6, 12, 22
-    cw = (w - left - right) / 12
-    bw = min(16, cw * 0.56)
-    bars = []
-    for i, c in enumerate(counts):
-        x = left + cw * i + cw / 2
-        y = t + (h - t - b) * (1 - c / ceiling)
-        bars.append(
-            {
-                "m": i + 1,
-                "c": c,
-                "x": round(x - bw / 2, 1),
-                "y": round(y, 1),
-                "w": round(bw, 1),
-                "h": round(h - b - y, 1),
-                "cx": round(x, 1),
-                "slot_x": round(left + cw * i, 1),
-                "slot_w": round(cw, 1),
-                "peak": c == top and c > 0 and sum(counts) >= 3,
-                "future": year == today.year and i + 1 > today.month,
-            }
-        )
-    grid = [
-        {"v": v, "y": round(t + (h - t - b) * (1 - v / ceiling), 1)}
-        for v in range(0, ceiling + 1, step if ceiling / step <= 4 else step * 2)
-    ]
-    return {"bars": bars, "grid": grid, "base_y": h - b, "label_y": h - 6, "left": left, "right": w - right}

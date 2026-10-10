@@ -2,7 +2,7 @@
 <h2><span aria-hidden="true">{{ event.emoji }}</span>{{ event.name }}</h2>
 <form id="recForm" class="rec-form"
       {% if log %}hx-post="{% url 'web:log_edit' log.id %}"{% else %}hx-post="{% url 'web:record_sheet' event.id %}"{% endif %}
-      hx-swap="none" data-today="{{ today|iso }}">
+      hx-swap="none" data-today="{{ today|iso }}" data-yesterday="{{ yesterday|iso }}" data-day-before="{{ day_before|iso }}">
   {% if not log %}<input type="hidden" name="log_id" value="{{ form.log_id|default:new_log_id }}">{% endif %}
   {% with mode=form.when|default:'' %}
   <div class="field"><span class="lbl" id="whenL">いつやった？</span>
@@ -17,7 +17,7 @@
     <div class="pickbox" data-pickbox>
       <div class="pf"><label for="recDate">日付</label>
         <input type="date" id="recDate" name="date" max="{{ today|iso }}"
-               value="{% if form.date %}{{ form.date }}{% elif log %}{{ log.local_date|iso }}{% elif preset %}{{ preset }}{% else %}{{ today|iso }}{% endif %}"></div>
+               value="{% if form.date %}{{ form.date }}{% elif log %}{{ log.local_date|iso }}{% elif preset %}{{ preset|iso }}{% else %}{{ today|iso }}{% endif %}"></div>
       <div class="pf"><label for="recTime">時刻（わかれば）</label>
         <input type="time" id="recTime" name="time" value="{% if form.time %}{{ form.time }}{% elif log and log.occurred_at %}{{ log|log_when:today|slice:'-5:' }}{% endif %}"></div>
     </div>

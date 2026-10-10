@@ -88,8 +88,35 @@ def test_elapsed_never_negative_after_crossing_timezones():
     assert elapsed(D, D - timedelta(1)) == Elapsed(0)
 
 
+def test_月単位の連続は年をまたいでも続く():
+    ds = desc(date(2027, 1, 5), date(2026, 12, 20), date(2026, 11, 1))
+    assert compute_streak(ds, "month")[0] == 3
+
+
+def test_週単位は日曜と翌日の月曜で別の週になる():
+    sun, mon = date(2026, 10, 11), date(2026, 10, 12)
+    assert compute_streak(desc(mon, sun), "week") == (2, period_index(mon, "week"))
+
+
+def test_月単位の今月はまだの判定():
+    count, last = compute_streak(desc(date(2026, 9, 3), date(2026, 8, 30)), "month")
+    state = streak_state(count, last, "month", date(2026, 10, 10))
+    assert state is not None and (state.current, state.text, state.pending_text) == (
+        False,
+        "2か月連続",
+        "（今月はまだ）",
+    )
+
+
 def test_friendly_interval():
     assert friendly_interval(1) == "ほぼ毎日"
     assert friendly_interval(7) == "だいたい7日ごと"
     assert friendly_interval(14) == "だいたい2週間ごと"
     assert friendly_interval(60) == "だいたい2か月ごと"
+
+
+def test_タイムゾーン名の検証():
+    from apps.events.services.dates import is_valid_timezone
+
+    assert is_valid_timezone("Asia/Tokyo") and is_valid_timezone("America/Los_Angeles")
+    assert not any(map(is_valid_timezone, ["", "Not/AZone", "../etc/passwd", "x" * 100]))

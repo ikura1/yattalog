@@ -4,20 +4,30 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from django.utils import timezone
-
+from apps.core import clock
 from apps.events.models import StreakUnit
+
+DEFAULT_TZ = "Asia/Tokyo"
+
+
+def is_valid_timezone(tz_name: str) -> bool:
+    """IANA のタイムゾーン名として正しいか。"""
+    if not tz_name or len(tz_name) > 64:
+        return False
+    try:
+        ZoneInfo(tz_name)
+    except ZoneInfoNotFoundError, ValueError:
+        return False
+    return True
 
 
 def zone(tz_name: str) -> ZoneInfo:
-    try:
-        return ZoneInfo(tz_name)
-    except ZoneInfoNotFoundError, ValueError:
-        return ZoneInfo("Asia/Tokyo")
+    """表示・計算用。保存済みの値が壊れていても落ちないよう、正しくなければ既定のタイムゾーンにする。"""
+    return ZoneInfo(tz_name) if is_valid_timezone(tz_name) else ZoneInfo(DEFAULT_TZ)
 
 
 def now_utc() -> datetime:
-    return timezone.now()
+    return clock.now()
 
 
 def today_in(tz_name: str, now: datetime | None = None) -> date:
