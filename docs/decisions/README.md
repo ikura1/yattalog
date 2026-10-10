@@ -41,3 +41,4 @@
 | 016 | [ログインは Google アカウントのみにする](016-google-login-only.md) | 決定 |
 | 017 | [SNS へのシェアは「シェア画像＋共有シート」で行う](017-share-image-via-share-sheet.md) | 決定 |
 | 018 | [イベント詳細に「よくやる時期」（月別の棒グラフ）を追加する](018-seasonal-chart.md) | 決定 |
+| 019 | [API を前提に作り、MCP サーバーは v1.x で公開する](019-api-first-mcp-later.md) | 決定 |
