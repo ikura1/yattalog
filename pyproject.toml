@@ -1,0 +1,44 @@
+[project]
+name = "yattalog"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.14"
+dependencies = [
+    "dj-database-url>=3.1.2",
+    "django>=6.1,<6.2",
+    "django-allauth[socialaccount]>=65.19.7",
+    "django-htmx>=1.29.0",
+    "django-ninja>=1.7.1",
+    "gunicorn>=26.2.0",
+    "psycopg[binary]>=3.3.6",
+    "uvicorn>=0.54.0",
+    "whitenoise>=6.12.0",
+]
+
+[dependency-groups]
+dev = [
+    "factory-boy>=3.3.3",
+    "freezegun>=1.5.5",
+    "hypothesis>=6.168.5",
+    "pytest>=9.1.1",
+    "pytest-django>=4.14.0",
+    "ruff>=0.17.0",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.test_settings"
+python_files = ["test_*.py"]
+addopts = "-q --strict-markers"
+
+[tool.ruff]
+line-length = 120
+target-version = "py314"
+extend-exclude = ["poc", "**/migrations/*"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "DJ", "S", "SIM"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S", "B"]
+"config/settings.py" = ["S105"]
