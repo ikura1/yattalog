@@ -6,7 +6,7 @@ from datetime import time, timedelta
 import pytest
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError
-from hypothesis import given, settings
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 from apps.events.models import Event, Log
@@ -135,7 +135,7 @@ def test_DBの制約で時刻とタイムゾーンは必ず一緒に入る(user,
 
 
 @pytest.mark.django_db
-@settings(max_examples=25, deadline=None)
+@settings(max_examples=25, deadline=None, suppress_health_check=[HealthCheck.too_slow])  # DB を使うので CI では遅い
 @given(st.lists(st.tuples(st.booleans(), st.integers(min_value=0, max_value=60)), min_size=1, max_size=25))
 def test_追加と取り消しを繰り返してもキャッシュは一から計算した値と一致する(ops):
     # 例ごとに新しいユーザーを作り、例どうしで状態を共有しない（レビュー 6）
