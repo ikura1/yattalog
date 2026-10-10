@@ -38,3 +38,5 @@
 | 013 | [カテゴリを1つだけ持たせ、ホームのタブで切り替える](013-categories-as-tabs.md) | 決定 |
 | 014 | [毎日続いているイベントに連続記録バッジを出す](014-streak-badge.md) | 決定（015 で拡張） |
 | 015 | [連続記録の単位をイベントごとに選べるようにする](015-streak-unit-per-event.md) | 決定 |
+| 016 | [ログインは Google アカウントのみにする](016-google-login-only.md) | 決定 |
+| 017 | [SNS へのシェアは「シェア画像＋共有シート」で行う](017-share-image-via-share-sheet.md) | 決定 |

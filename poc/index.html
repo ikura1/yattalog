@@ -185,6 +185,24 @@ input[type=date],input[type=time]{width:100%;min-width:0;border:1px solid var(--
 .logs .ops{display:flex;gap:4px}
 .empty{color:var(--muted);font-size:14px;margin:0}
 
+/* share */
+.share-prev{display:grid;place-items:center;margin-bottom:10px}
+.share-prev img{width:min(260px,70%);aspect-ratio:1080/1350;border-radius:14px;box-shadow:var(--shadow);background:var(--bg)}
+.share-opts{display:flex;flex-direction:column;gap:2px}
+.share-opts .check{margin-bottom:4px}
+a.btn{display:block;text-align:center;text-decoration:none;color:var(--fg)}
+.pill:disabled{opacity:.4}
+/* login mock */
+.login .in{min-height:100%;display:flex;flex-direction:column;justify-content:center;gap:18px;padding-block:32px}
+.login-hero{text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.login-tiles{display:flex;gap:10px;margin-bottom:6px}
+.login-tiles span{background:var(--tc);color:var(--tile-fg);border-radius:16px;width:76px;height:84px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:26px}
+.login-tiles b{font-family:var(--f-display);font-size:15px}
+.login-tiles span:nth-child(2){transform:translateY(-8px) rotate(3deg)}
+.login-tiles span:nth-child(1){transform:rotate(-4deg)}
+.login-copy{margin:0;color:var(--muted);font-size:15px;line-height:1.8}
+.gbtn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;max-width:400px;margin:0 auto;padding:14px 16px;border-radius:14px;border:1px solid var(--line);background:var(--surface);font-weight:700;font-size:16px;box-shadow:var(--shadow)}
+.login-legal{font-size:12px;color:var(--muted);text-align:center;margin:0}
 /* onboarding */
 .tpls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:14px}
 .tpl{display:flex;align-items:center;gap:8px;border:2px solid transparent;background:var(--tc);color:var(--tile-fg);border-radius:14px;padding:10px;text-align:left;font-weight:700;font-size:14px;min-width:0}
@@ -206,7 +224,7 @@ input[type=date],input[type=time]{width:100%;min-width:0;border:1px solid var(--
     <button class="pill" id="editBtn" type="button">編集</button>
     <button class="iconbtn" id="menuBtn" type="button" aria-label="メニュー">⋯</button>
   </header>
-  <p class="poc-note">PoC v0.5 ・ データはこの端末のブラウザにだけ保存されます</p>
+  <p class="poc-note">PoC v0.6 ・ データはこの端末のブラウザにだけ保存されます</p>
   <p class="edit-hint" id="editHint" hidden>ドラッグで並べ替え ・ タップで詳細 ・ ×でアーカイブ／削除</p>
   <nav class="tabs" id="tabs" role="tablist" aria-label="カテゴリ"></nav>
   <ul class="grid" id="grid" role="tabpanel"></ul>
@@ -438,7 +456,7 @@ function quickRecord(id){
   const ev = S.events.find(e=>e.id===id);
   showToast(grew ? `🔥 ${stText(after)}！` : `${ev.emoji} 記録しました`, [
     {label:"取り消す", fn:()=>{ S.logs = S.logs.filter(x=>x.id!==l.id); save(); renderGrid(); showToast("取り消しました"); }},
-    {label:"メモを足す", fn:()=>openRecordSheet(id, l.id)}
+    grew ? {label:"シェア", fn:()=>openShareSheet(l.id)} : {label:"メモを足す", fn:()=>openRecordSheet(id, l.id)}
   ]);
   if(!S.meta.hintShown){ S.meta.hintShown=true; save(); setTimeout(showHint, 600); }
 }
@@ -631,20 +649,128 @@ function openRemoveSheet(id){
   });
 }
 
+/* ---- share ---- */
+function streakAt(eventId, ms){
+  const ev = S.events.find(e=>e.id===eventId); const unit = ev?.streakUnit || "day";
+  if(unit==="none") return {n:0, unit};
+  const ps = new Set(S.logs.filter(l=>l.eventId===eventId && l.doneAt<=ms).map(l=>periodOf(l.doneAt, unit)));
+  let p = periodOf(ms, unit), n=0; while(ps.has(p)){ n++; p--; } return {n, unit};
+}
+function shareInfo(logId){
+  const l = S.logs.find(x=>x.id===logId); const ev = S.events.find(e=>e.id===l.eventId);
+  const prev = S.logs.filter(x=>x.eventId===ev.id && x.doneAt<l.doneAt).sort((a,b)=>b.doneAt-a.doneAt)[0];
+  const gap = prev ? dayNum(l.doneAt)-dayNum(prev.doneAt) : null;
+  const st = streakAt(ev.id, l.doneAt);
+  const headline = st.n>=STREAK_MIN ? `🔥 ${stText(st)}` : gap===null ? "はじめての記録" : gap===0 ? "今日2回目" : `${gap}日ぶり`;
+  const tint = getComputedStyle(document.documentElement).getPropertyValue(`--t-${ev.color}`).trim();
+  return {l, ev, st, gap, headline, tint};
+}
+function wrapText(ctx, text, maxW){ const out=[]; let line=""; for(const ch of text){ if(ctx.measureText(line+ch).width>maxW && line){ out.push(line); line=ch; } else line+=ch; } if(line) out.push(line); return out; }
+async function drawShareCard(info, opt){
+  try{ await document.fonts.ready; }catch(_){}
+  const W=1080, H=1350, c=document.createElement("canvas"); c.width=W; c.height=H; const x=c.getContext("2d");
+  const light = ["#FFD9D2","#FFE3C2","#FFF1B8","#D7F0C8","#C9EEE6","#D3E6FF","#E4DAFF","#FFDCEB"];
+  const lightMap = {tomato:0,tangerine:1,sun:2,leaf:3,teal:4,sky:5,grape:6,pink:7};
+  const bg = light[lightMap[info.ev.color]] || "#EEF1F6";       // シェア画像は常にライト配色で作る
+  const ink = "#1B2333", sub = "#4A5568", accent = "#1F6F5C";
+  x.fillStyle=bg; x.fillRect(0,0,W,H);
+  // 白いカード
+  const cx=72, cy=72, cw=W-144, ch=H-144, r=56;
+  x.fillStyle="#FFFFFF"; x.beginPath(); x.roundRect(cx,cy,cw,ch,r); x.fill();
+  const disp = '"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif', body='"Zen Kaku Gothic New","Hiragino Sans",sans-serif';
+  x.textAlign="center"; x.textBaseline="alphabetic";
+  const extra = (opt.photo && info.l.photo) || (opt.memo && info.l.comment);
+  let y = opt.photo && info.l.photo ? 250 : extra ? 380 : 450;
+  x.font=`${opt.photo&&info.l.photo?150:220}px ${disp}`; x.fillText(info.ev.emoji, W/2, y);
+  x.fillStyle=ink; x.font=`800 76px ${disp}`;
+  const nameLines = wrapText(x, info.ev.name, cw-140).slice(0,2);
+  y += 130; nameLines.forEach(t=>{ x.fillText(t, W/2, y); y+=92; });
+  x.fillStyle=accent; x.font=`800 120px ${disp}`; x.fillText("やった！", W/2, y+70); y+=130;
+  // 見出し（連続 or ○日ぶり）
+  x.font=`800 64px ${disp}`; const hw = x.measureText(info.headline).width+90;
+  x.fillStyle=bg; x.beginPath(); x.roundRect(W/2-hw/2, y+10, hw, 104, 52); x.fill();
+  x.fillStyle=ink; x.fillText(info.headline, W/2, y+85); y+=150;
+  if(opt.photo && info.l.photo){
+    const img = await new Promise(res=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>res(null); i.src=info.l.photo; });
+    if(img){ const bw=cw-160, bh=Math.min(360, H-cy-200-y); const sc=Math.max(bw/img.width, bh/img.height);
+      x.save(); x.beginPath(); x.roundRect(W/2-bw/2, y, bw, bh, 32); x.clip();
+      x.drawImage(img, W/2-img.width*sc/2, y+bh/2-img.height*sc/2, img.width*sc, img.height*sc); x.restore(); y+=bh+30; }
+  }
+  if(opt.memo && info.l.comment){
+    x.fillStyle=sub; x.font=`500 44px ${body}`;
+    wrapText(x, info.l.comment.replace(/\s+/g," "), cw-200).slice(0,2).forEach(t=>{ x.fillText(t, W/2, y+40); y+=62; });
+  }
+  // フッター
+  x.fillStyle=sub; x.font=`500 40px ${body}`; x.fillText(fmtWhen(info.l.doneAt, info.l.noTime), W/2, cy+ch-120);
+  x.font=`800 44px ${disp}`; const wm1="Yatta", wm2="log"; const w1=x.measureText(wm1).width, w2=x.measureText(wm2).width;
+  x.textAlign="left"; x.fillStyle=ink; x.fillText(wm1, W/2-(w1+w2)/2, cy+ch-50); x.fillStyle=accent; x.fillText(wm2, W/2-(w1+w2)/2+w1, cy+ch-50);
+  return c;
+}
+function shareText(info){ return `${info.ev.emoji} ${info.ev.name} やった！ ${info.headline} #Yattalog`; }
+function openShareSheet(logId){
+  const info = shareInfo(logId); const opt = {memo:false, photo:false};
+  openSheet(`<h2>シェア</h2>
+    <div class="share-prev"><img id="shareImg" alt="シェア画像のプレビュー"></div>
+    <div class="share-opts">
+      <label class="check"><input type="checkbox" id="optMemo" ${info.l.comment?"":"disabled"}> メモも載せる${info.l.comment?"":"（メモなし）"}</label>
+      <label class="check"><input type="checkbox" id="optPhoto" ${info.l.photo?"":"disabled"}> 写真も載せる${info.l.photo?"":"（写真なし）"}</label>
+    </div>
+    <p class="whenNote" style="margin:0 0 12px">投稿文：${esc(shareText(info))}</p>
+    <div class="row"><button class="btn primary" type="button" id="doShare">共有する（インスタ・Xなど）</button></div>
+    <div class="links"><a class="btn" id="xIntent" target="_blank" rel="noopener" href="https://x.com/intent/post?text=${encodeURIComponent(shareText(info))}">X の投稿画面を開く</a></div>
+    <p class="empty" id="shareNote" hidden></p>`, async sh => {
+    const img = sh.querySelector("#shareImg"); let canvas;
+    const redraw = async () => { canvas = await drawShareCard(info, opt); img.src = canvas.toDataURL("image/png"); };
+    sh.querySelector("#optMemo").onchange = e => { opt.memo=e.target.checked; redraw(); };
+    sh.querySelector("#optPhoto").onchange = e => { opt.photo=e.target.checked; redraw(); };
+    await redraw();
+    sh.querySelector("#doShare").onclick = async () => {
+      const note = sh.querySelector("#shareNote");
+      try{
+        const blob = await new Promise(r=>canvas.toBlob(r,"image/png"));
+        const file = new File([blob], "yattalog.png", {type:"image/png"});
+        if(!navigator.canShare || !navigator.canShare({files:[file]})) throw new Error("unsupported");
+        await navigator.share({files:[file], text:shareText(info)});
+      }catch(err){
+        if(err && err.name==="AbortError") return;
+        note.hidden=false; note.textContent="この環境では共有シートを開けませんでした。本番（ホーム画面に追加した PWA）では、スマホの共有シートからインスタや X に画像を渡せます。PoC では上のプレビューで見た目を確認してください。";
+      }
+    };
+  });
+}
+
+/* ---- login (mock) ---- */
+function openLogin(){
+  document.body.insertAdjacentHTML("beforeend", `<div class="panel login" role="dialog" aria-modal="true" aria-label="ログイン"><div class="in">
+    <div class="login-hero">
+      <div class="login-tiles" aria-hidden="true"><span style="--tc:var(--t-sky)">🛏️<b>5日</b></span><span style="--tc:var(--t-grape)">✂️<b>32日</b></span><span style="--tc:var(--t-leaf)">🪴<b>今日</b></span></div>
+      <h1 class="logo" style="font-size:40px">Yatta<b>log</b></h1>
+      <p class="login-copy">「あれ、前にやったのいつだっけ？」<br>やったら1タップ。<br>前回からの日数がひと目でわかる。</p>
+    </div>
+    <button class="gbtn" type="button" id="gLogin"><svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.6 13.2l7.8 6.1C12.3 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.8c4.3-4 6.9-9.9 6.9-17.2z"/><path fill="#FBBC05" d="M10.4 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6.1C1 16.5 0 20.1 0 24s1 7.5 2.6 10.8l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.8c-2.1 1.4-4.8 2.3-8.5 2.3-6.3 0-11.7-4.1-13.6-9.8l-7.8 6.1C6.6 42.6 14.6 48 24 48z"/></svg>Google でログイン</button>
+    <p class="login-legal">続けると、<u>利用規約</u>と<u>プライバシーポリシー</u>に同意したことになります。</p>
+    <p class="empty" style="text-align:center">これはモックです。ボタンを押すとホームに戻ります。</p>
+  </div></div>`);
+  const P = document.querySelector(".panel.login");
+  P.querySelector("#gLogin").onclick = ()=>{ P.remove(); showToast("ログインしました（モック）"); };
+}
+
 function openMenu(){
   const arch = S.events.filter(e=>e.archived);
   openSheet(`<h2>メニュー</h2>
     <ul class="menu">
       <li><button type="button" id="mCat">カテゴリを管理</button></li>
+      <li><button type="button" id="mLogin">ログイン画面を見る（モック）</button></li>
       <li><button type="button" id="mTpl">テンプレートから追加</button></li>
       <li><button type="button" id="mSample">お試しデータで始め直す</button></li>
       <li><button type="button" id="mReset">すべて消して最初から</button></li>
     </ul>
     <h2 style="margin-top:16px;font-size:16px">アーカイブ（${arch.length}）</h2>
     ${arch.length?arch.map(e=>`<div class="arch"><span aria-hidden="true">${esc(e.emoji)}</span><span style="flex:1;min-width:0">${esc(e.name)}</span><button class="btn small" type="button" data-un="${e.id}">戻す</button></div>`).join(""):`<p class="empty">アーカイブしたイベントはありません</p>`}
-    <p class="empty" style="margin-top:16px">PoC v0.5。ステップ3（画面一覧）以降の確認用です。</p>`, sh => {
+    <p class="empty" style="margin-top:16px">PoC v0.6。ステップ3（画面一覧）以降の確認用です。</p>`, sh => {
     sh.querySelector("#mTpl").onclick = ()=>openOnboarding(false);
     sh.querySelector("#mCat").onclick = openCatSheet;
+    sh.querySelector("#mLogin").onclick = ()=>{ closeSheet(); openLogin(); };
     sh.querySelector("#mSample").onclick = ()=>{ seedSample(); closeSheet(); renderGrid(); showToast("お試しデータを入れました"); };
     sh.querySelector("#mReset").onclick = ()=>{ S=fresh(false); save(); closeSheet(); renderGrid(); openOnboarding(true); };
     sh.addEventListener("click", e=>{ const b=e.target.closest("[data-un]"); if(!b) return; const ev=S.events.find(x=>x.id===b.dataset.un); ev.archived=false; ev.order=Math.min(0,...S.events.map(x=>x.order))-1; save(); renderGrid(); openMenu(); });
@@ -719,7 +845,7 @@ function renderDetail(){
   const shown = detail.sel ? logs.filter(l=>dayKey(l.doneAt)===detail.sel) : logs;
   const html = `<div class="panel" role="dialog" aria-modal="true" aria-label="${esc(ev.name)}の詳細"><div class="in">
     <header class="bar"><button class="iconbtn" type="button" id="dBack" aria-label="ホームに戻る">←</button><span style="flex:1"></span>
-      <button class="pill" type="button" id="dEdit">編集</button><button class="iconbtn" type="button" id="dMore" aria-label="アーカイブ・削除">⋯</button></header>
+      <button class="pill" type="button" id="dShare" ${logs.length?"":"disabled"}>シェア</button><button class="pill" type="button" id="dEdit">編集</button><button class="iconbtn" type="button" id="dMore" aria-label="アーカイブ・削除">⋯</button></header>
     <section class="hero" style="--tc:var(--t-${ev.color})"><span class="emo" aria-hidden="true">${esc(ev.emoji)}</span>
       <div style="min-width:0"><h2>${esc(ev.name)}</h2><div class="sub">${(()=>{const st=streakOf(ev.id);return st.n>=STREAK_MIN?`🔥 ${stText(st)}${st.cur?"":`（${UNITS[st.unit].cur}はまだ）`} ・ `:""})()}${ev.categoryId?esc(S.categories.find(c=>c.id===ev.categoryId)?.name)+" ・ ":""}${last?"前回 "+fmtWhen(last, logs[0].noTime):"まだ記録がありません"}</div></div>
       <div class="big">${a?`${a.n}${a.u?`<small>${a.u}</small>`:""}`:"—"}</div></section>
@@ -733,7 +859,7 @@ function renderDetail(){
       <div class="cal" id="cal">${cal}</div></section>
     <section class="card"><h3>${detail.sel?`${+detail.sel.slice(5,7)}月${+detail.sel.slice(8)}日の記録 <button class="btn small" type="button" id="clrSel">すべて表示</button>`:"記録の履歴"}</h3>
       ${shown.length?`<ul class="logs">${shown.map(l=>`<li><span class="when">${fmtWhen(l.doneAt, l.noTime)}</span><div class="body"><div class="c ${l.comment?"":"empty"}">${l.comment?esc(l.comment):"メモなし"}</div>${l.photo?`<img src="${l.photo}" alt="記録の写真">`:""}</div>
-        <div class="ops"><button class="btn small" type="button" data-le="${l.id}">編集</button><button class="btn small danger" type="button" data-ld="${l.id}" aria-label="この記録を削除">削除</button></div></li>`).join("")}</ul>`:`<p class="empty">${detail.sel?"この日の記録はありません":"記録はまだありません"}</p>`}
+        <div class="ops"><button class="btn small" type="button" data-ls="${l.id}" aria-label="この記録をシェア">シェア</button><button class="btn small" type="button" data-le="${l.id}">編集</button><button class="btn small danger" type="button" data-ld="${l.id}" aria-label="この記録を削除">削除</button></div></li>`).join("")}</ul>`:`<p class="empty">${detail.sel?"この日の記録はありません":"記録はまだありません"}</p>`}
       ${detail.sel?`<div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="recOnDay">${relDayLabel(detail.sel)}に記録する</button></div>`:`<p class="whenNote" style="margin-top:8px">カレンダーの日付をタップすると、その日の分を記録できます</p>`}
     </section></div></div>`;
   const old = document.querySelector(".panel"); const sc = old?.scrollTop||0; old?.remove();
@@ -742,6 +868,7 @@ function renderDetail(){
   P.querySelector("#dBack").onclick = closeDetail;
   P.querySelector("#dEdit").onclick = ()=>openEventSheet(ev.id);
   P.querySelector("#dMore").onclick = ()=>openRemoveSheet(ev.id);
+  P.querySelector("#dShare").onclick = ()=>{ if(logs[0]) openShareSheet(logs[0].id); };
   P.querySelector("#dRec").onclick = ()=>openRecordSheet(ev.id);
   P.querySelector("#calPrev").onclick = ()=>{ detail.m--; if(detail.m<1){detail.m=12;detail.y--;} renderDetail(); };
   P.querySelector("#calNext").onclick = ()=>{ detail.m++; if(detail.m>12){detail.m=1;detail.y++;} renderDetail(); };
@@ -749,6 +876,7 @@ function renderDetail(){
   P.querySelector("#recOnDay")?.addEventListener("click", ()=>openRecordSheet(ev.id, null, detail.sel));
   P.querySelector("#cal").onclick = e => { const b=e.target.closest("[data-day]"); if(!b) return; detail.sel = detail.sel===b.dataset.day?null:b.dataset.day; renderDetail(); };
   P.addEventListener("click", e => {
+    const ls=e.target.closest("[data-ls]"); if(ls) return openShareSheet(ls.dataset.ls);
     const le=e.target.closest("[data-le]"); if(le) return openRecordSheet(ev.id, le.dataset.le);
     const ld=e.target.closest("[data-ld]"); if(ld){ const gone=S.logs.find(l=>l.id===ld.dataset.ld); S.logs=S.logs.filter(l=>l.id!==gone.id); save(); renderDetail(); renderGrid();
       showToast("記録を削除しました",[{label:"元に戻す",fn:()=>{ S.logs.push(gone); save(); refreshDetail(); renderGrid(); }}]); }
