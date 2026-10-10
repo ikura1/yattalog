@@ -47,3 +47,4 @@
 | 022 | [v1 ではオフラインでの記録に対応しない](022-no-offline-logging-in-v1.md) | 決定 |
 | 023 | [タイムゾーンはユーザーごとに持ち、時刻なしの記録は日付で保存する](023-per-user-timezone.md) | 決定 |
 | 024 | [写真は端末で縮小し、1ユーザー1GBまでとする](024-photo-limits.md) | 決定 |
+| 025 | [サーバーは Django（＋ Django Ninja）で作る](025-tech-stack-django.md) | 決定 |

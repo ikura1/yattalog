@@ -246,6 +246,7 @@
 
 ## 4. 運用・技術（決定分）
 
+- **サーバー**：Django 6.x。API は Django Ninja、画面は Django テンプレート＋htmx（決定 025）
 - **デプロイ**：Render（Web と PostgreSQL。`render.yaml` で構成をコード管理する）
 - **画像の保存先**：Cloudflare R2
 - **データ**：新規に始める。旧 TimeTask との互換性や移行は不要
