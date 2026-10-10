@@ -1,0 +1,562 @@
+<title>Yattalog PoC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* Layout: スマホ1画面アプリ。上部バー＋3列タイルグリッド。詳細はフルスクリーンパネル、入力はボトムシート */
+:root{
+  --bg:#EEF1F6; --surface:#FFFFFF; --fg:#1B2333; --muted:#667085; --line:#D8DEE8;
+  --accent:#1F6F5C; --accent-fg:#FFFFFF; --danger:#C2362B; --toast:#1B2333; --toast-fg:#F4F6FA;
+  --scrim:rgba(17,24,39,.42); --shadow:0 1px 2px rgba(17,24,39,.08),0 6px 18px rgba(17,24,39,.06);
+  --t-tomato:#FFD9D2; --t-tangerine:#FFE3C2; --t-sun:#FFF1B8; --t-leaf:#D7F0C8;
+  --t-teal:#C9EEE6; --t-sky:#D3E6FF; --t-grape:#E4DAFF; --t-pink:#FFDCEB;
+  --tile-fg:#1B2333; --dot:#1F6F5C;
+  --f-display:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --r:18px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12161E; --surface:#1B212C; --fg:#E8ECF3; --muted:#98A2B3; --line:#2C3442;
+  --accent:#5CC9A7; --accent-fg:#0E1A16; --danger:#FF7B6E; --toast:#E8ECF3; --toast-fg:#12161E;
+  --scrim:rgba(0,0,0,.6); --shadow:0 1px 2px rgba(0,0,0,.4);
+  --t-tomato:#4A2A27; --t-tangerine:#4A3522; --t-sun:#463E1E; --t-leaf:#2A3F25;
+  --t-teal:#1F3F3A; --t-sky:#22344D; --t-grape:#35294F; --t-pink:#4A2638;
+  --tile-fg:#EEF1F6; --dot:#5CC9A7; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#12161E; --surface:#1B212C; --fg:#E8ECF3; --muted:#98A2B3; --line:#2C3442;
+  --accent:#5CC9A7; --accent-fg:#0E1A16; --danger:#FF7B6E; --toast:#E8ECF3; --toast-fg:#12161E;
+  --scrim:rgba(0,0,0,.6); --shadow:0 1px 2px rgba(0,0,0,.4);
+  --t-tomato:#4A2A27; --t-tangerine:#4A3522; --t-sun:#463E1E; --t-leaf:#2A3F25;
+  --t-teal:#1F3F3A; --t-sky:#22344D; --t-grape:#35294F; --t-pink:#4A2638;
+  --tile-fg:#EEF1F6; --dot:#5CC9A7; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.6;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible,.tile:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.app{max-width:720px;margin:0 auto;padding-inline:16px;padding-block:8px 120px}
+
+/* top bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;align-items:center;gap:8px;padding-block:10px;background:var(--bg)}
+.logo{font-family:var(--f-display);font-weight:800;font-size:24px;letter-spacing:.01em;margin:0;flex:1}
+.logo b{color:var(--accent)}
+.pill{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;font-weight:700;font-size:14px}
+.pill.on{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.iconbtn{border:none;background:transparent;width:40px;height:40px;border-radius:12px;font-size:20px;display:grid;place-items:center}
+.poc-note{font-size:12px;color:var(--muted);margin:0 0 12px}
+
+/* grid */
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;list-style:none;margin:0;padding:0}
+@media (min-width:560px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.tile{position:relative;aspect-ratio:1/1.08;max-width:100%;border-radius:var(--r);background:var(--tc,var(--surface));color:var(--tile-fg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:10px 8px;border:none;width:100%;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation;transition:transform .18s ease}
+.tile .emo{font-size:30px;line-height:1.1}
+.tile .name{font-size:12.5px;font-weight:700;text-align:center;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.6em;word-break:break-all}
+.tile .ago{font-family:var(--f-display);font-weight:800;font-size:22px;line-height:1.1;font-variant-numeric:tabular-nums}
+.tile .ago small{font-size:12px;font-weight:700;margin-left:1px}
+.tile .ago.never{font-size:14px;opacity:.6}
+.tile.today .ago{color:var(--accent)}
+.tile.pressing{transform:scale(.93)}
+.tile.pop{animation:pop .42s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{0%{transform:scale(.9)}100%{transform:scale(1)}}
+.tile.add{background:transparent;border:2px dashed var(--line);color:var(--muted);font-size:13px;font-weight:700}
+.tile.add .emo{font-size:28px}
+/* edit mode */
+.editing .tile:not(.add){animation:wig .32s ease-in-out infinite alternate;touch-action:none}
+.editing .tile:not(.add):nth-child(2n){animation-delay:-.16s}
+@keyframes wig{from{transform:rotate(-1.2deg)}to{transform:rotate(1.2deg)}}
+.tile .x{position:absolute;top:-6px;left:-6px;width:26px;height:26px;border-radius:50%;border:none;background:var(--fg);color:var(--bg);font-size:14px;font-weight:700;display:none;place-items:center;line-height:1}
+.editing .tile .x{display:grid}
+.tile.dragging{opacity:.35;animation:none}
+.ghost{position:fixed;pointer-events:none;z-index:50;transform:scale(1.08);box-shadow:0 12px 30px rgba(0,0,0,.25);animation:none!important}
+.edit-hint{font-size:13px;color:var(--muted);margin:0 0 10px}
+
+/* toast */
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:40;background:var(--toast);color:var(--toast-fg);
+  border-radius:14px;padding:10px 10px 10px 16px;display:flex;align-items:center;gap:6px;width:min(560px,calc(100% - 32px));box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.toast p{margin:0;flex:1;font-weight:700;font-size:14px;min-width:0}
+.toast button{border:none;background:transparent;color:var(--toast-fg);font-weight:700;padding:6px 10px;border-radius:8px;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+.toast .bar5{position:absolute;left:12px;right:12px;bottom:4px;height:2px;border-radius:2px;background:var(--toast-fg);opacity:.35;transform-origin:left;animation:shrink 5s linear forwards}
+@keyframes shrink{to{transform:scaleX(0)}}
+.hint{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:39;width:min(560px,calc(100% - 32px));
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow);display:flex;gap:10px;align-items:center;font-size:14px}
+.hint p{margin:0;flex:1}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:var(--scrim);z-index:30}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:31;background:var(--surface);border-radius:22px 22px 0 0;max-height:88%;overflow:auto;
+  padding:8px 16px calc(20px + env(safe-area-inset-bottom,0px));max-width:720px;margin:0 auto;animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(30px);opacity:.5}}
+.grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:4px auto 10px}
+.sheet h2{font-family:var(--f-display);font-size:20px;margin:0 0 12px;display:flex;align-items:center;gap:8px;text-wrap:balance}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
+.field label,.lbl{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.04em}
+input[type=text],input[type=datetime-local],textarea{width:100%;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:12px;padding:10px 12px;font:inherit;font-size:16px}
+textarea{min-height:84px;resize:vertical}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 16px;font-weight:700;flex:1;min-width:120px}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn.danger{color:var(--danger)}
+.btn.small{flex:0 0 auto;min-width:0;padding:7px 12px;font-size:13px}
+.links{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.photo-prev{max-height:160px;border-radius:12px;display:block;margin-top:6px}
+.emojis{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px}
+.emojis button{border:1px solid transparent;background:var(--bg);border-radius:10px;font-size:22px;aspect-ratio:1;padding:0}
+.emojis button[aria-pressed=true]{border-color:var(--accent);background:var(--surface)}
+.colors{display:flex;gap:8px;flex-wrap:wrap}
+.colors button{width:36px;height:36px;border-radius:50%;border:2px solid var(--line)}
+.colors button[aria-pressed=true]{border:3px solid var(--fg)}
+
+/* detail panel */
+.panel{position:fixed;inset:0;z-index:20;background:var(--bg);overflow:auto;padding-block:env(safe-area-inset-top,0px) calc(40px + env(safe-area-inset-bottom,0px))}
+.panel .in{max-width:720px;margin:0 auto;padding-inline:16px}
+.hero{display:flex;align-items:center;gap:14px;padding:16px;border-radius:var(--r);background:var(--tc);color:var(--tile-fg);margin-bottom:14px}
+.hero .emo{font-size:44px}
+.hero h2{margin:0;font-family:var(--f-display);font-size:22px;line-height:1.3;text-wrap:balance;word-break:break-all}
+.hero .sub{font-size:13px;opacity:.8}
+.hero .big{margin-left:auto;text-align:right;font-family:var(--f-display);font-weight:800;font-size:30px;line-height:1;white-space:nowrap}
+.hero .big small{font-size:14px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:14px}
+.stat{background:var(--surface);border-radius:14px;padding:10px 12px;min-width:0}
+.stat .k{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.04em}
+.stat .v{font-family:var(--f-display);font-weight:800;font-size:20px;font-variant-numeric:tabular-nums;line-height:1.3}
+.stat .v small{font-size:12px;font-weight:700}
+.card{background:var(--surface);border-radius:var(--r);padding:14px;margin-bottom:14px}
+.card h3{margin:0 0 8px;font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.cal-head strong{font-family:var(--f-display);font-size:16px}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;text-align:center;font-variant-numeric:tabular-nums}
+.cal .dow{font-size:11px;color:var(--muted);font-weight:700;padding-bottom:2px}
+.cal button{border:none;background:transparent;aspect-ratio:1;border-radius:50%;font-size:13px;position:relative;padding:0}
+.cal button.has{background:var(--dot);color:var(--accent-fg);font-weight:700}
+.cal button.today{box-shadow:inset 0 0 0 2px var(--fg)}
+.cal button.sel{outline:2px solid var(--fg);outline-offset:1px}
+.cal .pad{visibility:hidden}
+.logs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.logs li{padding:10px 0;border-top:1px solid var(--line);display:flex;gap:10px;align-items:flex-start}
+.logs li:first-child{border-top:none}
+.logs .when{font-variant-numeric:tabular-nums;font-weight:700;font-size:14px;white-space:nowrap}
+.logs .body{flex:1;min-width:0}
+.logs .c{white-space:pre-wrap;word-break:break-word;font-size:14px;color:var(--fg)}
+.logs .c.empty{color:var(--muted)}
+.logs img{max-width:120px;border-radius:10px;margin-top:6px;display:block}
+.logs .ops{display:flex;gap:4px}
+.empty{color:var(--muted);font-size:14px;margin:0}
+
+/* onboarding */
+.tpls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:14px}
+.tpl{display:flex;align-items:center;gap:8px;border:2px solid transparent;background:var(--tc);color:var(--tile-fg);border-radius:14px;padding:10px;text-align:left;font-weight:700;font-size:14px;min-width:0}
+.tpl .emo{font-size:22px}
+.tpl[aria-pressed=true]{border-color:var(--fg)}
+.tpl .chk{margin-left:auto;width:20px;height:20px;border-radius:50%;border:2px solid currentColor;display:grid;place-items:center;font-size:12px;flex:none}
+.tpl[aria-pressed=true] .chk{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.check{display:flex;gap:8px;align-items:center;font-size:14px;margin-bottom:14px}
+.menu{list-style:none;margin:0;padding:0}
+.menu button{width:100%;text-align:left;border:none;background:transparent;padding:13px 4px;border-top:1px solid var(--line);font-weight:500}
+.menu li:first-child button{border-top:none}
+.arch{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="app" id="app">
+  <header class="bar">
+    <h1 class="logo">Yatta<b>log</b></h1>
+    <button class="pill" id="editBtn" type="button">編集</button>
+    <button class="iconbtn" id="menuBtn" type="button" aria-label="メニュー">⋯</button>
+  </header>
+  <p class="poc-note">PoC v0.1 ・ データはこの端末のブラウザにだけ保存されます</p>
+  <p class="edit-hint" id="editHint" hidden>ドラッグで並べ替え ・ タップで詳細 ・ ×でアーカイブ／削除</p>
+  <ul class="grid" id="grid"></ul>
+</div>
+<div id="layer"></div>
+
+<script>
+(() => {
+const TZ = "Asia/Tokyo";
+const COLORS = ["tomato","tangerine","sun","leaf","teal","sky","grape","pink"];
+const EMOJIS = ["🛏️","✂️","🌀","🚲","🧗","🦷","🚗","🪴","📞","🏋️","🧺","🧹","🍳","💊","🐈","🛁","🧴","🔋","📚","🎸","🏃","💇","🧽","🗑️"];
+const TEMPLATES = [
+  {name:"シーツ交換",emoji:"🛏️",color:"sky",every:7},
+  {name:"エアコンのフィルター掃除",emoji:"🌀",color:"teal",every:30},
+  {name:"散髪",emoji:"✂️",color:"grape",every:35},
+  {name:"歯医者",emoji:"🦷",color:"pink",every:120},
+  {name:"洗車",emoji:"🚗",color:"tangerine",every:30},
+  {name:"換気扇の掃除",emoji:"🧽",color:"sun",every:90},
+  {name:"布団を干す",emoji:"🧺",color:"leaf",every:10},
+  {name:"植物の水やり",emoji:"🪴",color:"leaf",every:3},
+  {name:"実家に連絡",emoji:"📞",color:"tomato",every:14},
+  {name:"ジム",emoji:"🏋️",color:"tangerine",every:3},
+  {name:"自転車のチェーン注油",emoji:"🚲",color:"teal",every:21},
+  {name:"ボルダリング",emoji:"🧗",color:"sun",every:4},
+];
+const KEY = "yattalog-poc-v1";
+let S = load();
+let editing = false;
+let toastTimer = null;
+
+function load(){
+  try{ const raw = localStorage.getItem(KEY); if(raw) return JSON.parse(raw); }catch(e){}
+  return {events:[],logs:[],meta:{onboarded:false,hintShown:false}};
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); return true; }
+  catch(e){ showToast("保存できませんでした（写真が大きすぎる可能性があります）"); return false; }
+}
+const uid = () => Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ---- dates (Asia/Tokyo calendar days) ---- */
+const dfmt = new Intl.DateTimeFormat("en-CA",{timeZone:TZ,year:"numeric",month:"2-digit",day:"2-digit"});
+const dayKey = ms => dfmt.format(new Date(ms));                // "2026-10-10"
+const dayNum = ms => { const [y,m,d] = dayKey(ms).split("-").map(Number); return Date.UTC(y,m-1,d)/864e5; };
+const daysSince = ms => dayNum(Date.now()) - dayNum(ms);
+function parts(ms){ const o={}; new Intl.DateTimeFormat("en-US",{timeZone:TZ,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false}).formatToParts(new Date(ms)).forEach(p=>o[p.type]=p.value); if(o.hour==="24")o.hour="00"; return o; }
+function fmtWhen(ms){ const p=parts(ms), now=parts(Date.now()); return (p.year===now.year?"":p.year+"/")+`${p.month}/${p.day} ${p.hour}:${p.minute}`; }
+function toLocalInput(ms){ const p=parts(ms); return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`; }
+function fromLocalInput(v){ return new Date(v+":00+09:00").getTime(); }
+function agoParts(ms){
+  if(ms==null) return null;
+  const d = daysSince(ms);
+  if(d<=0) return {n:"今日",u:""};
+  if(d<60) return {n:d,u:"日"};
+  if(d<730) return {n:Math.floor(d/30),u:"か月"};
+  return {n:Math.floor(d/365),u:"年"};
+}
+function friendlyInterval(days){
+  if(days<1.5) return "ほぼ毎日";
+  if(days<10) return `だいたい${Math.round(days)}日ごと`;
+  if(days<45) return `だいたい${Math.round(days/7)}週間ごと`;
+  if(days<365) return `だいたい${Math.round(days/30)}か月ごと`;
+  return `だいたい${Math.round(days/365)}年ごと`;
+}
+
+/* ---- data helpers ---- */
+const active = () => S.events.filter(e=>!e.archived).sort((a,b)=>a.order-b.order);
+const logsOf = id => S.logs.filter(l=>l.eventId===id).sort((a,b)=>b.doneAt-a.doneAt);
+const lastOf = id => { const l = logsOf(id)[0]; return l ? l.doneAt : null; };
+function addEvent(t, front=true){
+  const minOrder = Math.min(0,...S.events.map(e=>e.order));
+  const ev = {id:uid(),name:t.name,emoji:t.emoji,color:t.color,archived:false,createdAt:Date.now(),order:front?minOrder-1:Date.now()};
+  S.events.push(ev); return ev;
+}
+function addLog(eventId, doneAt=Date.now(), comment="", photo=null){
+  const l = {id:uid(),eventId,doneAt,comment,photo}; S.logs.push(l); return l;
+}
+
+/* ---- grid ---- */
+function tileHTML(ev){
+  const last = lastOf(ev.id), a = agoParts(last);
+  const ago = a ? `<span class="ago">${a.n}${a.u?`<small>${a.u}</small>`:""}</span>` : `<span class="ago never">まだ</span>`;
+  const label = `${ev.name}、${a ? (a.u? `前回から${a.n}${a.u}` : "今日やった") : "まだ記録なし"}`;
+  return `<li><button class="tile${a&&a.n==="今日"?" today":""}" type="button" data-id="${ev.id}" style="--tc:var(--t-${ev.color})" aria-label="${esc(label)}">
+    <span class="x" data-x="${ev.id}" role="button" aria-label="${esc(ev.name)}をアーカイブまたは削除">×</span>
+    <span class="emo" aria-hidden="true">${esc(ev.emoji)}</span><span class="name">${esc(ev.name)}</span>${ago}</button></li>`;
+}
+function renderGrid(){
+  const g = $("#grid");
+  g.innerHTML = active().map(tileHTML).join("") + `<li><button class="tile add" type="button" id="addTile"><span class="emo">＋</span>追加</button></li>`;
+  $("#app").classList.toggle("editing", editing);
+  $("#editBtn").textContent = editing ? "完了" : "編集";
+  $("#editBtn").classList.toggle("on", editing);
+  $("#editHint").hidden = !editing;
+}
+
+/* tap / long-press / drag */
+let press = null;
+const LONG = 480, SLOP = 10;
+$("#grid").addEventListener("pointerdown", e => {
+  const t = e.target.closest(".tile"); if(!t || t.classList.contains("add")) return;
+  if(e.target.closest("[data-x]")) return;
+  if(e.button && e.button!==0) return;
+  press = {el:t,id:t.dataset.id,x:e.clientX,y:e.clientY,moved:false,long:false,pid:e.pointerId};
+  if(!editing){
+    t.classList.add("pressing");
+    press.timer = setTimeout(()=>{ if(!press) return; press.long=true; t.classList.remove("pressing"); if(navigator.vibrate) try{navigator.vibrate(15)}catch(_){} openRecordSheet(press.id); }, LONG);
+  }
+});
+window.addEventListener("pointermove", e => {
+  if(!press || e.pointerId!==press.pid) return;
+  const dx=e.clientX-press.x, dy=e.clientY-press.y;
+  if(!press.moved && Math.hypot(dx,dy)>SLOP){
+    press.moved=true; clearTimeout(press.timer); press.el.classList.remove("pressing");
+    if(editing) startDrag(e);
+  }
+  if(press.drag) moveDrag(e);
+});
+window.addEventListener("pointerup", e => {
+  if(!press || e.pointerId!==press.pid) return;
+  const p = press; press=null; clearTimeout(p.timer); p.el.classList.remove("pressing");
+  if(p.drag){ endDrag(p); return; }
+  if(p.moved || p.long) return;
+  if(editing) openDetail(p.id); else quickRecord(p.id);
+});
+window.addEventListener("pointercancel", () => { if(!press) return; clearTimeout(press.timer); press.el.classList.remove("pressing"); if(press.drag) endDrag(press); press=null; });
+$("#grid").addEventListener("contextmenu", e => {
+  const t = e.target.closest(".tile"); if(!t || t.classList.contains("add")) return;
+  e.preventDefault(); if(press && press.long) return;
+  if(press){ clearTimeout(press.timer); press=null; }
+  if(!editing) openRecordSheet(t.dataset.id);
+});
+$("#grid").addEventListener("click", e => {
+  if(e.target.closest("#addTile")) return openEventSheet();
+  const x = e.target.closest("[data-x]"); if(x){ e.stopPropagation(); return openRemoveSheet(x.dataset.x); }
+  // keyboard activation (Enter/Space) produces click with detail 0
+  const t = e.target.closest(".tile"); if(t && e.detail===0 && !t.classList.contains("add")){ editing ? openDetail(t.dataset.id) : quickRecord(t.dataset.id); }
+});
+
+function startDrag(e){
+  const r = press.el.getBoundingClientRect();
+  const g = press.el.cloneNode(true); g.classList.add("ghost"); g.style.width=r.width+"px"; g.style.height=r.height+"px";
+  document.body.appendChild(g);
+  press.drag = {ghost:g, ox:e.clientX-r.left, oy:e.clientY-r.top};
+  press.el.classList.add("dragging");
+  moveDrag(e);
+}
+function moveDrag(e){
+  const d = press.drag; d.ghost.style.left=(e.clientX-d.ox)+"px"; d.ghost.style.top=(e.clientY-d.oy)+"px";
+  d.ghost.style.display="none"; const over = document.elementFromPoint(e.clientX,e.clientY); d.ghost.style.display="";
+  const t = over && over.closest(".tile:not(.add)");
+  if(t && t.dataset.id!==press.id){
+    const list = active(); const from = list.findIndex(x=>x.id===press.id), to = list.findIndex(x=>x.id===t.dataset.id);
+    const [m] = list.splice(from,1); list.splice(to,0,m); list.forEach((x,i)=>x.order=i);
+    renderGrid(); press.el = document.querySelector(`.tile[data-id="${press.id}"]`); press.el.classList.add("dragging");
+  }
+}
+function endDrag(p){ p.drag.ghost.remove(); save(); renderGrid(); }
+
+/* ---- record ---- */
+function quickRecord(id){
+  const l = addLog(id); save(); renderGrid();
+  const t = document.querySelector(`.tile[data-id="${id}"]`); if(t){ t.classList.add("pop"); }
+  const ev = S.events.find(e=>e.id===id);
+  showToast(`${ev.emoji} 記録しました`, [
+    {label:"取り消す", fn:()=>{ S.logs = S.logs.filter(x=>x.id!==l.id); save(); renderGrid(); showToast("取り消しました"); }},
+    {label:"メモを足す", fn:()=>openRecordSheet(id, l.id)}
+  ]);
+  if(!S.meta.hintShown){ S.meta.hintShown=true; save(); setTimeout(showHint, 600); }
+}
+function showHint(){
+  const h = document.createElement("div"); h.className="hint"; h.setAttribute("role","status");
+  h.innerHTML = `<p>💡 タイルを<b>長押し</b>すると、メモや写真も残せます</p><button class="btn small" type="button">OK</button>`;
+  h.querySelector("button").onclick=()=>h.remove(); document.body.appendChild(h); setTimeout(()=>h.remove(),9000);
+}
+function showToast(msg, actions=[]){
+  document.querySelector(".toast")?.remove(); clearTimeout(toastTimer);
+  const t = document.createElement("div"); t.className="toast"; t.setAttribute("role","status");
+  t.innerHTML = `<p>${esc(msg)}</p>`+actions.map((a,i)=>`<button type="button" data-i="${i}">${esc(a.label)}</button>`).join("")+(actions.length?`<span class="bar5"></span>`:"");
+  t.addEventListener("click", e=>{ const b=e.target.closest("[data-i]"); if(!b) return; t.remove(); actions[+b.dataset.i].fn(); });
+  document.body.appendChild(t); toastTimer=setTimeout(()=>t.remove(), actions.length?5000:2200);
+}
+
+/* ---- sheets ---- */
+function openSheet(html, onMount){
+  closeSheet();
+  const L = $("#layer");
+  L.insertAdjacentHTML("beforeend", `<div class="scrim" data-close></div><div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div>`);
+  L.querySelector(".scrim").onclick = closeSheet;
+  const sh = L.querySelector(".sheet"); onMount && onMount(sh);
+  const f = sh.querySelector("input,textarea,button"); f && f.focus({preventScroll:true});
+}
+function closeSheet(){ $("#layer").querySelectorAll(".scrim,.sheet").forEach(n=>n.remove()); }
+document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ if($(".sheet")) closeSheet(); else if($(".panel")) closeDetail(); }});
+
+function resizePhoto(file){
+  return new Promise((res,rej)=>{
+    const r = new FileReader(); r.onerror=rej;
+    r.onload = () => { const img = new Image(); img.onerror=rej; img.onload = () => {
+      const max=800, s=Math.min(1,max/Math.max(img.width,img.height));
+      const c=document.createElement("canvas"); c.width=Math.round(img.width*s); c.height=Math.round(img.height*s);
+      c.getContext("2d").drawImage(img,0,0,c.width,c.height); res(c.toDataURL("image/jpeg",.78)); }; img.src=r.result; };
+    r.readAsDataURL(file);
+  });
+}
+
+function openRecordSheet(eventId, logId=null){
+  const ev = S.events.find(e=>e.id===eventId); const log = logId ? S.logs.find(l=>l.id===logId) : null;
+  let photo = log?.photo || null;
+  openSheet(`
+    <h2><span aria-hidden="true">${esc(ev.emoji)}</span>${esc(ev.name)}</h2>
+    <form id="recForm">
+      <div class="field"><label for="recWhen">やった日時</label><input type="datetime-local" id="recWhen" value="${toLocalInput(log?log.doneAt:Date.now())}" max="${toLocalInput(Date.now())}" required></div>
+      <div class="field"><label for="recComment">メモ</label><textarea id="recComment" placeholder="例：新しい洗剤を試した">${esc(log?.comment)}</textarea></div>
+      <div class="field"><label for="recPhoto">写真（1枚）</label><input type="file" id="recPhoto" accept="image/*"><div id="photoBox">${photo?`<img class="photo-prev" src="${photo}" alt="添付した写真"><button type="button" class="btn small" id="rmPhoto">写真を外す</button>`:""}</div></div>
+      <p class="empty" id="recErr" hidden></p>
+      <div class="row"><button class="btn primary" type="submit">${log?"保存する":"やった！を記録"}</button></div>
+    </form>
+    ${log?"":`<div class="links"><button class="btn" type="button" id="toDetail">履歴・統計を見る</button><button class="btn" type="button" id="toEdit">イベントを編集</button></div>`}
+  `, sh => {
+    const box = sh.querySelector("#photoBox");
+    const bindRm = () => { const b=sh.querySelector("#rmPhoto"); if(b) b.onclick=()=>{ photo=null; box.innerHTML=""; sh.querySelector("#recPhoto").value=""; }; };
+    bindRm();
+    sh.querySelector("#recPhoto").onchange = async e => { const f=e.target.files[0]; if(!f) return;
+      try{ photo = await resizePhoto(f); box.innerHTML=`<img class="photo-prev" src="${photo}" alt="添付した写真"><button type="button" class="btn small" id="rmPhoto">写真を外す</button>`; bindRm(); }
+      catch(_){ showToast("この画像は読み込めませんでした。JPEG か PNG を選んでください"); } };
+    sh.querySelector("#recForm").onsubmit = e => { e.preventDefault();
+      const when = fromLocalInput(sh.querySelector("#recWhen").value);
+      const err = sh.querySelector("#recErr");
+      if(isNaN(when)){ err.hidden=false; err.textContent="日時を入力してください"; return; }
+      if(when > Date.now()+60000){ err.hidden=false; err.textContent="未来の日時は記録できません。今より前の日時にしてください"; return; }
+      const comment = sh.querySelector("#recComment").value.trim();
+      if(log){ log.doneAt=when; log.comment=comment; log.photo=photo; } else addLog(eventId, when, comment, photo);
+      if(!save()) return; closeSheet(); renderGrid(); refreshDetail();
+      showToast(log?"記録を更新しました":`${ev.emoji} ${ev.name} を記録しました`);
+    };
+    sh.querySelector("#toDetail")?.addEventListener("click", ()=>{ closeSheet(); openDetail(eventId); });
+    sh.querySelector("#toEdit")?.addEventListener("click", ()=>openEventSheet(eventId));
+  });
+}
+
+function openEventSheet(eventId=null){
+  const ev = eventId ? S.events.find(e=>e.id===eventId) : null;
+  let emoji = ev?.emoji || EMOJIS[0], color = ev?.color || COLORS[(S.events.length)%COLORS.length];
+  openSheet(`
+    <h2>${ev?"イベントを編集":"イベントを追加"}</h2>
+    <form id="evForm">
+      <div class="field"><label for="evName">名前</label><input type="text" id="evName" maxlength="40" value="${esc(ev?.name)}" placeholder="例：シーツ交換" required></div>
+      <div class="field"><span class="lbl" id="emoL">アイコン</span><div class="emojis" role="group" aria-labelledby="emoL">${EMOJIS.map(x=>`<button type="button" data-e="${x}" aria-pressed="${x===emoji}">${x}</button>`).join("")}</div></div>
+      <div class="field"><span class="lbl" id="colL">色</span><div class="colors" role="group" aria-labelledby="colL">${COLORS.map(c=>`<button type="button" data-c="${c}" style="background:var(--t-${c})" aria-label="${c}" aria-pressed="${c===color}"></button>`).join("")}</div></div>
+      <div class="row"><button class="btn primary" type="submit">${ev?"保存する":"追加する"}</button></div>
+      ${ev?"":`<div class="links"><button class="btn" type="button" id="fromTpl">テンプレートから選ぶ</button></div>`}
+    </form>`, sh => {
+    sh.querySelector(".emojis").onclick = e => { const b=e.target.closest("[data-e]"); if(!b) return; emoji=b.dataset.e; sh.querySelectorAll("[data-e]").forEach(x=>x.setAttribute("aria-pressed", x===b)); };
+    sh.querySelector(".colors").onclick = e => { const b=e.target.closest("[data-c]"); if(!b) return; color=b.dataset.c; sh.querySelectorAll("[data-c]").forEach(x=>x.setAttribute("aria-pressed", x===b)); };
+    sh.querySelector("#fromTpl")?.addEventListener("click", ()=>openOnboarding(false));
+    sh.querySelector("#evForm").onsubmit = e => { e.preventDefault();
+      const name = sh.querySelector("#evName").value.trim(); if(!name) return;
+      if(ev){ Object.assign(ev,{name,emoji,color}); } else addEvent({name,emoji,color});
+      save(); closeSheet(); renderGrid(); refreshDetail(); showToast(ev?"保存しました":"追加しました"); };
+  });
+}
+
+function openRemoveSheet(id){
+  const ev = S.events.find(e=>e.id===id); const n = logsOf(id).length;
+  openSheet(`<h2><span aria-hidden="true">${esc(ev.emoji)}</span>${esc(ev.name)}</h2>
+    <p>アーカイブすると、ホームには出なくなりますが、記録は残ります。メニューからいつでも戻せます。</p>
+    <div class="row"><button class="btn primary" type="button" id="doArch">アーカイブする</button></div>
+    <p style="margin-top:18px">削除すると、このイベントと<b>${n}件の記録</b>がすべて消え、元に戻せません。</p>
+    <div class="row"><button class="btn danger" type="button" id="doDel">削除する</button></div>`, sh => {
+    sh.querySelector("#doArch").onclick = ()=>{ ev.archived=true; save(); closeSheet(); closeDetail(); renderGrid(); showToast("アーカイブしました"); };
+    sh.querySelector("#doDel").onclick = ()=>{ S.events=S.events.filter(e=>e.id!==id); S.logs=S.logs.filter(l=>l.eventId!==id); save(); closeSheet(); closeDetail(); renderGrid(); showToast("削除しました"); };
+  });
+}
+
+function openMenu(){
+  const arch = S.events.filter(e=>e.archived);
+  openSheet(`<h2>メニュー</h2>
+    <ul class="menu">
+      <li><button type="button" id="mTpl">テンプレートから追加</button></li>
+      <li><button type="button" id="mSample">お試しデータで始め直す</button></li>
+      <li><button type="button" id="mReset">すべて消して最初から</button></li>
+    </ul>
+    <h2 style="margin-top:16px;font-size:16px">アーカイブ（${arch.length}）</h2>
+    ${arch.length?arch.map(e=>`<div class="arch"><span aria-hidden="true">${esc(e.emoji)}</span><span style="flex:1;min-width:0">${esc(e.name)}</span><button class="btn small" type="button" data-un="${e.id}">戻す</button></div>`).join(""):`<p class="empty">アーカイブしたイベントはありません</p>`}
+    <p class="empty" style="margin-top:16px">PoC v0.1。ステップ3（画面一覧）以降の確認用です。</p>`, sh => {
+    sh.querySelector("#mTpl").onclick = ()=>openOnboarding(false);
+    sh.querySelector("#mSample").onclick = ()=>{ seedSample(); closeSheet(); renderGrid(); showToast("お試しデータを入れました"); };
+    sh.querySelector("#mReset").onclick = ()=>{ S={events:[],logs:[],meta:{onboarded:false,hintShown:false}}; save(); closeSheet(); renderGrid(); openOnboarding(true); };
+    sh.addEventListener("click", e=>{ const b=e.target.closest("[data-un]"); if(!b) return; const ev=S.events.find(x=>x.id===b.dataset.un); ev.archived=false; ev.order=Math.min(0,...S.events.map(x=>x.order))-1; save(); renderGrid(); openMenu(); });
+  });
+}
+
+/* ---- onboarding ---- */
+function pastLogs(ev, every){
+  // お試し用：だいたい every 日ごとの過去記録を、ゆらぎ付きで作る
+  let t = Date.now() - (Math.random()*every*1.4+.3)*864e5;
+  const start = Date.now() - 400*864e5; let n=0;
+  while(t>start && n<40){ addLog(ev.id, t, n===0&&Math.random()<.5?"いつもどおり":""); t -= every*(0.6+Math.random()*0.9)*864e5; n++; }
+}
+function seedSample(){
+  S = {events:[],logs:[],meta:{onboarded:true,hintShown:false}};
+  TEMPLATES.slice(0,8).forEach((t,i)=>{ const ev=addEvent(t,false); ev.order=i; pastLogs(ev,t.every); });
+  const ev = addEvent({name:"パスポート更新",emoji:"📚",color:"grape"},false); ev.order=99;
+  save();
+}
+function openOnboarding(first){
+  const picked = new Set(first?[0,2,4,8]:[]);
+  openSheet(`<h2>${first?"ようこそ！何を記録しますか？":"テンプレートから追加"}</h2>
+    <p class="empty" style="margin-bottom:12px">タップで選んで、まとめて追加できます。あとから変更・追加もできます。</p>
+    <div class="tpls">${TEMPLATES.map((t,i)=>`<button type="button" class="tpl" data-t="${i}" aria-pressed="${picked.has(i)}" style="--tc:var(--t-${t.color})"><span class="emo" aria-hidden="true">${t.emoji}</span><span style="min-width:0">${esc(t.name)}</span><span class="chk" aria-hidden="true">✓</span></button>`).join("")}</div>
+    <label class="check"><input type="checkbox" id="withPast" checked> お試し用に、過去の記録も入れておく（PoC 専用）</label>
+    <div class="row"><button class="btn primary" type="button" id="tplAdd">追加する</button>${first?`<button class="btn" type="button" id="tplSkip">自分で作る</button>`:""}</div>`, sh => {
+    sh.querySelector(".tpls").onclick = e => { const b=e.target.closest("[data-t]"); if(!b) return; const i=+b.dataset.t; picked.has(i)?picked.delete(i):picked.add(i); b.setAttribute("aria-pressed", picked.has(i)); };
+    sh.querySelector("#tplAdd").onclick = () => {
+      const past = sh.querySelector("#withPast").checked;
+      [...picked].sort((a,b)=>b-a).forEach(i=>{ const ev=addEvent(TEMPLATES[i]); if(past) pastLogs(ev,TEMPLATES[i].every); });
+      S.meta.onboarded=true; save(); closeSheet(); renderGrid(); showToast(`${picked.size}件追加しました`);
+    };
+    sh.querySelector("#tplSkip")?.addEventListener("click", ()=>{ S.meta.onboarded=true; save(); closeSheet(); openEventSheet(); });
+  });
+}
+
+/* ---- detail ---- */
+let detail = null; // {id, ym:[y,m], sel}
+function openDetail(id){
+  const now = parts(Date.now());
+  detail = {id, y:+now.year, m:+now.month, sel:null};
+  renderDetail();
+}
+function closeDetail(){ detail=null; document.querySelector(".panel")?.remove(); }
+function refreshDetail(){ if(detail && S.events.find(e=>e.id===detail.id)) renderDetail(); }
+function renderDetail(){
+  const ev = S.events.find(e=>e.id===detail.id); if(!ev) return closeDetail();
+  const logs = logsOf(ev.id); const last = logs[0]?.doneAt; const a = agoParts(last);
+  const thisYear = parts(Date.now()).year;
+  const yearCount = logs.filter(l=>parts(l.doneAt).year===thisYear).length;
+  let avg = "—";
+  if(logs.length>=2){ const asc=[...logs].reverse(); let sum=0; for(let i=1;i<asc.length;i++) sum += (asc[i].doneAt-asc[i-1].doneAt)/864e5; avg = friendlyInterval(sum/(asc.length-1)); }
+  // calendar
+  const {y,m} = detail; const first = new Date(Date.UTC(y,m-1,1)); const dim = new Date(Date.UTC(y,m,0)).getUTCDate();
+  const dow0 = first.getUTCDay(); const marks = new Set(logs.map(l=>dayKey(l.doneAt))); const todayK = dayKey(Date.now());
+  let cal = ["日","月","火","水","木","金","土"].map(d=>`<span class="dow">${d}</span>`).join("");
+  for(let i=0;i<dow0;i++) cal += `<span class="pad"></span>`;
+  for(let d=1; d<=dim; d++){ const k=`${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    cal += `<button type="button" data-day="${k}" class="${marks.has(k)?"has":""} ${k===todayK?"today":""} ${detail.sel===k?"sel":""}" aria-label="${m}月${d}日${marks.has(k)?"、記録あり":""}">${d}</button>`; }
+  const shown = detail.sel ? logs.filter(l=>dayKey(l.doneAt)===detail.sel) : logs;
+  const html = `<div class="panel" role="dialog" aria-modal="true" aria-label="${esc(ev.name)}の詳細"><div class="in">
+    <header class="bar"><button class="iconbtn" type="button" id="dBack" aria-label="ホームに戻る">←</button><span style="flex:1"></span>
+      <button class="pill" type="button" id="dEdit">編集</button><button class="iconbtn" type="button" id="dMore" aria-label="アーカイブ・削除">⋯</button></header>
+    <section class="hero" style="--tc:var(--t-${ev.color})"><span class="emo" aria-hidden="true">${esc(ev.emoji)}</span>
+      <div style="min-width:0"><h2>${esc(ev.name)}</h2><div class="sub">${last?"前回 "+fmtWhen(last):"まだ記録がありません"}</div></div>
+      <div class="big">${a?`${a.n}${a.u?`<small>${a.u}</small>`:""}`:"—"}</div></section>
+    <div class="stats">
+      <div class="stat"><div class="k">記録回数</div><div class="v">${logs.length}<small>回</small></div></div>
+      <div class="stat"><div class="k">今年</div><div class="v">${yearCount}<small>回</small></div></div>
+      <div class="stat"><div class="k">ペース</div><div class="v" style="font-size:14px">${avg}</div></div>
+    </div>
+    <div class="row" style="margin-bottom:14px"><button class="btn primary" type="button" id="dRec">詳しく記録</button></div>
+    <section class="card"><div class="cal-head"><button class="iconbtn" type="button" id="calPrev" aria-label="前の月">‹</button><strong>${y}年${m}月</strong><button class="iconbtn" type="button" id="calNext" aria-label="次の月">›</button></div>
+      <div class="cal" id="cal">${cal}</div></section>
+    <section class="card"><h3>${detail.sel?`${+detail.sel.slice(5,7)}月${+detail.sel.slice(8)}日の記録 <button class="btn small" type="button" id="clrSel">すべて表示</button>`:"記録の履歴"}</h3>
+      ${shown.length?`<ul class="logs">${shown.map(l=>`<li><span class="when">${fmtWhen(l.doneAt)}</span><div class="body"><div class="c ${l.comment?"":"empty"}">${l.comment?esc(l.comment):"メモなし"}</div>${l.photo?`<img src="${l.photo}" alt="記録の写真">`:""}</div>
+        <div class="ops"><button class="btn small" type="button" data-le="${l.id}">編集</button><button class="btn small danger" type="button" data-ld="${l.id}" aria-label="この記録を削除">削除</button></div></li>`).join("")}</ul>`:`<p class="empty">記録はまだありません</p>`}
+    </section></div></div>`;
+  const old = document.querySelector(".panel"); const sc = old?.scrollTop||0; old?.remove();
+  document.body.insertAdjacentHTML("beforeend", html);
+  const P = document.querySelector(".panel"); P.scrollTop = sc;
+  P.querySelector("#dBack").onclick = closeDetail;
+  P.querySelector("#dEdit").onclick = ()=>openEventSheet(ev.id);
+  P.querySelector("#dMore").onclick = ()=>openRemoveSheet(ev.id);
+  P.querySelector("#dRec").onclick = ()=>openRecordSheet(ev.id);
+  P.querySelector("#calPrev").onclick = ()=>{ detail.m--; if(detail.m<1){detail.m=12;detail.y--;} renderDetail(); };
+  P.querySelector("#calNext").onclick = ()=>{ detail.m++; if(detail.m>12){detail.m=1;detail.y++;} renderDetail(); };
+  P.querySelector("#clrSel")?.addEventListener("click", ()=>{ detail.sel=null; renderDetail(); });
+  P.querySelector("#cal").onclick = e => { const b=e.target.closest("[data-day]"); if(!b) return; detail.sel = detail.sel===b.dataset.day?null:b.dataset.day; renderDetail(); };
+  P.addEventListener("click", e => {
+    const le=e.target.closest("[data-le]"); if(le) return openRecordSheet(ev.id, le.dataset.le);
+    const ld=e.target.closest("[data-ld]"); if(ld){ const gone=S.logs.find(l=>l.id===ld.dataset.ld); S.logs=S.logs.filter(l=>l.id!==gone.id); save(); renderDetail(); renderGrid();
+      showToast("記録を削除しました",[{label:"元に戻す",fn:()=>{ S.logs.push(gone); save(); refreshDetail(); renderGrid(); }}]); }
+  });
+}
+
+/* ---- boot ---- */
+$("#editBtn").onclick = ()=>{ editing=!editing; renderGrid(); };
+$("#menuBtn").onclick = openMenu;
+renderGrid();
+if(!S.meta.onboarded) openOnboarding(true);
+setInterval(renderGrid, 60000);
+})();
+</script>
