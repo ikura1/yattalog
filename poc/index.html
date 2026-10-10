@@ -48,6 +48,29 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,.tile:focus-visi
 .iconbtn{border:none;background:transparent;width:40px;height:40px;border-radius:12px;font-size:20px;display:grid;place-items:center}
 .poc-note{font-size:12px;color:var(--muted);margin:0 0 12px}
 
+/* tabs */
+.tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -16px 12px;padding:2px 16px 4px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 60px);z-index:4;background:var(--bg)}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 14px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.tabs button .n{font-size:11px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.tabs button[aria-selected=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.tabs button[aria-selected=true] .n{color:var(--bg);opacity:.7}
+.tabs .tab-add{width:36px;justify-content:center;padding:7px 0;color:var(--muted)}
+.tab-empty{margin-top:12px}
+.slide-l{animation:sl .22s ease-out}.slide-r{animation:sr .22s ease-out}
+@keyframes sl{from{transform:translateX(24px);opacity:.4}}@keyframes sr{from{transform:translateX(-24px);opacity:.4}}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:7px 14px;font-weight:700;font-size:14px}
+.chips button[aria-checked=true]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.chips .chip-new{border-style:dashed;color:var(--muted);background:transparent}
+.inline-new{display:flex;gap:6px;align-items:center;width:100%;margin-top:4px}
+.inline-new input{flex:1;min-width:0}
+.catlist{list-style:none;margin:0 0 12px;padding:0}
+.catlist li{display:flex;align-items:center;gap:4px;padding:6px 0;border-top:1px solid var(--line)}
+.catlist li:first-child{border-top:none}
+.catlist input{flex:1;min-width:0}
+.catlist .cnt{font-size:12px;color:var(--muted);white-space:nowrap;padding:0 4px}
+.iconbtn:disabled{opacity:.3}
 /* grid */
 .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;list-style:none;margin:0;padding:0}
 @media (min-width:560px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
@@ -177,9 +200,11 @@ input[type=date],input[type=time]{width:100%;min-width:0;border:1px solid var(--
     <button class="pill" id="editBtn" type="button">編集</button>
     <button class="iconbtn" id="menuBtn" type="button" aria-label="メニュー">⋯</button>
   </header>
-  <p class="poc-note">PoC v0.2 ・ データはこの端末のブラウザにだけ保存されます</p>
+  <p class="poc-note">PoC v0.3 ・ データはこの端末のブラウザにだけ保存されます</p>
   <p class="edit-hint" id="editHint" hidden>ドラッグで並べ替え ・ タップで詳細 ・ ×でアーカイブ／削除</p>
-  <ul class="grid" id="grid"></ul>
+  <nav class="tabs" id="tabs" role="tablist" aria-label="カテゴリ"></nav>
+  <ul class="grid" id="grid" role="tabpanel"></ul>
+  <p class="empty tab-empty" id="tabEmpty" hidden></p>
 </div>
 <div id="layer"></div>
 
@@ -189,18 +214,18 @@ const TZ = "Asia/Tokyo";
 const COLORS = ["tomato","tangerine","sun","leaf","teal","sky","grape","pink"];
 const EMOJIS = ["🛏️","✂️","🌀","🚲","🧗","🦷","🚗","🪴","📞","🏋️","🧺","🧹","🍳","💊","🐈","🛁","🧴","🔋","📚","🎸","🏃","💇","🧽","🗑️"];
 const TEMPLATES = [
-  {name:"シーツ交換",emoji:"🛏️",color:"sky",every:7},
-  {name:"エアコンのフィルター掃除",emoji:"🌀",color:"teal",every:30},
-  {name:"散髪",emoji:"✂️",color:"grape",every:35},
-  {name:"歯医者",emoji:"🦷",color:"pink",every:120},
-  {name:"洗車",emoji:"🚗",color:"tangerine",every:30},
-  {name:"換気扇の掃除",emoji:"🧽",color:"sun",every:90},
-  {name:"布団を干す",emoji:"🧺",color:"leaf",every:10},
-  {name:"植物の水やり",emoji:"🪴",color:"leaf",every:3},
-  {name:"実家に連絡",emoji:"📞",color:"tomato",every:14},
-  {name:"ジム",emoji:"🏋️",color:"tangerine",every:3},
-  {name:"自転車のチェーン注油",emoji:"🚲",color:"teal",every:21},
-  {name:"ボルダリング",emoji:"🧗",color:"sun",every:4},
+  {name:"シーツ交換",cat:"家事",emoji:"🛏️",color:"sky",every:7},
+  {name:"エアコンのフィルター掃除",cat:"家事",emoji:"🌀",color:"teal",every:30},
+  {name:"散髪",cat:"身の回り",emoji:"✂️",color:"grape",every:35},
+  {name:"歯医者",cat:"身の回り",emoji:"🦷",color:"pink",every:120},
+  {name:"洗車",cat:"身の回り",emoji:"🚗",color:"tangerine",every:30},
+  {name:"換気扇の掃除",cat:"家事",emoji:"🧽",color:"sun",every:90},
+  {name:"布団を干す",cat:"家事",emoji:"🧺",color:"leaf",every:10},
+  {name:"植物の水やり",cat:"家事",emoji:"🪴",color:"leaf",every:3},
+  {name:"実家に連絡",cat:"身の回り",emoji:"📞",color:"tomato",every:14},
+  {name:"ジム",cat:"趣味",emoji:"🏋️",color:"tangerine",every:3},
+  {name:"自転車のチェーン注油",cat:"趣味",emoji:"🚲",color:"teal",every:21},
+  {name:"ボルダリング",cat:"趣味",emoji:"🧗",color:"sun",every:4},
 ];
 const KEY = "yattalog-poc-v1";
 let S = load();
@@ -208,8 +233,12 @@ let editing = false;
 let toastTimer = null;
 
 function load(){
-  try{ const raw = localStorage.getItem(KEY); if(raw) return JSON.parse(raw); }catch(e){}
-  return {events:[],logs:[],meta:{onboarded:false,hintShown:false}};
+  let d = null;
+  try{ const raw = localStorage.getItem(KEY); if(raw) d = JSON.parse(raw); }catch(e){}
+  return migrate(d || fresh(false));
+}
+function fresh(onboarded){ return {events:[],logs:[],categories:[],meta:{onboarded,hintShown:false,tab:"all"}}; }
+function migrate(d){ d.categories ||= []; d.meta ||= {}; d.meta.tab ||= "all"; d.events.forEach(e=>{ if(e.categoryId===undefined) e.categoryId=null; }); return d;
 }
 function save(){
   try{ localStorage.setItem(KEY, JSON.stringify(S)); return true; }
@@ -251,10 +280,15 @@ function friendlyInterval(days){
 /* ---- data helpers ---- */
 const active = () => S.events.filter(e=>!e.archived).sort((a,b)=>a.order-b.order);
 const logsOf = id => S.logs.filter(l=>l.eventId===id).sort((a,b)=>b.doneAt-a.doneAt);
+const cats = () => [...S.categories].sort((a,b)=>a.order-b.order);
+const curTab = () => (S.meta.tab==="all" || S.categories.some(c=>c.id===S.meta.tab)) ? S.meta.tab : "all";
+const visible = () => { const t=curTab(); return t==="all" ? active() : active().filter(e=>e.categoryId===t); };
+function ensureCat(name){ let c=S.categories.find(x=>x.name===name); if(!c){ c={id:uid(),name,order:S.categories.length}; S.categories.push(c);} return c.id; }
 const lastOf = id => { const l = logsOf(id)[0]; return l ? l.doneAt : null; };
 function addEvent(t, front=true){
   const minOrder = Math.min(0,...S.events.map(e=>e.order));
-  const ev = {id:uid(),name:t.name,emoji:t.emoji,color:t.color,archived:false,createdAt:Date.now(),order:front?minOrder-1:Date.now()};
+  const categoryId = t.categoryId!==undefined ? t.categoryId : (t.cat ? ensureCat(t.cat) : null);
+  const ev = {id:uid(),name:t.name,emoji:t.emoji,color:t.color,categoryId,archived:false,createdAt:Date.now(),order:front?minOrder-1:Date.now()};
   S.events.push(ev); return ev;
 }
 function addLog(eventId, doneAt=Date.now(), comment="", photo=null, noTime=false){
@@ -272,7 +306,14 @@ function tileHTML(ev){
 }
 function renderGrid(){
   const g = $("#grid");
-  g.innerHTML = active().map(tileHTML).join("") + `<li><button class="tile add" type="button" id="addTile"><span class="emo">＋</span>追加</button></li>`;
+  const t = curTab(), list = visible();
+  g.innerHTML = list.map(tileHTML).join("") + `<li><button class="tile add" type="button" id="addTile"><span class="emo">＋</span>追加</button></li>`;
+  const tabs = [{id:"all",name:"すべて",n:active().length}, ...cats().map(c=>({id:c.id,name:c.name,n:active().filter(e=>e.categoryId===c.id).length}))];
+  $("#tabs").innerHTML = tabs.map(x=>`<button type="button" role="tab" data-tab="${x.id}" aria-selected="${x.id===t}">${esc(x.name)}<span class="n">${x.n}</span></button>`).join("")
+    + `<button type="button" class="tab-add" id="tabAdd" aria-label="カテゴリを管理">＋</button>`;
+  const sel = $("#tabs").querySelector('[aria-selected="true"]'); sel && sel.scrollIntoView({block:"nearest",inline:"nearest"});
+  const te = $("#tabEmpty"); te.hidden = list.length>0 || t==="all";
+  if(!te.hidden) te.textContent = "このカテゴリにはまだイベントがありません。「＋ 追加」で作るか、イベントの編集でカテゴリを変えてください";
   $("#app").classList.toggle("editing", editing);
   $("#editBtn").textContent = editing ? "完了" : "編集";
   $("#editBtn").classList.toggle("on", editing);
@@ -309,6 +350,18 @@ window.addEventListener("pointerup", e => {
   if(editing) openDetail(p.id); else quickRecord(p.id);
 });
 window.addEventListener("pointercancel", () => { if(!press) return; clearTimeout(press.timer); press.el.classList.remove("pressing"); if(press.drag) endDrag(press); press=null; });
+$("#tabs").addEventListener("click", e => {
+  if(e.target.closest("#tabAdd")) return openCatSheet();
+  const b = e.target.closest("[data-tab]"); if(!b) return; setTab(b.dataset.tab);
+});
+function setTab(id){ S.meta.tab=id; save(); renderGrid(); }
+function swipeTab(dir){ const ids=["all",...cats().map(c=>c.id)]; const i=ids.indexOf(curTab()); const n=i+dir; if(n<0||n>=ids.length) return;
+  setTab(ids[n]); const g=$("#grid"); g.classList.remove("slide-l","slide-r"); void g.offsetWidth; g.classList.add(dir>0?"slide-l":"slide-r"); }
+// スワイプでタブ切り替え（編集モード中は無効）
+let sw=null;
+$("#app").addEventListener("pointerdown", e=>{ if(editing || e.target.closest("#tabs")) return; sw={x:e.clientX,y:e.clientY,t:Date.now()}; });
+window.addEventListener("pointerup", e=>{ if(!sw) return; const dx=e.clientX-sw.x, dy=e.clientY-sw.y, dt=Date.now()-sw.t; sw=null;
+  if(Math.abs(dx)>60 && Math.abs(dy)<Math.abs(dx)*0.6 && dt<700) swipeTab(dx<0?1:-1); });
 $("#grid").addEventListener("contextmenu", e => {
   const t = e.target.closest(".tile"); if(!t || t.classList.contains("add")) return;
   e.preventDefault(); if(press && press.long) return;
@@ -335,8 +388,9 @@ function moveDrag(e){
   d.ghost.style.display="none"; const over = document.elementFromPoint(e.clientX,e.clientY); d.ghost.style.display="";
   const t = over && over.closest(".tile:not(.add)");
   if(t && t.dataset.id!==press.id){
-    const list = active(); const from = list.findIndex(x=>x.id===press.id), to = list.findIndex(x=>x.id===t.dataset.id);
-    const [m] = list.splice(from,1); list.splice(to,0,m); list.forEach((x,i)=>x.order=i);
+    const list = visible(); const slots = list.map(x=>x.order).sort((a,b)=>a-b);
+    const from = list.findIndex(x=>x.id===press.id), to = list.findIndex(x=>x.id===t.dataset.id);
+    const [m] = list.splice(from,1); list.splice(to,0,m); list.forEach((x,i)=>x.order=slots[i]);
     renderGrid(); press.el = document.querySelector(`.tile[data-id="${press.id}"]`); press.el.classList.add("dragging");
   }
 }
@@ -457,12 +511,16 @@ function openRecordSheet(eventId, logId=null, presetDay=null){
 function openEventSheet(eventId=null){
   const ev = eventId ? S.events.find(e=>e.id===eventId) : null;
   let emoji = ev?.emoji || EMOJIS[0], color = ev?.color || COLORS[(S.events.length)%COLORS.length];
+  let catId = ev ? ev.categoryId : (curTab()==="all" ? null : curTab());
   openSheet(`
     <h2>${ev?"イベントを編集":"イベントを追加"}</h2>
     <form id="evForm">
       <div class="field"><label for="evName">名前</label><input type="text" id="evName" maxlength="40" value="${esc(ev?.name)}" placeholder="例：シーツ交換" required></div>
       <div class="field"><span class="lbl" id="emoL">アイコン</span><div class="emojis" role="group" aria-labelledby="emoL">${EMOJIS.map(x=>`<button type="button" data-e="${x}" aria-pressed="${x===emoji}">${x}</button>`).join("")}</div></div>
       <div class="field"><span class="lbl" id="colL">色</span><div class="colors" role="group" aria-labelledby="colL">${COLORS.map(c=>`<button type="button" data-c="${c}" style="background:var(--t-${c})" aria-label="${c}" aria-pressed="${c===color}"></button>`).join("")}</div></div>
+      <div class="field"><span class="lbl" id="catL">カテゴリ</span><div class="chips" role="radiogroup" aria-labelledby="catL">
+        <button type="button" role="radio" data-cat="" aria-checked="${!catId}">なし</button>${cats().map(c=>`<button type="button" role="radio" data-cat="${c.id}" aria-checked="${c.id===catId}">${esc(c.name)}</button>`).join("")}
+        <button type="button" class="chip-new" id="catNew">＋ 新しいカテゴリ</button></div></div>
       ${ev?"":`<div class="field"><label for="evLast">前回やった日（わかれば）</label><input type="date" id="evLast" max="${todayKey()}"><span class="whenNote">入れておくと、最初から「前回から○日」が出ます</span></div>`}
       <div class="row"><button class="btn primary" type="submit">${ev?"保存する":"追加する"}</button></div>
       ${ev?"":`<div class="links"><button class="btn" type="button" id="fromTpl">テンプレートから選ぶ</button></div>`}
@@ -470,12 +528,50 @@ function openEventSheet(eventId=null){
     sh.querySelector(".emojis").onclick = e => { const b=e.target.closest("[data-e]"); if(!b) return; emoji=b.dataset.e; sh.querySelectorAll("[data-e]").forEach(x=>x.setAttribute("aria-pressed", x===b)); };
     sh.querySelector(".colors").onclick = e => { const b=e.target.closest("[data-c]"); if(!b) return; color=b.dataset.c; sh.querySelectorAll("[data-c]").forEach(x=>x.setAttribute("aria-pressed", x===b)); };
     sh.querySelector("#fromTpl")?.addEventListener("click", ()=>openOnboarding(false));
+    const chips = sh.querySelector(".chips");
+    const bindChips = () => chips.querySelectorAll("[data-cat]").forEach(b=>b.onclick=()=>{ catId=b.dataset.cat||null; chips.querySelectorAll("[data-cat]").forEach(x=>x.setAttribute("aria-checked", x===b)); });
+    bindChips();
+    sh.querySelector("#catNew").onclick = () => {
+      const box = document.createElement("div"); box.className="inline-new";
+      box.innerHTML = `<input type="text" id="catNewName" maxlength="20" placeholder="例：車・バイク"><button type="button" class="btn small primary" id="catNewOk">作る</button>`;
+      sh.querySelector("#catNew").replaceWith(box); const inp=box.querySelector("input"); inp.focus();
+      const ok = () => { const n=inp.value.trim(); if(!n) return; const id=ensureCat(n); save();
+        const b=document.createElement("button"); b.type="button"; b.setAttribute("role","radio"); b.dataset.cat=id; b.textContent=n; box.before(b); bindChips(); b.click(); inp.value=""; };
+      box.querySelector("#catNewOk").onclick = ok; inp.onkeydown = e=>{ if(e.key==="Enter"){ e.preventDefault(); ok(); } };
+    };
     sh.querySelector("#evForm").onsubmit = e => { e.preventDefault();
       const name = sh.querySelector("#evName").value.trim(); if(!name) return;
-      if(ev){ Object.assign(ev,{name,emoji,color}); }
-      else { const ne = addEvent({name,emoji,color}); const last = sh.querySelector("#evLast").value;
+      if(ev){ Object.assign(ev,{name,emoji,color,categoryId:catId}); }
+      else { const ne = addEvent({name,emoji,color,categoryId:catId}); const last = sh.querySelector("#evLast").value;
         if(last && last <= todayKey()) addLog(ne.id, noonOf(last), "", null, true); }
       save(); closeSheet(); renderGrid(); refreshDetail(); showToast(ev?"保存しました":"追加しました"); };
+  });
+}
+
+function openCatSheet(){
+  const list = cats();
+  openSheet(`<h2>カテゴリ</h2>
+    <p class="empty" style="margin-bottom:10px">ホーム上部のタブになります。1つのイベントは1つのカテゴリに入ります。</p>
+    <ul class="catlist">${list.map((c,i)=>`<li>
+      <input type="text" value="${esc(c.name)}" data-rn="${c.id}" maxlength="20" aria-label="カテゴリ名">
+      <span class="cnt">${active().filter(e=>e.categoryId===c.id).length}件</span>
+      <button class="iconbtn" type="button" data-up="${c.id}" ${i===0?"disabled":""} aria-label="上へ">↑</button>
+      <button class="iconbtn" type="button" data-dn="${c.id}" ${i===list.length-1?"disabled":""} aria-label="下へ">↓</button>
+      <button class="iconbtn" type="button" data-del="${c.id}" aria-label="${esc(c.name)}を削除">🗑</button></li>`).join("")||`<li class="empty">まだカテゴリがありません</li>`}</ul>
+    <form class="inline-new" id="catAddForm"><input type="text" id="catAddName" maxlength="20" placeholder="新しいカテゴリ名"><button class="btn small primary" type="submit">追加</button></form>
+    <p class="empty" id="catDelNote" hidden></p>`, sh => {
+    sh.querySelector("#catAddForm").onsubmit = e => { e.preventDefault(); const n=sh.querySelector("#catAddName").value.trim(); if(!n) return; ensureCat(n); save(); renderGrid(); openCatSheet(); };
+    sh.querySelectorAll("[data-rn]").forEach(inp => inp.onchange = () => { const c=S.categories.find(x=>x.id===inp.dataset.rn); const n=inp.value.trim(); if(n){ c.name=n; save(); renderGrid(); } else inp.value=c.name; });
+    sh.addEventListener("click", e => {
+      const mv = (id,d) => { const l=cats(); const i=l.findIndex(c=>c.id===id); const j=i+d; [l[i],l[j]]=[l[j],l[i]]; l.forEach((c,k)=>c.order=k); save(); renderGrid(); openCatSheet(); };
+      const up=e.target.closest("[data-up]"); if(up) return mv(up.dataset.up,-1);
+      const dn=e.target.closest("[data-dn]"); if(dn) return mv(dn.dataset.dn,1);
+      const del=e.target.closest("[data-del]"); if(del){ const c=S.categories.find(x=>x.id===del.dataset.del); const n=S.events.filter(ev=>ev.categoryId===c.id).length;
+        const note=sh.querySelector("#catDelNote");
+        if(n && note.dataset.pending!==c.id){ note.hidden=false; note.dataset.pending=c.id; note.innerHTML=`「${esc(c.name)}」を削除すると、入っている${n}件のイベントは「なし」になります（イベントと記録は消えません）。もう一度 🗑 を押すと削除します。`; return; }
+        S.events.forEach(ev=>{ if(ev.categoryId===c.id) ev.categoryId=null; }); S.categories=S.categories.filter(x=>x.id!==c.id); cats().forEach((x,k)=>x.order=k);
+        if(S.meta.tab===c.id) S.meta.tab="all"; save(); renderGrid(); openCatSheet(); showToast("カテゴリを削除しました"); }
+    });
   });
 }
 
@@ -495,16 +591,18 @@ function openMenu(){
   const arch = S.events.filter(e=>e.archived);
   openSheet(`<h2>メニュー</h2>
     <ul class="menu">
+      <li><button type="button" id="mCat">カテゴリを管理</button></li>
       <li><button type="button" id="mTpl">テンプレートから追加</button></li>
       <li><button type="button" id="mSample">お試しデータで始め直す</button></li>
       <li><button type="button" id="mReset">すべて消して最初から</button></li>
     </ul>
     <h2 style="margin-top:16px;font-size:16px">アーカイブ（${arch.length}）</h2>
     ${arch.length?arch.map(e=>`<div class="arch"><span aria-hidden="true">${esc(e.emoji)}</span><span style="flex:1;min-width:0">${esc(e.name)}</span><button class="btn small" type="button" data-un="${e.id}">戻す</button></div>`).join(""):`<p class="empty">アーカイブしたイベントはありません</p>`}
-    <p class="empty" style="margin-top:16px">PoC v0.2。ステップ3（画面一覧）以降の確認用です。</p>`, sh => {
+    <p class="empty" style="margin-top:16px">PoC v0.3。ステップ3（画面一覧）以降の確認用です。</p>`, sh => {
     sh.querySelector("#mTpl").onclick = ()=>openOnboarding(false);
+    sh.querySelector("#mCat").onclick = openCatSheet;
     sh.querySelector("#mSample").onclick = ()=>{ seedSample(); closeSheet(); renderGrid(); showToast("お試しデータを入れました"); };
-    sh.querySelector("#mReset").onclick = ()=>{ S={events:[],logs:[],meta:{onboarded:false,hintShown:false}}; save(); closeSheet(); renderGrid(); openOnboarding(true); };
+    sh.querySelector("#mReset").onclick = ()=>{ S=fresh(false); save(); closeSheet(); renderGrid(); openOnboarding(true); };
     sh.addEventListener("click", e=>{ const b=e.target.closest("[data-un]"); if(!b) return; const ev=S.events.find(x=>x.id===b.dataset.un); ev.archived=false; ev.order=Math.min(0,...S.events.map(x=>x.order))-1; save(); renderGrid(); openMenu(); });
   });
 }
@@ -517,21 +615,23 @@ function pastLogs(ev, every){
   while(t>start && n<40){ addLog(ev.id, t, n===0&&Math.random()<.5?"いつもどおり":""); t -= every*(0.6+Math.random()*0.9)*864e5; n++; }
 }
 function seedSample(){
-  S = {events:[],logs:[],meta:{onboarded:true,hintShown:false}};
-  TEMPLATES.slice(0,8).forEach((t,i)=>{ const ev=addEvent(t,false); ev.order=i; pastLogs(ev,t.every); });
-  const ev = addEvent({name:"パスポート更新",emoji:"📚",color:"grape"},false); ev.order=99;
+  S = fresh(true);
+  ["家事","身の回り","趣味"].forEach(ensureCat);
+  TEMPLATES.forEach((t,i)=>{ const ev=addEvent(t,false); ev.order=i; pastLogs(ev,t.every); });
+  const ev = addEvent({name:"パスポート更新",emoji:"📚",color:"grape",categoryId:null},false); ev.order=99;
   save();
 }
 function openOnboarding(first){
   const picked = new Set(first?[0,2,4,8]:[]);
   openSheet(`<h2>${first?"ようこそ！何を記録しますか？":"テンプレートから追加"}</h2>
-    <p class="empty" style="margin-bottom:12px">タップで選んで、まとめて追加できます。あとから変更・追加もできます。</p>
+    <p class="empty" style="margin-bottom:12px">タップで選んで、まとめて追加できます。「家事」「身の回り」「趣味」のカテゴリも自動で作ります。あとから変更できます。</p>
     <div class="tpls">${TEMPLATES.map((t,i)=>`<button type="button" class="tpl" data-t="${i}" aria-pressed="${picked.has(i)}" style="--tc:var(--t-${t.color})"><span class="emo" aria-hidden="true">${t.emoji}</span><span style="min-width:0">${esc(t.name)}</span><span class="chk" aria-hidden="true">✓</span></button>`).join("")}</div>
     <label class="check"><input type="checkbox" id="withPast" checked> お試し用に、過去の記録も入れておく（PoC 専用）</label>
     <div class="row"><button class="btn primary" type="button" id="tplAdd">追加する</button>${first?`<button class="btn" type="button" id="tplSkip">自分で作る</button>`:""}</div>`, sh => {
     sh.querySelector(".tpls").onclick = e => { const b=e.target.closest("[data-t]"); if(!b) return; const i=+b.dataset.t; picked.has(i)?picked.delete(i):picked.add(i); b.setAttribute("aria-pressed", picked.has(i)); };
     sh.querySelector("#tplAdd").onclick = () => {
       const past = sh.querySelector("#withPast").checked;
+      ["家事","身の回り","趣味"].filter(n=>[...picked].some(i=>TEMPLATES[i].cat===n)).forEach(ensureCat);
       [...picked].sort((a,b)=>b-a).forEach(i=>{ const ev=addEvent(TEMPLATES[i]); if(past) pastLogs(ev,TEMPLATES[i].every); });
       S.meta.onboarded=true; save(); closeSheet(); renderGrid(); showToast(`${picked.size}件追加しました`);
     };
@@ -567,7 +667,7 @@ function renderDetail(){
     <header class="bar"><button class="iconbtn" type="button" id="dBack" aria-label="ホームに戻る">←</button><span style="flex:1"></span>
       <button class="pill" type="button" id="dEdit">編集</button><button class="iconbtn" type="button" id="dMore" aria-label="アーカイブ・削除">⋯</button></header>
     <section class="hero" style="--tc:var(--t-${ev.color})"><span class="emo" aria-hidden="true">${esc(ev.emoji)}</span>
-      <div style="min-width:0"><h2>${esc(ev.name)}</h2><div class="sub">${last?"前回 "+fmtWhen(last, logs[0].noTime):"まだ記録がありません"}</div></div>
+      <div style="min-width:0"><h2>${esc(ev.name)}</h2><div class="sub">${ev.categoryId?esc(S.categories.find(c=>c.id===ev.categoryId)?.name)+" ・ ":""}${last?"前回 "+fmtWhen(last, logs[0].noTime):"まだ記録がありません"}</div></div>
       <div class="big">${a?`${a.n}${a.u?`<small>${a.u}</small>`:""}`:"—"}</div></section>
     <div class="stats">
       <div class="stat"><div class="k">記録回数</div><div class="v">${logs.length}<small>回</small></div></div>
