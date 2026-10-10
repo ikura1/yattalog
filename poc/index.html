@@ -185,6 +185,31 @@ input[type=date],input[type=time]{width:100%;min-width:0;border:1px solid var(--
 .logs .ops{display:flex;gap:4px}
 .empty{color:var(--muted);font-size:14px;margin:0}
 
+/* season chart */
+.season-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.seg2{display:flex;border:1px solid var(--line);border-radius:999px;padding:2px;gap:2px}
+.seg2 button{border:none;background:transparent;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;color:var(--muted)}
+.seg2 button[aria-pressed=true]{background:var(--fg);color:var(--bg)}
+.season-sub{margin:6px 0 0;font-size:13px;color:var(--muted)}
+.season-n{font-family:var(--f-body);font-size:12px;color:var(--muted);font-weight:700}
+.season-line{margin:4px 0 6px;font-size:14px}
+.season-line b{font-family:var(--f-display);color:var(--accent);font-size:16px}
+.season-chart{position:relative}
+.season-chart svg{width:100%;height:auto;display:block;overflow:visible}
+.sgrid{stroke:var(--line);stroke-width:1}
+.sgrid.base{stroke:var(--muted);stroke-opacity:.5}
+.sax{fill:var(--muted);font-size:10px;font-family:var(--f-body);font-variant-numeric:tabular-nums}
+.sax.fut{opacity:.4}
+.sval{fill:var(--fg);font-size:11px;font-weight:700;font-family:var(--f-display)}
+.sbar{fill:var(--accent);fill-opacity:.55;stroke:var(--accent);stroke-width:0}
+.sbar[data-v="0"]{fill:none;stroke:var(--line);stroke-width:2;stroke-linecap:round}
+.sbar.peak{fill-opacity:1}
+.sbar.on{fill-opacity:1;stroke:var(--fg);stroke-width:1.5}
+.shit{fill:transparent;cursor:pointer;outline:none}
+.shit:focus-visible{fill:var(--line);fill-opacity:.4}
+.tipping .sval{opacity:0}
+.season-tip{position:absolute;top:0;transform:translate(-50%,-100%);background:var(--toast);color:var(--toast-fg);font-size:12px;font-weight:700;padding:3px 8px;border-radius:8px;white-space:nowrap;pointer-events:none;font-variant-numeric:tabular-nums}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 /* share */
 .share-prev{display:grid;place-items:center;margin-bottom:10px}
 .share-prev img{width:min(260px,70%);aspect-ratio:1080/1350;border-radius:14px;box-shadow:var(--shadow);background:var(--bg)}
@@ -224,7 +249,7 @@ a.btn{display:block;text-align:center;text-decoration:none;color:var(--fg)}
     <button class="pill" id="editBtn" type="button">編集</button>
     <button class="iconbtn" id="menuBtn" type="button" aria-label="メニュー">⋯</button>
   </header>
-  <p class="poc-note">PoC v0.6 ・ データはこの端末のブラウザにだけ保存されます</p>
+  <p class="poc-note">PoC v0.7 ・ データはこの端末のブラウザにだけ保存されます</p>
   <p class="edit-hint" id="editHint" hidden>ドラッグで並べ替え ・ タップで詳細 ・ ×でアーカイブ／削除</p>
   <nav class="tabs" id="tabs" role="tablist" aria-label="カテゴリ"></nav>
   <ul class="grid" id="grid" role="tabpanel"></ul>
@@ -767,7 +792,7 @@ function openMenu(){
     </ul>
     <h2 style="margin-top:16px;font-size:16px">アーカイブ（${arch.length}）</h2>
     ${arch.length?arch.map(e=>`<div class="arch"><span aria-hidden="true">${esc(e.emoji)}</span><span style="flex:1;min-width:0">${esc(e.name)}</span><button class="btn small" type="button" data-un="${e.id}">戻す</button></div>`).join(""):`<p class="empty">アーカイブしたイベントはありません</p>`}
-    <p class="empty" style="margin-top:16px">PoC v0.6。ステップ3（画面一覧）以降の確認用です。</p>`, sh => {
+    <p class="empty" style="margin-top:16px">PoC v0.7。ステップ3（画面一覧）以降の確認用です。</p>`, sh => {
     sh.querySelector("#mTpl").onclick = ()=>openOnboarding(false);
     sh.querySelector("#mCat").onclick = openCatSheet;
     sh.querySelector("#mLogin").onclick = ()=>{ closeSheet(); openLogin(); };
@@ -781,8 +806,8 @@ function openMenu(){
 function pastLogs(ev, every){
   // お試し用：だいたい every 日ごとの過去記録を、ゆらぎ付きで作る
   let t = Date.now() - (Math.random()*every*1.4+.3)*864e5;
-  const start = Date.now() - 400*864e5; let n=0;
-  while(t>start && n<40){ addLog(ev.id, t, n===0&&Math.random()<.5?"いつもどおり":""); t -= every*(0.6+Math.random()*0.9)*864e5; n++; }
+  const start = Date.now() - 760*864e5; let n=0;
+  while(t>start && n<400){ addLog(ev.id, t, n===0&&Math.random()<.5?"いつもどおり":""); t -= every*(0.6+Math.random()*0.9)*864e5; n++; }
 }
 function seedSample(){
   S = fresh(true);
@@ -799,6 +824,12 @@ function seedSample(){
     S.logs = S.logs.filter(l=>l.eventId!==e.id);
     for(let i=skipCurrent?1:0; i<count+(skipCurrent?1:0); i++) addLog(e.id, noonOf(shiftDay(todayKey(), -i*stepDays)), "", null, true); };
   periodDemo("シーツ交換", 5, 7, false); periodDemo("散髪", 4, 30, true);
+  // 季節のくせ：エアコン掃除は夏前と冬前、布団干しは春と秋に多い
+  const seasonal = (name, weights) => { const e=S.events.find(x=>x.name===name); if(!e) return;
+    const keep = S.logs.filter(l=>l.eventId===e.id && daysSince(l.doneAt)<=35); S.logs = S.logs.filter(l=>l.eventId!==e.id).concat(keep);
+    for(let d=36; d<760; d++){ const t=Date.now()-d*864e5; const m=+parts(t).month; if(Math.random() < weights[m-1]) addLog(e.id, noonOf(dayKey(t)), "", null, true); } };
+  seasonal("エアコンのフィルター掃除", [.01,.01,.01,.02,.06,.12,.10,.08,.02,.02,.04,.06]);
+  seasonal("布団を干す", [.04,.06,.16,.2,.18,.06,.04,.04,.12,.18,.16,.05]);
   save();
 }
 function openOnboarding(first){
@@ -823,11 +854,56 @@ function openOnboarding(first){
 let detail = null; // {id, ym:[y,m], sel}
 function openDetail(id){
   const now = parts(Date.now());
-  detail = {id, y:+now.year, m:+now.month, sel:null};
+  detail = {id, y:+now.year, m:+now.month, sel:null, sy:+now.year, sAll:false};
   renderDetail();
 }
 function closeDetail(){ detail=null; document.querySelector(".panel")?.remove(); }
 function refreshDetail(){ if(detail && S.events.find(e=>e.id===detail.id)) renderDetail(); }
+/* よくやる時期：月別の記録回数（1年分 or 全期間の月別合計） */
+function monthRanges(ms){ // [6,7,8,12] -> "6〜8月・12月"
+  const out=[]; let a=null,b=null;
+  ms.forEach(m=>{ if(a===null){a=b=m;} else if(m===b+1){b=m;} else { out.push(a===b?`${a}月`:`${a}〜${b}月`); a=b=m; } });
+  if(a!==null) out.push(a===b?`${a}月`:`${a}〜${b}月`); return out.join("・");
+}
+function seasonCard(logs){
+  if(!logs.length) return "";
+  const years = logs.map(l=>+parts(l.doneAt).year); const minY = Math.min(...years), maxY = +parts(Date.now()).year;
+  detail.sy = Math.min(Math.max(detail.sy, minY), maxY);
+  const all = detail.sAll, Y = detail.sy;
+  const counts = Array(12).fill(0);
+  logs.forEach(l=>{ const p=parts(l.doneAt); if(all || +p.year===Y) counts[+p.month-1]++; });
+  const total = counts.reduce((a,b)=>a+b,0), max = Math.max(...counts);
+  // 見出し：最大値の7割以上の月を「よくやる時期」とする（3回未満は判定しない）
+  let headline;
+  if(total<3) headline = "記録が増えると、よくやる時期がわかります";
+  else if(counts.every(c=>c>=max*0.7)) headline = "1年を通して同じくらい";
+  else headline = `よくやるのは <b>${monthRanges(counts.map((c,i)=>c>=max*0.7&&c>0?i+1:0).filter(Boolean))}</b>`;
+  // 目盛り：上限をきりのいい数に
+  const step = max<=4?1:max<=10?2:max<=20?5:max<=50?10:20, top = Math.max(step, Math.ceil(max/step)*step);
+  const W=320, H=150, L=22, R=6, T=12, B=22, cw=(W-L-R)/12, bw=Math.min(16, cw*0.56);
+  const yv = v => T + (H-T-B)*(1 - v/top);
+  let grid=""; for(let v=0; v<=top; v+=step){ const y=yv(v); grid += `<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" class="sgrid${v===0?" base":""}"/><text x="${L-6}" y="${y+3.5}" class="sax" text-anchor="end">${v}</text>`; if(top/step>4) v+=step; }
+  const nowM = +parts(Date.now()).month, isCur = !all && Y===maxY;
+  let bars="", hits="", labels="";
+  counts.forEach((c,i)=>{ const x=L+cw*i+cw/2, y=yv(c), h=Math.max(0,(H-B)-y);
+    const future = isCur && i+1>nowM;
+    if(c>0){ const r=Math.min(4,h); bars += `<path class="sbar${c===max&&total>=3?" peak":""}" data-m="${i+1}" data-v="${c}" d="M${x-bw/2},${H-B} V${y+r} Q${x-bw/2},${y} ${x-bw/2+r},${y} H${x+bw/2-r} Q${x+bw/2},${y} ${x+bw/2},${y+r} V${H-B} Z"/>`; }
+    else bars += `<path class="sbar" data-m="${i+1}" data-v="0" d="M${x-bw/2},${H-B} h${bw}"/>`;
+    if(c===max && c>0 && total>=3) labels += `<text x="${x}" y="${y-5}" class="sval" text-anchor="middle">${c}</text>`;
+    hits += `<rect class="shit" data-m="${i+1}" x="${L+cw*i}" y="${T}" width="${cw}" height="${H-T}" tabindex="0" role="img" aria-label="${i+1}月 ${c}回"/>`;
+    labels += `<text x="${x}" y="${H-6}" class="sax${future?" fut":""}" text-anchor="middle">${i+1}</text>`; });
+  const yearNav = `<div class="seg2" role="group" aria-label="期間">
+      <button type="button" data-sall="0" aria-pressed="${!all}">年ごと</button><button type="button" data-sall="1" aria-pressed="${all}">全期間</button></div>`;
+  return `<section class="card season">
+    <div class="season-head"><h3 style="margin:0">よくやる時期</h3>${yearNav}</div>
+    ${all?`<p class="season-sub">${minY}〜${maxY}年の月別合計（${total}回）</p>`:
+      `<div class="cal-head" style="margin:2px 0 0"><button class="iconbtn" type="button" id="syPrev" aria-label="前の年" ${Y<=minY?"disabled":""}>‹</button><strong>${Y}年 <small class="season-n">${total}回</small></strong><button class="iconbtn" type="button" id="syNext" aria-label="次の年" ${Y>=maxY?"disabled":""}>›</button></div>`}
+    <p class="season-line">${headline}</p>
+    <div class="season-chart" id="season"><span class="season-tip" id="seasonTip" hidden></span>
+      <svg viewBox="0 0 ${W} ${H}" role="group" aria-label="月別の記録回数">${grid}${bars}${labels}${hits}</svg></div>
+    <table class="sr-only"><caption>${all?"全期間":Y+"年"}の月別記録回数</caption><tr><th>月</th><th>回数</th></tr>${counts.map((c,i)=>`<tr><td>${i+1}月</td><td>${c}</td></tr>`).join("")}</table>
+  </section>`;
+}
 function renderDetail(){
   const ev = S.events.find(e=>e.id===detail.id); if(!ev) return closeDetail();
   const logs = logsOf(ev.id); const last = logs[0]?.doneAt; const a = agoParts(last);
@@ -855,6 +931,7 @@ function renderDetail(){
       <div class="stat"><div class="k">ペース</div><div class="v" style="font-size:14px">${avg}</div></div>
     </div>
     <div class="row" style="margin-bottom:14px"><button class="btn primary" type="button" id="dRec">詳しく記録</button></div>
+    ${seasonCard(logs)}
     <section class="card"><div class="cal-head"><button class="iconbtn" type="button" id="calPrev" aria-label="前の月">‹</button><strong>${y}年${m}月</strong><button class="iconbtn" type="button" id="calNext" aria-label="次の月">›</button></div>
       <div class="cal" id="cal">${cal}</div></section>
     <section class="card"><h3>${detail.sel?`${+detail.sel.slice(5,7)}月${+detail.sel.slice(8)}日の記録 <button class="btn small" type="button" id="clrSel">すべて表示</button>`:"記録の履歴"}</h3>
@@ -872,6 +949,20 @@ function renderDetail(){
   P.querySelector("#dRec").onclick = ()=>openRecordSheet(ev.id);
   P.querySelector("#calPrev").onclick = ()=>{ detail.m--; if(detail.m<1){detail.m=12;detail.y--;} renderDetail(); };
   P.querySelector("#calNext").onclick = ()=>{ detail.m++; if(detail.m>12){detail.m=1;detail.y++;} renderDetail(); };
+  P.querySelector("#syPrev")?.addEventListener("click", ()=>{ detail.sy--; renderDetail(); });
+  P.querySelector("#syNext")?.addEventListener("click", ()=>{ detail.sy++; renderDetail(); });
+  P.querySelectorAll("[data-sall]").forEach(b=>b.onclick=()=>{ detail.sAll = b.dataset.sall==="1"; renderDetail(); });
+  const chart = P.querySelector("#season");
+  if(chart){ const tip = P.querySelector("#seasonTip");
+    const show = b => { P.querySelectorAll(".sbar.on").forEach(x=>x.classList.remove("on")); b.classList.add("on");
+      tip.hidden=false; tip.textContent = `${b.dataset.m}月：${b.dataset.v}回`;
+      const r = b.getBoundingClientRect(), cr = chart.getBoundingClientRect();
+      tip.style.left = Math.min(Math.max(r.left+r.width/2-cr.left, 34), cr.width-34)+"px"; tip.style.top = Math.max(r.top-cr.top-6, 0)+"px"; chart.classList.add("tipping"); };
+    chart.querySelectorAll(".shit").forEach(h=>{ const bar = chart.querySelector(`.sbar[data-m="${h.dataset.m}"]`);
+      h.addEventListener("pointerenter", ()=>show(bar)); h.addEventListener("click", ()=>show(bar));
+      h.addEventListener("focus", ()=>show(bar)); });
+    chart.addEventListener("pointerleave", e=>{ if(e.pointerType==="mouse"){ tip.hidden=true; chart.classList.remove("tipping"); P.querySelectorAll(".sbar.on").forEach(x=>x.classList.remove("on")); } });
+  }
   P.querySelector("#clrSel")?.addEventListener("click", ()=>{ detail.sel=null; renderDetail(); });
   P.querySelector("#recOnDay")?.addEventListener("click", ()=>openRecordSheet(ev.id, null, detail.sel));
   P.querySelector("#cal").onclick = e => { const b=e.target.closest("[data-day]"); if(!b) return; detail.sel = detail.sel===b.dataset.day?null:b.dataset.day; renderDetail(); };
