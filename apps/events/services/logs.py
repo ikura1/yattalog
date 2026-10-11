@@ -48,13 +48,28 @@ def clean_memo(memo: str) -> str:
 
 
 def refresh_event_cache(event: Event) -> Event:
-    """記録から、最終記録日・記録回数・連続記録を計算し直して保存する。"""
+    """記録から、最終記録日とその時刻・記録回数・連続記録を計算し直して保存する。"""
     logs = Log.objects.filter(event=event)
     dates = logs.order_by("-local_date").values_list("local_date", flat=True).distinct()
     event.log_count = logs.count()
     event.last_local_date = dates.first()
+    event.last_occurred_at = (
+        logs.filter(local_date=event.last_local_date, occurred_at__isnull=False)
+        .order_by("-occurred_at")
+        .values_list("occurred_at", flat=True)
+        .first()
+    )
     event.streak_count, event.streak_period = compute_streak(dates.iterator(), event.streak_unit)
-    event.save(update_fields=["log_count", "last_local_date", "streak_count", "streak_period", "updated_at"])
+    event.save(
+        update_fields=[
+            "log_count",
+            "last_local_date",
+            "last_occurred_at",
+            "streak_count",
+            "streak_period",
+            "updated_at",
+        ]
+    )
     return event
 
 

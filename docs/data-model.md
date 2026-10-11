@@ -100,6 +100,7 @@ Django のカスタムユーザー。パスワードは使わない（Google ロ
 | created_at / updated_at | timestamptz | |
 | **キャッシュ** | | 記録を追加・編集・削除したときに、同じトランザクションの中で更新する |
 | last_local_date | date null | 最新の記録の日付。経過日数 ＝ 今日（ユーザーのタイムゾーン）− この日付（0未満なら0） |
+| last_occurred_at | timestamptz null | 最新の記録の日付（last_local_date）にある、時刻ありの記録のうち一番新しい時刻。今日の記録を「さっき」「N時間」と表示するために使う（決定 034） |
 | log_count | int | 記録回数 |
 | streak_count | int | 連続回数（連続の最後の期間までの値） |
 | streak_period | int null | 連続の最後の期間の番号（下記） |

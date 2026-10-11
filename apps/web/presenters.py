@@ -2,10 +2,10 @@
 
 import calendar
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 
 from apps.events.models import Event
-from apps.events.services.dates import elapsed
+from apps.events.services.dates import elapsed, now_utc
 from apps.events.services.streaks import StreakState, streak_state
 
 
@@ -30,7 +30,7 @@ class Tile:
         if self.never:
             state = "まだ記録なし"
         elif self.is_today:
-            state = "今日やった"
+            state = f"{self.number}{self.unit}前にやった" if self.unit else f"{self.number}やった"
         else:
             state = f"前回から{self.number}{self.unit}"
         s = f"{e.name}、{state}"
@@ -39,8 +39,8 @@ class Tile:
         return s + "。ダブルタップで記録"
 
 
-def tile(event: Event, today: date) -> Tile:
-    el = elapsed(event.last_local_date, today)
+def tile(event: Event, today: date, now: datetime | None = None) -> Tile:
+    el = elapsed(event.last_local_date, today, event.last_occurred_at, now or now_utc())
     number, unit = el.label
     return Tile(
         event=event,

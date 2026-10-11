@@ -54,6 +54,7 @@ def test_月の移動は年をまたぐ():
 
 from datetime import timedelta  # noqa: E402
 
+from apps.core.testing import NOW  # noqa: E402
 from apps.events.models import Event  # noqa: E402
 from apps.events.services.dates import period_index  # noqa: E402
 from apps.web.presenters import tile  # noqa: E402
@@ -74,6 +75,18 @@ def test_一度も記録していないイベントの読み上げ():
 
 def test_今日やったイベントの読み上げ():
     assert "今日やった" in tile(make_event(last_local_date=TODAY), TODAY).aria_label
+
+
+def test_さっきやったイベントの読み上げ():
+    e = make_event(last_local_date=TODAY, last_occurred_at=NOW - timedelta(minutes=5))
+    assert "シーツ交換、さっきやった" in tile(e, TODAY, NOW).aria_label
+
+
+def test_数時間前にやったイベントの読み上げ():
+    e = make_event(last_local_date=TODAY, last_occurred_at=NOW - timedelta(hours=3))
+    t = tile(e, TODAY, NOW)
+    assert (t.number, t.unit, t.is_today) == ("3", "時間", True)
+    assert "シーツ交換、3時間前にやった" in t.aria_label
 
 
 def test_経過日数の読み上げ():

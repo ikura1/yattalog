@@ -53,18 +53,23 @@ def period_index(d: date, unit: str) -> int:
 
 @dataclass(frozen=True)
 class Elapsed:
-    """タイルに出す経過日数（SPEC 3.3）。"""
+    """タイルに出す経過時間（SPEC 3.3）。"""
 
     days: int | None  # None は一度も記録していない
+    minutes: int | None = None  # 今日の時刻ありの記録からの経過分。それ以外は None（決定 034）
 
     @property
     def label(self) -> tuple[str, str]:
-        """(数字, 単位)。例：("5", "日")、("今日", "")、("—", "")。"""
+        """(数字, 単位)。例：("5", "日")、("3", "時間")、("さっき", "")、("今日", "")、("—", "")。"""
         d = self.days
         if d is None:
             return ("—", "")
         if d <= 0:
-            return ("今日", "")
+            if self.minutes is None:
+                return ("今日", "")
+            if self.minutes < 60:
+                return ("さっき", "")
+            return (str(self.minutes // 60), "時間")
         if d < 60:
             return (str(d), "日")
         if d < 730:
@@ -72,11 +77,20 @@ class Elapsed:
         return (str(d // 365), "年")
 
 
-def elapsed(last_local_date: date | None, today: date) -> Elapsed:
+def elapsed(
+    last_local_date: date | None,
+    today: date,
+    last_occurred_at: datetime | None = None,
+    now: datetime | None = None,
+) -> Elapsed:
     if last_local_date is None:
         return Elapsed(None)
     # タイムゾーンをまたいだ直後は、記録の日付が「今日」より先になることがある。その場合は「今日」とする
-    return Elapsed(max(0, (today - last_local_date).days))
+    days = max(0, (today - last_local_date).days)
+    if days > 0 or last_occurred_at is None or now is None:
+        return Elapsed(days)
+    # 端末とサーバーの時計のずれで、記録の時刻が少し先になることがある。その場合は 0 分とする
+    return Elapsed(0, max(0, int((now - last_occurred_at).total_seconds() // 60)))
 
 
 def friendly_interval(days: float) -> str:

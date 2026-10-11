@@ -23,12 +23,12 @@ def tile(page):
     return page.locator("#grid .tile", has_text="シーツ交換")
 
 
-def test_タップすると今日になり_取り消すと元に戻る(home):
+def test_タップするとさっきになり_取り消すと元に戻る(home):
     page = home
     expect(tile(page).locator(".ago")).to_have_text("まだ")
 
     tile(page).click()
-    expect(tile(page).locator(".ago")).to_have_text("今日")
+    expect(tile(page).locator(".ago")).to_have_text("さっき")
     toast = page.locator(".toast:not(.hint)")
     expect(toast).to_contain_text("シーツ交換 を記録しました")
     assert Log.objects.count() == 1
@@ -51,5 +51,5 @@ def test_サーバーが失敗したらタイルを元に戻して知らせる(h
 
     page.unroute("**/record/")
     page.locator(".toast:not(.hint)").get_by_role("button", name="もう一度").click()
-    expect(tile(page).locator(".ago")).to_have_text("今日")
+    expect(tile(page).locator(".ago")).to_have_text("さっき")
     assert Log.objects.count() == 1

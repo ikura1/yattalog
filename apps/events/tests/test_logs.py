@@ -94,6 +94,48 @@ def test_タイムゾーンを変えても記録の日付は変わらない(user
     assert r.log.local_date == TODAY  # 決定 026
 
 
+def test_記録すると最終記録の時刻も更新される(user, event):
+    log_svc.record(user, event.id, uuid.uuid7())
+    event.refresh_from_db()
+    assert event.last_occurred_at == NOW
+
+
+def test_最終記録の時刻は_最終記録日の時刻ありの記録のうち一番新しいもの(user, event):
+    early = datetime(2026, 10, 10, 9, 0, tzinfo=ZoneInfo("Asia/Tokyo"))
+    log_svc.record(user, event.id, uuid.uuid7(), When(date=TODAY, time=time(9, 0)))
+    latest = log_svc.record(user, event.id, uuid.uuid7())
+    log_svc.record(user, event.id, uuid.uuid7(), When(date=TODAY))  # 時刻なしは対象外
+    event.refresh_from_db()
+    assert event.last_occurred_at == NOW
+
+    log_svc.undo(user, latest.log.id)
+    event.refresh_from_db()
+    assert event.last_occurred_at == early
+
+
+def test_最終記録日が時刻なしの記録だけなら_最終記録の時刻は空(user, event):
+    log_svc.record(user, event.id, uuid.uuid7(), When(date=TODAY - timedelta(1), time=time(23, 0)))
+    log_svc.record(user, event.id, uuid.uuid7(), When(date=TODAY))
+    event.refresh_from_db()
+    assert (event.last_local_date, event.last_occurred_at) == (TODAY, None)
+
+
+def test_マイグレーションは_すでにある記録から最終記録の時刻を入れる(user, event):
+    from importlib import import_module
+
+    from django.apps import apps
+
+    log_svc.record(user, event.id, uuid.uuid7())
+    never = ev_svc.create_event(user, name="散髪", emoji="✂️", color="grape")
+    Event.objects.update(last_occurred_at=None)  # 列を足した直後の状態
+
+    import_module("apps.events.migrations.0003_event_last_occurred_at").fill_last_occurred_at(apps, None)
+
+    event.refresh_from_db()
+    never.refresh_from_db()
+    assert (event.last_occurred_at, never.last_occurred_at) == (NOW, None)
+
+
 def test_取り消すと最終記録日と連続記録が計算し直される(user, event):
     log_svc.record(user, event.id, uuid.uuid7(), When(date=TODAY - timedelta(7)))
     latest = log_svc.record(user, event.id, uuid.uuid7())
@@ -132,6 +174,10 @@ def test_DBの制約で時刻とタイムゾーンは必ず一緒に入る(user,
         Log.objects.create(id=uuid.uuid7(), space=event.space, event=event, local_date=TODAY, occurred_at=NOW)
 
 
+def cache_of(event: Event) -> tuple:
+    return (event.log_count, event.last_local_date, event.last_occurred_at, event.streak_count, event.streak_period)
+
+
 @pytest.mark.django_db
 @settings(max_examples=25, deadline=None, suppress_health_check=[HealthCheck.too_slow])  # DB を使うので CI では遅い
 @given(st.lists(st.tuples(st.booleans(), st.integers(min_value=0, max_value=60)), min_size=1, max_size=25))
@@ -148,10 +194,10 @@ def test_追加と取り消しを繰り返してもキャッシュは一から�
         else:
             log_svc.undo(user, ids.pop(back % len(ids)))
     event.refresh_from_db()
-    cached = (event.log_count, event.last_local_date, event.streak_count, event.streak_period)
+    cached = cache_of(event)
     log_svc.refresh_event_cache(event)
     event.refresh_from_db()
-    assert cached == (event.log_count, event.last_local_date, event.streak_count, event.streak_period)
+    assert cached == cache_of(event)
 
 
 # --- 「🔥 N日連続！」を出すかどうか（RecordResult.streak_grew） -----------------------------
