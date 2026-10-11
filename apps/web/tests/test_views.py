@@ -39,6 +39,22 @@ def test_ホームにイベントが並ぶ(client_in, event):
     assert "シーツ交換" in body and "まだ" in body
 
 
+def test_CSRFトークンのないPOSTは拒否され_トークンをヘッダーで送れば通る(user, event):
+    from django.test import Client
+
+    browser = Client(enforce_csrf_checks=True)  # 通常のテスト用クライアントは CSRF の検査を省くので、検査ありで確かめる
+    browser.force_login(user)
+    url = f"/events/{event.id}/record/"
+
+    assert browser.post(url, {"log_id": str(uuid.uuid4())}).status_code == 403
+    assert not Log.objects.exists()
+
+    browser.get("/")  # ページを開くとトークンが配られる。htmx と fetch は、これをヘッダーで送り返す
+    token = browser.cookies["csrftoken"].value
+    assert browser.post(url, {"log_id": str(uuid.uuid4())}, HTTP_X_CSRFTOKEN=token).status_code == 200
+    assert Log.objects.count() == 1
+
+
 def test_CSPでインラインスクリプトを禁止している(client_in, event):
     csp = client_in.get("/")["Content-Security-Policy"]
     assert "script-src 'self'" in csp and "unsafe-inline" not in csp and "frame-ancestors 'none'" in csp
@@ -134,20 +150,36 @@ def theirs(other_user):
     return e, lid
 
 
-@pytest.mark.parametrize(
-    "method,path",
-    [
-        ("get", "/events/{e}/"),
-        ("get", "/events/{e}/record-sheet/"),
-        ("post", "/events/{e}/record/"),
-        ("get", "/events/{e}/edit/"),
-        ("post", "/events/{e}/remove/"),
-        ("post", "/events/{e}/restore/"),
-        ("post", "/events/{e}/move/"),
-        ("get", "/logs/{l}/edit/"),
-        ("post", "/logs/{l}/delete/"),
-    ],
-)
+# ID を受け取る URL と、他人の ID を渡したときに 404 になることを確かめるメソッド
+NOT_YOURS_ROUTES = [
+    ("get", "/events/{e}/"),
+    ("get", "/events/{e}/record-sheet/"),
+    ("post", "/events/{e}/record-sheet/"),
+    ("post", "/events/{e}/record/"),
+    ("get", "/events/{e}/edit/"),
+    ("post", "/events/{e}/edit/"),
+    ("get", "/events/{e}/remove/"),
+    ("post", "/events/{e}/remove/"),
+    ("post", "/events/{e}/restore/"),
+    ("post", "/events/{e}/move/"),
+    ("get", "/logs/{l}/edit/"),
+    ("post", "/logs/{l}/edit/"),
+    ("post", "/logs/{l}/delete/"),
+]
+# 取り消しは再送に備えて「何も起きない」で返す（404 にはしない）。下のテストで別に確かめている
+UNDO_ROUTE = "/logs/{l}/undo/"
+
+
+def test_IDを受け取るURLは_すべて他人のデータのテストに入っている():
+    """URL を足したのにテストを足し忘れる、を防ぐ（レビュー S4）。"""
+    from apps.web.urls import urlpatterns
+
+    routes = {"/" + str(p.pattern) for p in urlpatterns if "<uuid:" in str(p.pattern)}
+    with_id = {r.replace("<uuid:event_id>", "{e}").replace("<uuid:log_id>", "{l}") for r in routes}
+    assert with_id == {path for _, path in NOT_YOURS_ROUTES} | {UNDO_ROUTE}
+
+
+@pytest.mark.parametrize("method,path", NOT_YOURS_ROUTES)
 def test_他人のイベントと記録は404(client_in, theirs, method, path):
     e, lid = theirs
     r = getattr(client_in, method)(path.format(e=e.id, l=lid), {"log_id": str(uuid.uuid4()), "action": "delete"})
