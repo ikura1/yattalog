@@ -125,6 +125,7 @@ STORAGES = {
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/login/"
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None  # User に username 欄はない（allauth の既定は "username"）
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*"]
 ACCOUNT_EMAIL_VERIFICATION = "none"  # Google 側で確認済みのメールだけを受け付ける（adapter で検証）
