@@ -7,6 +7,7 @@
     get(k) { try { return localStorage.getItem(k); } catch (_) { return null; } },
     set(k, v) { try { localStorage.setItem(k, v); } catch (_) { /* 保存できなくても動く */ } },
   };
+  const TOO_MANY = "操作が多すぎます。少し待ってから、もう一度お試しください"; // 429（レート制限）
   const csrf = () => {
     const h = document.body.getAttribute("hx-headers");
     try { return JSON.parse(h)["X-CSRFToken"]; } catch (_) { return ""; }
@@ -152,9 +153,10 @@
         store.set("yl:hint-longpress", "1");
         setTimeout(() => toast("💡 タイルを長押しすると、日付を変えたりメモを残したりできます", [{ label: "OK", fn: () => {} }], { hint: true, duration: 9000 }), 5400);
       }
-    } catch (_) {
+    } catch (err) {
       const restored = replaceTile($(`#grid > li[data-id="${li.dataset.id}"]`) || li, before);
-      toast("記録できませんでした", [{ label: "もう一度", fn: () => { const b = restored && $(".tile", restored); if (b) quickRecord(b, logId); } }]);
+      const retry = [{ label: "もう一度", fn: () => { const b = restored && $(".tile", restored); if (b) quickRecord(b, logId); } }];
+      toast(err.message === "429" ? TOO_MANY : "記録できませんでした", retry);
     }
   }
 
@@ -458,7 +460,7 @@
     const d = $("#detail");
     if (d && window.htmx) window.htmx.ajax("GET", location.pathname + location.search, { target: "#detail", swap: "innerHTML" });
   });
-  document.addEventListener("htmx:responseError", () => toast("うまくいきませんでした。もう一度お試しください"));
+  document.addEventListener("htmx:responseError", (e) => toast(e.detail.xhr && e.detail.xhr.status === 429 ? TOO_MANY : "うまくいきませんでした。もう一度お試しください"));
   document.addEventListener("htmx:sendError", () => toast("通信できませんでした。つながっているか確認してください"));
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && sheet() && !sheet().hidden) closeSheet(); });
 

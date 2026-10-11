@@ -59,6 +59,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.core.ratelimit.RateLimitMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django_htmx.middleware.HtmxMiddleware",
@@ -163,6 +164,17 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = 60 * 60 * 24 * 30
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+
+# --- レート制限（レビュー S7、決定 037）---------------------------------------
+# 名前: (回数, 秒)。ログインしていれば人ごと、していなければ接続元ごとに数える
+RATE_LIMITS = {
+    "record": (60, 60),  # 記録の追加
+    "write": (120, 60),  # 書き込み全般（記録を含む）
+    "login": (20, 60),  # ログインの入口と戻り先（/accounts/）
+    "all": (300, 60),  # すべてのリクエスト（静的ファイルは除く）
+}
+# 回数はプロセス内に持つ。Cloud Run のインスタンスごとに別々に数える（最大2台）
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 
 # CSP（Django 6.0 の標準機能）。インラインスクリプトは nonce 付きのものだけを許可する
 from django.utils.csp import CSP  # noqa: E402
