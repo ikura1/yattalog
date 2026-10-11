@@ -28,10 +28,10 @@ say "コンテナの置き場所（Artifact Registry）"
 gcloud artifacts repositories describe yattalog --location "$REGION" >/dev/null 2>&1 || \
   gcloud artifacts repositories create yattalog --repository-format docker --location "$REGION" \
     --description "Yattalog のコンテナイメージ"
-# 無料枠（0.5GB）に収まるよう、新しい5つだけを残す
+# 無料枠（0.5GB）に収まるよう、新しい5つだけを残す（1日より古いものが削除の対象。"0s" は条件なしとみなされて弾かれる）
 cat > /tmp/yattalog-cleanup.json <<'JSON'
 [{"name":"keep-recent","action":{"type":"Keep"},"mostRecentVersions":{"keepCount":5}},
- {"name":"delete-old","action":{"type":"Delete"},"condition":{"olderThan":"0s"}}]
+ {"name":"delete-old","action":{"type":"Delete"},"condition":{"tagState":"ANY","olderThan":"1d"}}]
 JSON
 gcloud artifacts repositories set-cleanup-policies yattalog --location "$REGION" \
   --policy /tmp/yattalog-cleanup.json --no-dry-run >/dev/null
