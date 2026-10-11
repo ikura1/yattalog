@@ -267,7 +267,7 @@
 ## 4. 運用・技術（決定分）
 
 - **サーバー**：Django 6.x。API は Django Ninja、画面は Django テンプレート＋htmx（決定 025）
-- **デプロイ**：Render（Web と PostgreSQL。`render.yaml` で構成をコード管理する）
+- **デプロイ（試験運用）**：Google Cloud Run（シンガポール）＋ Neon PostgreSQL（無料プラン）。main へのマージで GitHub Actions が自動デプロイする（決定 033、`deploy/README.md`）
 - **画像の保存先**：Cloudflare R2
 - **データ**：新規に始める。旧 TimeTask との互換性や移行は不要
 

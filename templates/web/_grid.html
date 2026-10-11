@@ -1,0 +1,10 @@
+<nav class="tabs" id="tabs" role="tablist" aria-label="カテゴリ">
+  <button type="button" role="tab" data-tab="all" aria-selected="true">すべて<span class="n">{{ total }}</span></button>
+  {% for c, n in categories %}<button type="button" role="tab" data-tab="{{ c.id }}" aria-selected="false">{{ c.name }}<span class="n">{{ n }}</span></button>{% endfor %}
+  <button type="button" class="tab-add" aria-label="カテゴリを管理" hx-get="{% url 'web:categories' %}" hx-target="#sheet-body">＋</button>
+</nav>
+<ul class="grid" id="grid" role="tabpanel">
+  {% for t in tiles %}{% include "web/_tile.html" %}{% endfor %}
+  <li class="add-li"><button class="tile add" type="button" id="addTile" hx-get="{% url 'web:event_new' %}" hx-target="#sheet-body"><span class="emo" aria-hidden="true">＋</span>追加</button></li>
+</ul>
+<p class="empty tab-empty" id="tabEmpty" hidden>このカテゴリにはまだイベントがありません。「＋ 追加」で作れます。</p>

@@ -1,0 +1,23 @@
+<h2>カテゴリ</h2>
+<p class="note">ホーム上部のタブになります。1つのイベントは1つのカテゴリに入ります。</p>
+<ul class="catlist">
+  {% for c, n in rows %}
+  <li>
+    <form hx-post="{% url 'web:categories' %}" hx-target="#sheet-body" class="cat-rename">
+      <input type="hidden" name="action" value="rename"><input type="hidden" name="id" value="{{ c.id }}">
+      <input type="text" name="name" value="{{ c.name }}" maxlength="20" aria-label="カテゴリ名" hx-trigger="change" hx-post="{% url 'web:categories' %}" hx-target="#sheet-body" hx-include="closest form">
+    </form>
+    <span class="cnt">{{ n }}件</span>
+    <button class="iconbtn" type="button" aria-label="上へ" {% if forloop.first %}disabled{% endif %} hx-post="{% url 'web:categories' %}" hx-vals='{"action":"up","id":"{{ c.id }}"}' hx-target="#sheet-body">↑</button>
+    <button class="iconbtn" type="button" aria-label="下へ" {% if forloop.last %}disabled{% endif %} hx-post="{% url 'web:categories' %}" hx-vals='{"action":"down","id":"{{ c.id }}"}' hx-target="#sheet-body">↓</button>
+    <button class="iconbtn" type="button" aria-label="{{ c.name }}を削除" hx-post="{% url 'web:categories' %}" hx-vals='{"action":"delete","id":"{{ c.id }}"}' hx-target="#sheet-body"
+            hx-confirm="「{{ c.name }}」を削除すると、入っている{{ n }}件のイベントは「なし」になります（イベントと記録は消えません）。">🗑</button>
+  </li>
+  {% empty %}<li class="note">まだカテゴリがありません</li>{% endfor %}
+</ul>
+<form hx-post="{% url 'web:categories' %}" hx-target="#sheet-body" class="inline-new">
+  <input type="hidden" name="action" value="create">
+  <input type="text" name="name" maxlength="20" placeholder="新しいカテゴリ名" aria-label="新しいカテゴリ名" required>
+  <button class="btn small primary" type="submit">追加</button>
+</form>
+{% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}

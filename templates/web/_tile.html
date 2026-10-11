@@ -1,0 +1,16 @@
+<li data-category="{{ t.event.category_id|default:'' }}" data-id="{{ t.event.id }}">
+  <button class="tile c-{{ t.event.color }}{% if t.is_today %} today{% endif %}" type="button"
+          data-id="{{ t.event.id }}"
+          data-record-url="{% url 'web:record' t.event.id %}"
+          data-sheet-url="{% url 'web:record_sheet' t.event.id %}"
+          data-detail-url="{% url 'web:event_detail' t.event.id %}"
+          data-remove-url="{% url 'web:event_remove' t.event.id %}"
+          data-move-url="{% url 'web:event_move' t.event.id %}"
+          aria-label="{{ t.aria_label }}">
+    <span class="x" data-x aria-hidden="true">×</span>
+    {% if t.streak %}<span class="streak{% if not t.streak.current %} pending{% endif %}" aria-hidden="true"><span class="fire">🔥</span>{{ t.streak.count }}{% if t.streak_unit_label %}<small>{{ t.streak_unit_label }}</small>{% endif %}</span>{% endif %}
+    <span class="emo" aria-hidden="true">{{ t.event.emoji }}</span>
+    <span class="name">{{ t.event.name }}</span>
+    {% if t.never %}<span class="ago never">まだ</span>{% else %}<span class="ago">{{ t.number }}{% if t.unit %}<small>{{ t.unit }}</small>{% endif %}</span>{% endif %}
+  </button>
+</li>

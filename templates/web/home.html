@@ -1,0 +1,20 @@
+{% extends "web/base.html" %}
+{% block body %}
+<div class="app" id="app" data-grid-url="{% url 'web:grid' %}" data-tz-url="{% url 'web:timezone' %}"
+     data-user-tz="{{ user_tz }}" data-kept-tz="{{ user.timezone_kept_for }}" data-needs-tz="{{ needs_tz|yesno:'1,' }}">
+  <header class="bar">
+    <h1 class="logo">Yatta<b>log</b></h1>
+    <button class="pill" id="editBtn" type="button" aria-pressed="false">編集</button>
+    <button class="iconbtn" type="button" aria-label="メニュー"
+            hx-get="{% url 'web:menu' %}" hx-target="#sheet-body">⋯</button>
+  </header>
+  <div class="banner" id="netBanner" hidden role="status">オフラインです。つながると記録できます</div>
+  <div class="banner" id="tzBanner" hidden role="status">
+    <span>端末のタイムゾーン（<b id="tzName"></b>）に切り替えますか？</span>
+    <button type="button" class="btn small primary" id="tzYes">切り替える</button>
+    <button type="button" class="btn small" id="tzNo">このまま</button>
+  </div>
+  <p class="edit-hint" id="editHint" hidden>ドラッグで並べ替え ・ タップで詳細 ・ ×でアーカイブ／削除</p>
+  <div id="grid-wrap">{% include "web/_grid.html" %}</div>
+</div>
+{% endblock %}

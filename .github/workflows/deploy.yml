@@ -1,0 +1,63 @@
+# main に入ったら Cloud Run にデプロイする（決定 033）。
+# 認証はキーを使わない Workload Identity 連携。必要な値はリポジトリの Variables に入れる（deploy/README.md）。
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  REGION: asia-southeast1
+  SERVICE: yattalog
+  IMAGE: asia-southeast1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/yattalog/app:${{ github.sha }}
+
+jobs:
+  deploy:
+    if: ${{ vars.GCP_PROJECT_ID != '' }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and push image
+        run: |
+          gcloud auth configure-docker asia-southeast1-docker.pkg.dev --quiet
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+
+      - name: Migrate database
+        run: |
+          gcloud run jobs deploy yattalog-migrate \
+            --image "$IMAGE" --region "$REGION" \
+            --service-account "${{ vars.GCP_RUNTIME_SA }}" \
+            --set-secrets "DJANGO_SECRET_KEY=django-secret-key:latest,DATABASE_URL=database-url:latest" \
+            --command python --args manage.py,migrate,--noinput \
+            --max-retries 0 --task-timeout 300s \
+            --execute-now --wait
+
+      - name: Deploy service
+        run: |
+          gcloud run deploy "$SERVICE" \
+            --image "$IMAGE" --region "$REGION" \
+            --service-account "${{ vars.GCP_RUNTIME_SA }}" \
+            --allow-unauthenticated \
+            --min-instances 0 --max-instances 2 \
+            --cpu 1 --memory 512Mi --cpu-boost --concurrency 40 \
+            --set-env-vars "DJANGO_ALLOWED_HOSTS=${{ vars.DJANGO_ALLOWED_HOSTS }},GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }}" \
+            --set-secrets "DJANGO_SECRET_KEY=django-secret-key:latest,DATABASE_URL=database-url:latest,GOOGLE_CLIENT_SECRET=google-client-secret:latest,DJANGO_ADMIN_URL=django-admin-url:latest"

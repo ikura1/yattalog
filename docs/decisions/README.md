@@ -27,7 +27,7 @@
 | 002 | [一般公開する](002-public-release.md) | 決定 |
 | 003 | [スマホ中心・PWA で作る](003-mobile-first-pwa.md) | 決定 |
 | 004 | [v1 は個人用、共有は将来に備える](004-personal-first-sharing-later.md) | 決定 |
-| 005 | [デプロイ先は Render と Cloudflare R2](005-hosting-render-r2.md) | 決定 |
+| 005 | [デプロイ先は Render と Cloudflare R2](005-hosting-render-r2.md) | 決定（アプリと DB は 033 で置き換え） |
 | 006 | [記録はタップで即記録、長押しで詳細入力](006-tap-and-long-press.md) | 決定（010 で具体化） |
 | 007 | [目安の間隔（期限）は持たせない](007-no-target-interval.md) | 決定 |
 | 008 | [ホームの並び順は手動](008-manual-ordering.md) | 決定（010 で具体化） |
@@ -55,3 +55,4 @@
 | 030 | [α・β・一般公開の3段階でリリースする](030-staged-release.md) | 決定 |
 | 031 | [ホーム画面への追加（PWA）を案内する](031-pwa-install-guide.md) | 決定 |
 | 032 | [データモデルの基本方針](032-data-model.md) | 決定 |
+| 033 | [試験運用は Cloud Run ＋ Neon（無料プラン）で動かす](033-cloud-run-neon-for-trial.md) | 決定 |

@@ -1,0 +1,14 @@
+# 手元で本番と同じ PostgreSQL を使うための設定（レビュー 9）。
+#   docker compose up -d
+#   export DATABASE_URL=postgres://yattalog:yattalog@localhost:5432/yattalog
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: yattalog
+      POSTGRES_PASSWORD: yattalog
+      POSTGRES_DB: yattalog
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+volumes:
+  pgdata:
