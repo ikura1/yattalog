@@ -97,3 +97,18 @@ def test_カテゴリを絵文字つきで追加すると_タブに絵文字が�
     new.get_by_role("button", name="追加").click()
 
     expect(page.locator('#tabs [role="tab"]', has_text="家事").locator(".cat-emo")).to_have_text("🧹")
+
+
+# --- レート制限（決定 037） ---
+
+
+def test_操作が多すぎると言われたら_その旨を知らせてタイルを元に戻す(home):
+    page = home
+    page.route(
+        "**/record/", lambda route: route.fulfill(status=429, body="操作が多すぎます", headers={"Retry-After": "30"})
+    )
+
+    tile(page).click()
+
+    expect(page.locator(".toast:not(.hint)")).to_contain_text("操作が多すぎます")
+    expect(tile(page).locator(".ago")).to_have_text("まだ")

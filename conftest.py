@@ -20,6 +20,15 @@ def frozen_clock(request):
         yield
 
 
+@pytest.fixture(autouse=True)
+def empty_cache():
+    """レート制限の回数がテストをまたいで残らないようにする。"""
+    from django.core.cache import cache
+
+    cache.clear()
+    yield
+
+
 @pytest.fixture
 def user(db):
     return new_user()
