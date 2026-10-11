@@ -298,6 +298,16 @@
     const parts = [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(s)];
     return parts[parts.length - 1].segment;
   }
+  // 絵文字を1つだけ入れる欄（カテゴリの絵文字など）。続けて打ったら、最後の1つに置き換える
+  const keepOneEmoji = (e) => {
+    const el = e.target;
+    if (e.isComposing || !el.matches || !el.matches("[data-one-emoji]")) return;
+    const one = lastGrapheme(el.value);
+    if (el.value !== one) el.value = one;
+  };
+  document.addEventListener("input", keepOneEmoji);
+  document.addEventListener("compositionend", keepOneEmoji);
+
   function bindEmojiField(root) {
     const input = $("#evEmoji", root);
     if (!input) return;

@@ -149,6 +149,11 @@ textarea { min-height: 84px; resize: vertical; }
 .catlist li { display: flex; align-items: center; gap: 4px; padding: 6px 0; border-top: 1px solid var(--line); }
 .catlist li:first-child { border-top: none; }
 .catlist form { flex: 1; min-width: 0; }
+.catlist form { display: flex; gap: 6px; }
+.catlist form input { flex: 1; padding-left: 8px; padding-right: 8px; }
+.catlist form input.cat-emoji, .inline-new input.cat-emoji { width: 44px; flex: 0 0 auto; text-align: center; padding-left: 4px; padding-right: 4px; }
+.cat-emoji::placeholder { opacity: .35; }
+.chips .cat-emo { margin-right: 4px; }
 .catlist .cnt { font-size: 12px; color: var(--muted); white-space: nowrap; padding: 0 4px; }
 .menu { list-style: none; margin: 0; padding: 0; }
 .menu button { width: 100%; text-align: left; border: none; background: transparent; padding: 13px 4px; border-top: 1px solid var(--line); }

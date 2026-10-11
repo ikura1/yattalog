@@ -21,7 +21,7 @@
   <fieldset class="field"><legend class="lbl">カテゴリ</legend>
     <div class="chips">
       <label><input type="radio" name="category" value="" {% if not selected_category %}checked{% endif %}><span>なし</span></label>
-      {% for c in categories %}<label><input type="radio" name="category" value="{{ c.id }}" {% if selected_category == c.id|stringformat:'s' %}checked{% endif %}><span>{{ c.name }}</span></label>{% endfor %}
+      {% for c in categories %}<label><input type="radio" name="category" value="{{ c.id }}" {% if selected_category == c.id|stringformat:'s' %}checked{% endif %}><span>{% if c.emoji %}<span class="cat-emo" aria-hidden="true">{{ c.emoji }}</span>{% endif %}{{ c.name }}</span></label>{% endfor %}
     </div>
   </fieldset>
   {% if not event %}

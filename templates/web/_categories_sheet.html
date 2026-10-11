@@ -1,10 +1,12 @@
 <h2>カテゴリ</h2>
-<p class="note">ホーム上部のタブになります。1つのイベントは1つのカテゴリに入ります。</p>
+<p class="note">ホーム上部のタブになります。1つのイベントは1つのカテゴリに入ります。左の欄には、絵文字を1つ付けられます（なくてもかまいません）。</p>
 <ul class="catlist">
   {% for c, n in rows %}
   <li>
     <form hx-post="{% url 'web:categories' %}" hx-target="#sheet-body" class="cat-rename">
       <input type="hidden" name="action" value="rename"><input type="hidden" name="id" value="{{ c.id }}">
+      <input type="text" name="emoji" value="{{ c.emoji }}" maxlength="16" class="cat-emoji" data-one-emoji placeholder="😀" aria-label="{{ c.name }}の絵文字（なくてもよい）"
+             autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" hx-trigger="change" hx-post="{% url 'web:categories' %}" hx-target="#sheet-body" hx-include="closest form">
       <input type="text" name="name" value="{{ c.name }}" maxlength="20" aria-label="カテゴリ名" hx-trigger="change" hx-post="{% url 'web:categories' %}" hx-target="#sheet-body" hx-include="closest form">
     </form>
     <span class="cnt">{{ n }}件</span>
@@ -17,6 +19,8 @@
 </ul>
 <form hx-post="{% url 'web:categories' %}" hx-target="#sheet-body" class="inline-new">
   <input type="hidden" name="action" value="create">
+  <input type="text" name="emoji" maxlength="16" class="cat-emoji" data-one-emoji placeholder="😀" aria-label="新しいカテゴリの絵文字（なくてもよい）"
+         autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
   <input type="text" name="name" maxlength="20" placeholder="新しいカテゴリ名" aria-label="新しいカテゴリ名" required>
   <button class="btn small primary" type="submit">追加</button>
 </form>

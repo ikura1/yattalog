@@ -76,6 +76,7 @@ Django のカスタムユーザー。パスワードは使わない（Google ロ
 | id | uuid PK | |
 | space | FK → Space（CASCADE） | |
 | name | varchar(20) | |
+| emoji | varchar(16) | 任意の絵文字1つ。なければ空文字（決定 036） |
 | sort_key | varchar(64) | タブの並び順（分数インデックス） |
 | created_at / updated_at | timestamptz | |
 

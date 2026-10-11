@@ -5,7 +5,7 @@ import uuid
 
 import pytest
 
-from apps.events.models import Event, Log
+from apps.events.models import Category, Event, Log
 from apps.events.services import events as ev_svc
 from apps.events.services import logs as log_svc
 
@@ -283,3 +283,35 @@ def test_DBのソートキーが壊れていても並べ替えは500ではなく
 def test_存在しないIDは404(client_in, path):
     method = client_in.post if path.endswith("restore/") else client_in.get
     assert method(path.format(id=uuid.uuid4())).status_code == 404
+
+
+# --- カテゴリの絵文字（決定 036） ---
+
+
+def test_カテゴリを絵文字つきで作ると_タブとイベントのシートに絵文字が出る(client_in, user):
+    r = client_in.post("/categories/", {"action": "create", "name": "家事", "emoji": "🧹"})
+    assert r.status_code == 200 and Category.objects.get(name="家事").emoji == "🧹"
+    assert "🧹</span>家事" in client_in.get("/").content.decode()
+    assert "🧹</span>家事" in client_in.get("/events/new/").content.decode()
+
+
+def test_絵文字なしのカテゴリは_名前だけが出る(client_in, user):
+    ev_svc.create_category(user, "家事")
+    assert 'class="cat-emo"' not in client_in.get("/").content.decode()
+
+
+def test_カテゴリの一覧で絵文字を変えたり外したりできる(client_in, user):
+    house = ev_svc.create_category(user, "家事", emoji="🧹")
+    client_in.post("/categories/", {"action": "rename", "id": str(house.id), "name": "家事", "emoji": "🧺"})
+    house.refresh_from_db()
+    assert house.emoji == "🧺"
+
+    client_in.post("/categories/", {"action": "rename", "id": str(house.id), "name": "家事", "emoji": ""})
+    house.refresh_from_db()
+    assert house.emoji == ""
+
+
+def test_カテゴリの絵文字が正しくなければ_エラーを出して保存しない(client_in, user):
+    r = client_in.post("/categories/", {"action": "create", "name": "家事", "emoji": "そうじ"})
+    assert "絵文字を1つ" in r.content.decode() and not Category.objects.exists()
+    assert "HX-Trigger" not in r

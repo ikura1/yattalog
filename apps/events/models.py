@@ -37,6 +37,7 @@ class StreakUnit(models.TextChoices):
 class Category(BaseModel):
     space = models.ForeignKey(Space, on_delete=models.CASCADE, related_name="categories")
     name = models.CharField(max_length=20)
+    emoji = models.CharField(max_length=16, blank=True, default="")  # 任意。タブの名前の前に出す（決定 036）
     sort_key = SortKeyField()
 
     class Meta:
