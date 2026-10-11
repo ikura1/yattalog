@@ -58,7 +58,7 @@ def test_同じIDで2回記録しても1件(client_in, event):
     r1 = client_in.post(f"/events/{event.id}/record/", {"log_id": lid})
     r2 = client_in.post(f"/events/{event.id}/record/", {"log_id": lid})
     assert (r1.json()["created"], r2.json()["created"]) == (True, False)
-    assert Log.objects.count() == 1 and "今日" in r1.json()["tile_html"]
+    assert Log.objects.count() == 1 and "さっき" in r1.json()["tile_html"]
 
 
 def test_取り消すと記録が消える(client_in, event):

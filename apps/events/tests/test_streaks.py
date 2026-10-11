@@ -3,6 +3,7 @@ from datetime import date, timedelta
 from hypothesis import given
 from hypothesis import strategies as st
 
+from apps.core.testing import NOW
 from apps.events.services.dates import Elapsed, elapsed, friendly_interval, period_index
 from apps.events.services.streaks import compute_streak, streak_state
 
@@ -120,3 +121,25 @@ def test_タイムゾーン名の検証():
 
     assert is_valid_timezone("Asia/Tokyo") and is_valid_timezone("America/Los_Angeles")
     assert not any(map(is_valid_timezone, ["", "Not/AZone", "../etc/passwd", "x" * 100]))
+
+
+# --- 今日の記録は時間で出す（決定 034） ---------------------------------------------
+
+
+def test_今日の時刻ありの記録は_1時間未満なら_さっき_それ以上は_N時間():
+    assert elapsed(D, D, NOW - timedelta(seconds=30), NOW).label == ("さっき", "")
+    assert elapsed(D, D, NOW - timedelta(minutes=59), NOW).label == ("さっき", "")
+    assert elapsed(D, D, NOW - timedelta(minutes=60), NOW).label == ("1", "時間")
+    assert elapsed(D, D, NOW - timedelta(hours=5, minutes=50), NOW).label == ("5", "時間")
+
+
+def test_今日の時刻なしの記録は_今日_のまま():
+    assert elapsed(D, D, None, NOW).label == ("今日", "")
+
+
+def test_日付が変わったら_2時間前の記録でも_1日():
+    assert elapsed(D - timedelta(1), D, NOW - timedelta(hours=2), NOW).label == ("1", "日")
+
+
+def test_時計のずれで記録が少し先の時刻でも_さっき():
+    assert elapsed(D, D, NOW + timedelta(seconds=40), NOW).label == ("さっき", "")

@@ -64,6 +64,7 @@ class Event(BaseModel):
 
     # --- キャッシュ（記録の追加・編集・削除のときにサービス層で更新する、決定 032）---
     last_local_date = models.DateField(null=True, blank=True)
+    last_occurred_at = models.DateTimeField(null=True, blank=True)  # 最終記録日の、時刻ありの記録のうち最新の時刻
     log_count = models.PositiveIntegerField(default=0)
     streak_count = models.PositiveIntegerField(default=0)
     streak_period = models.IntegerField(null=True, blank=True)

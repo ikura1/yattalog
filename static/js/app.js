@@ -132,9 +132,9 @@
     if (!navigator.onLine) { toast("オフラインです。つながると記録できます"); return; }
     const li = btn.closest("li");
     const before = li.outerHTML;
-    // 楽観的更新：返事を待たずに「今日」にする
+    // 楽観的更新：返事を待たずに「さっき」にする
     const ago = $(".ago", btn);
-    if (ago) { ago.className = "ago"; ago.textContent = "今日"; }
+    if (ago) { ago.className = "ago"; ago.textContent = "さっき"; }
     btn.classList.add("today", "pop", "pending-net");
     try {
       const res = await post(btn.dataset.recordUrl, { log_id: logId });
@@ -290,6 +290,18 @@
     }
   }
 
+  /* ---------- 開いたままでも経過時間を古くしない ----------
+     「さっき」「N時間」「今日」は時間がたつと変わるので、画面に戻ってきたときと一定時間ごとにホームを読み直す。
+     編集中・シートを開いている間・タイルを押している間・記録の送信中は、操作のじゃまになるので読み直さない。 */
+  const STALE_MS = 5 * 60 * 1000;
+  let gridLoadedAt = Date.now();
+  function refreshIfStale() {
+    if (document.hidden || !$("#grid") || !navigator.onLine) return;
+    if (editing || press || $(".pending-net") || (sheet() && !sheet().hidden)) return;
+    if (Date.now() - gridLoadedAt < STALE_MS) return;
+    refreshHome();
+  }
+
   /* ---------- 左右スワイプでタブ切り替え（画面の端は除く、レビュー D5） ---------- */
   let sw = null;
   document.addEventListener("pointerdown", (e) => {
@@ -402,7 +414,7 @@
   document.addEventListener("htmx:afterSwap", (e) => {
     const t = e.detail.target;
     if (t.id === "sheet-body") { openSheet(); bindRecordForm(t); }
-    if (t.id === "grid-wrap") { bindHome(); applyTab(currentTab()); }
+    if (t.id === "grid-wrap") { gridLoadedAt = Date.now(); bindHome(); applyTab(currentTab()); }
     if (t.id === "detail") bindSeason(t);
   });
   document.addEventListener("yl:close-sheet", closeSheet);
@@ -431,6 +443,8 @@
     bindSeason(document);
     initTimezone();
     netBanner();
+    document.addEventListener("visibilitychange", refreshIfStale);
+    setInterval(refreshIfStale, 60 * 1000);
     window.addEventListener("online", netBanner);
     window.addEventListener("offline", netBanner);
   });

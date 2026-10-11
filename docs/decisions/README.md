@@ -56,3 +56,4 @@
 | 031 | [ホーム画面への追加（PWA）を案内する](031-pwa-install-guide.md) | 決定 |
 | 032 | [データモデルの基本方針](032-data-model.md) | 決定 |
 | 033 | [試験運用は Cloud Run ＋ Neon（無料プラン）で動かす](033-cloud-run-neon-for-trial.md) | 決定 |
+| 034 | [今日の記録は「さっき」「N時間」で表示する](034-elapsed-hours-today.md) | 決定 |
