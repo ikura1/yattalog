@@ -1,6 +1,6 @@
 <nav class="tabs" id="tabs" role="tablist" aria-label="カテゴリ">
   <button type="button" role="tab" data-tab="all" aria-selected="true">すべて<span class="n">{{ total }}</span></button>
-  {% for c, n in categories %}<button type="button" role="tab" data-tab="{{ c.id }}" aria-selected="false">{{ c.name }}<span class="n">{{ n }}</span></button>{% endfor %}
+  {% for c, n in categories %}<button type="button" role="tab" data-tab="{{ c.id }}" aria-selected="false">{% if c.emoji %}<span class="cat-emo" aria-hidden="true">{{ c.emoji }}</span>{% endif %}{{ c.name }}<span class="n">{{ n }}</span></button>{% endfor %}
   <button type="button" class="tab-add" aria-label="カテゴリを管理" hx-get="{% url 'web:categories' %}" hx-target="#sheet-body">＋</button>
 </nav>
 <ul class="grid" id="grid" role="tabpanel">

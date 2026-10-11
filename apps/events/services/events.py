@@ -44,6 +44,16 @@ def _clean_emoji(emoji: str) -> str:
     return emoji
 
 
+def _clean_optional_emoji(emoji: str) -> str:
+    """付けなくてもよい絵文字（カテゴリ）。入れるなら絵文字1つ。"""
+    emoji = (emoji or "").strip()
+    if not emoji:
+        return ""
+    if len(emoji) > EMOJI_MAX or not is_single_emoji(emoji):
+        raise ValidationError("カテゴリの絵文字は、絵文字を1つ入れるか空にしてください", code="emoji")
+    return emoji
+
+
 def _check(color: str, unit: str) -> None:
     if color not in COLORS:
         raise ValidationError("色を選んでください", code="color")
@@ -174,23 +184,27 @@ def move_event(user, event_id, *, before_id=None, after_id=None) -> Event:
 
 
 @transaction.atomic
-def create_category(user, name: str) -> Category:
+def create_category(user, name: str, emoji: str = "") -> Category:
     space = personal_space(user)
     name = _clean_name(name, 20, "カテゴリ名")
+    emoji = _clean_optional_emoji(emoji)
     if existing := Category.objects.filter(space=space, name=name).first():
         return existing
     last = Category.objects.filter(space=space).order_by("-sort_key").values_list("sort_key", flat=True).first()
-    return Category.objects.create(space=space, name=name, sort_key=_key_between(last, None))
+    return Category.objects.create(space=space, name=name, emoji=emoji, sort_key=_key_between(last, None))
 
 
 @transaction.atomic
-def rename_category(user, category_id, name: str) -> Category:
+def rename_category(user, category_id, name: str, emoji: str | None = None) -> Category:
+    """名前と絵文字を変える。emoji が None なら絵文字はそのまま、空文字なら外す。"""
     cat = category_for(user, category_id)
     name = _clean_name(name, 20, "カテゴリ名")
     if Category.objects.filter(space=cat.space, name=name).exclude(id=cat.id).exists():
         raise ValidationError("同じ名前のカテゴリがあります", code="duplicate")
     cat.name = name
-    cat.save(update_fields=["name", "updated_at"])
+    if emoji is not None:
+        cat.emoji = _clean_optional_emoji(emoji)
+    cat.save(update_fields=["name", "emoji", "updated_at"])
     return cat
 
 

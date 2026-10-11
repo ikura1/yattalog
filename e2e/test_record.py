@@ -81,3 +81,19 @@ def test_おすすめを選び直すと_入力欄は空になる(home):
 
     expect(page.locator("#evEmoji")).to_have_value("")
     expect(page.locator('input[name="emoji"]:checked')).to_have_value("✂️")
+
+
+# --- カテゴリの絵文字（決定 036） ---
+
+
+def test_カテゴリを絵文字つきで追加すると_タブに絵文字が出る(home):
+    page = home
+    page.locator(".tab-add").click()
+    new = page.locator(".inline-new")
+    new.locator('input[name="emoji"]').press_sequentially("🧺🧹")  # 続けて打ったら、最後の1つだけ残る
+    expect(new.locator('input[name="emoji"]')).to_have_value("🧹")
+    new.locator('input[name="name"]').fill("家事")
+
+    new.get_by_role("button", name="追加").click()
+
+    expect(page.locator('#tabs [role="tab"]', has_text="家事").locator(".cat-emo")).to_have_text("🧹")

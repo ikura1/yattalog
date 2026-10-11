@@ -457,9 +457,9 @@ def categories(request: HttpRequest) -> HttpResponse:
         try:
             match action:
                 case "create":
-                    ev_svc.create_category(request.user, p.get("name", ""))
+                    ev_svc.create_category(request.user, p.get("name", ""), p.get("emoji", ""))
                 case "rename":
-                    ev_svc.rename_category(request.user, p.get("id"), p.get("name", ""))
+                    ev_svc.rename_category(request.user, p.get("id"), p.get("name", ""), p.get("emoji"))
                 case "delete":
                     ev_svc.delete_category(request.user, p.get("id"))
                 case "up" | "down":

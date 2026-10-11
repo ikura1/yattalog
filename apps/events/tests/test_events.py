@@ -154,3 +154,34 @@ def test_壊れたソートキーが入っていても並べ替えは入力エ�
     Event.objects.filter(id=a.id).update(sort_key="!!")
     with pytest.raises(ValidationError):
         ev_svc.move_event(user, b.id, after_id=a.id)
+
+
+# --- カテゴリの絵文字（任意、決定 036） ---
+
+
+def test_カテゴリは絵文字つきでも_なしでも作れる(user):
+    assert ev_svc.create_category(user, "家事", emoji=" 🧹 ").emoji == "🧹"
+    assert ev_svc.create_category(user, "趣味").emoji == ""
+
+
+@pytest.mark.parametrize("not_one_emoji", ["a", "あ", "🧹🧺", "🧹a"])
+def test_カテゴリの絵文字は_入れるなら絵文字1つ(user, not_one_emoji):
+    with pytest.raises(ValidationError, match="絵文字を1つ"):
+        ev_svc.create_category(user, "家事", emoji=not_one_emoji)
+    assert not Category.objects.exists()
+
+
+def test_カテゴリの絵文字は_あとから付けたり外したりできる(user):
+    house = ev_svc.create_category(user, "家事")
+
+    assert ev_svc.rename_category(user, house.id, "家事", emoji="🧹").emoji == "🧹"
+    assert ev_svc.rename_category(user, house.id, "そうじ").emoji == "🧹"  # 絵文字を渡さなければそのまま
+    assert ev_svc.rename_category(user, house.id, "そうじ", emoji="").emoji == ""
+
+
+def test_カテゴリの絵文字が正しくなければ_名前も変わらない(user):
+    house = ev_svc.create_category(user, "家事", emoji="🧹")
+    with pytest.raises(ValidationError, match="絵文字を1つ"):
+        ev_svc.rename_category(user, house.id, "そうじ", emoji="abc")
+    house.refresh_from_db()
+    assert (house.name, house.emoji) == ("家事", "🧹")
