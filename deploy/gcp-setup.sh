@@ -66,8 +66,9 @@ if ! gcloud secrets describe database-url >/dev/null 2>&1; then
   put_secret database-url "$DBURL"
 fi
 if ! gcloud secrets describe google-client-secret >/dev/null 2>&1; then
-  read -rsp "Google OAuth のクライアントシークレット: " GSECRET; echo
-  put_secret google-client-secret "$GSECRET"
+  echo "Google OAuth のリダイレクト URI: https://yattalog-$PROJECT_NUMBER.$REGION.run.app/accounts/google/login/callback/"
+  read -rsp "Google OAuth のクライアントシークレット（まだなら空のまま Enter。あとでこのスクリプトをもう一度流す）: " GSECRET; echo
+  if [ -n "$GSECRET" ]; then put_secret google-client-secret "$GSECRET"; else MISSING_GSECRET=1; fi
 fi
 
 say "GitHub Actions からのキーなし認証（Workload Identity 連携）"
@@ -91,6 +92,9 @@ cat <<OUT
   DJANGO_ALLOWED_HOSTS  = $HOST
   GOOGLE_CLIENT_ID      = （OAuth クライアント ID）
 
-Google OAuth クライアントの「承認済みのリダイレクト URI」に次を追加してください:
+Google OAuth クライアントの「承認済みのリダイレクト URI」:
   https://$HOST/accounts/google/login/callback/
 OUT
+if [ -n "${MISSING_GSECRET:-}" ]; then
+  echo "⚠ Google OAuth のクライアントシークレットが未登録です。OAuth クライアントを作ってから、もう一度このスクリプトを流してください（作成済みのものはそのまま使われます）"
+fi
