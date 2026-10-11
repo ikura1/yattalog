@@ -53,3 +53,31 @@ def test_サーバーが失敗したらタイルを元に戻して知らせる(h
     page.locator(".toast:not(.hint)").get_by_role("button", name="もう一度").click()
     expect(tile(page).locator(".ago")).to_have_text("さっき")
     assert Log.objects.count() == 1
+
+
+# --- アイコンの入力欄（決定 035） ---
+
+
+def test_入力欄に絵文字を入れると_おすすめの選択が外れて_そのアイコンで追加される(home):
+    page = home
+    page.locator("#addTile").click()
+    page.locator("#evName").fill("ぎょうざ")
+    page.locator('.emo-opt:has(input[value="✂️"])').click()
+
+    page.locator("#evEmoji").press_sequentially("🍜🥟")  # 続けて打ったら、最後の1つだけ残る
+    expect(page.locator("#evEmoji")).to_have_value("🥟")
+    expect(page.locator('input[name="emoji"]:checked')).to_have_count(0)
+
+    page.get_by_role("button", name="追加する").click()
+    expect(page.locator("#grid .tile", has_text="ぎょうざ").locator(".emo")).to_have_text("🥟")
+
+
+def test_おすすめを選び直すと_入力欄は空になる(home):
+    page = home
+    page.locator("#addTile").click()
+    page.locator("#evEmoji").press_sequentially("🥟")
+
+    page.locator('.emo-opt:has(input[value="✂️"])').click()
+
+    expect(page.locator("#evEmoji")).to_have_value("")
+    expect(page.locator('input[name="emoji"]:checked')).to_have_value("✂️")

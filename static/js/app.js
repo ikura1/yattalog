@@ -290,6 +290,29 @@
     }
   }
 
+  /* ---------- アイコン：おすすめの一覧か、入力欄のどちらか一方（決定 035） ----------
+     入力欄には絵文字を1つだけ残す（続けて打ったら、最後の1つに置き換える）。正しいかどうかはサーバーで確かめる。 */
+  function lastGrapheme(text) {
+    const s = text.trim();
+    if (!s || !window.Intl || !Intl.Segmenter) return s;
+    const parts = [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(s)];
+    return parts[parts.length - 1].segment;
+  }
+  function bindEmojiField(root) {
+    const input = $("#evEmoji", root);
+    if (!input) return;
+    const radios = $$('input[name="emoji"]', root);
+    const sync = (e) => {
+      if (e.isComposing) return; // かな漢字変換の途中は触らない
+      input.value = lastGrapheme(input.value);
+      if (input.value) radios.forEach((r) => { r.checked = false; });
+      else if (radios.length && !radios.some((r) => r.checked)) radios[0].checked = true;
+    };
+    input.addEventListener("input", sync);
+    input.addEventListener("compositionend", sync);
+    radios.forEach((r) => r.addEventListener("change", () => { input.value = ""; }));
+  }
+
   /* ---------- 開いたままでも経過時間を古くしない ----------
      「さっき」「N時間」「今日」は時間がたつと変わるので、画面に戻ってきたときと一定時間ごとにホームを読み直す。
      編集中・シートを開いている間・タイルを押している間・記録の送信中は、操作のじゃまになるので読み直さない。 */
@@ -413,7 +436,7 @@
   /* ---------- htmx との連携 ---------- */
   document.addEventListener("htmx:afterSwap", (e) => {
     const t = e.detail.target;
-    if (t.id === "sheet-body") { openSheet(); bindRecordForm(t); }
+    if (t.id === "sheet-body") { openSheet(); bindRecordForm(t); bindEmojiField(t); }
     if (t.id === "grid-wrap") { gridLoadedAt = Date.now(); bindHome(); applyTab(currentTab()); }
     if (t.id === "detail") bindSeason(t);
   });

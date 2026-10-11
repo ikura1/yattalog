@@ -132,6 +132,11 @@ textarea { min-height: 84px; resize: vertical; }
 .emojis { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; }
 .emo-opt span { display: grid; place-items: center; aspect-ratio: 1; border: 1px solid transparent; background: var(--bg); border-radius: 10px; font-size: 22px; cursor: pointer; }
 .emo-opt input:checked + span { border-color: var(--accent); background: var(--surface); }
+.emo-custom { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.emo-custom label { font-size: 13px; font-weight: 700; }
+.emo-custom input { width: 64px; flex: 0 0 auto; text-align: center; font-size: 22px; padding: 6px 4px; }
+.emo-custom input:not(:placeholder-shown) { border-color: var(--accent); background: var(--surface); }
+.emo-custom input::placeholder { opacity: .35; }
 .colors { display: flex; gap: 8px; flex-wrap: wrap; }
 .color-opt span { display: block; width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--line); background: var(--tc); cursor: pointer; }
 .color-opt input:checked + span { border: 3px solid var(--fg); }

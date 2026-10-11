@@ -91,6 +91,23 @@ def test_名前は必須(user):
         ev_svc.create_event(user, name="  ", emoji="⭐", color="sky")
 
 
+@pytest.mark.parametrize("emoji", ["🥟", "❤️", "👍🏽", "👨‍👩‍👧", "🇯🇵", "1️⃣", "🏴󠁧󠁢󠁥󠁮󠁧󠁿"])
+def test_アイコンは絵文字なら何でも使える(user, emoji):
+    assert ev_svc.create_event(user, name="ぎょうざ", emoji=f" {emoji} ", color="sky").emoji == emoji
+
+
+@pytest.mark.parametrize("not_one_emoji", ["", "a", "あ", "1", ":)", "🪴🪴", "🪴a", "🇯", "\u200d"])
+def test_アイコンは絵文字1つでなければ弾く(user, not_one_emoji):
+    with pytest.raises(ValidationError, match="絵文字を1つ"):
+        ev_svc.create_event(user, name="水やり", emoji=not_one_emoji, color="sky")
+
+
+def test_編集でも絵文字でないアイコンは弾く(user):
+    e = make(user, "水やり")
+    with pytest.raises(ValidationError, match="絵文字を1つ"):
+        ev_svc.update_event(user, e.id, name="水やり", emoji="abc", color="sky", streak_unit="day")
+
+
 def test_アーカイブから戻したイベントは先頭に入る(user):
     a = make(user, "a")
     make(user, "b")
