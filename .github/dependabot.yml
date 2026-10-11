@@ -1,0 +1,25 @@
+# 依存しているものの更新と、脆弱性の修正を PR で知らせる（レビュー S12）。
+# Actions はコミット ID で固定しているので、更新はここからの PR で取り込む。
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      python:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
