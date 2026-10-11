@@ -11,6 +11,7 @@ dependencies = [
     "django-ninja>=1.7.1",
     "gunicorn>=26.2.0",
     "psycopg[binary]>=3.3.6",
+    "regex>=2026.9.29",
     "uvicorn>=0.54.0",
     "whitenoise>=6.12.0",
 ]

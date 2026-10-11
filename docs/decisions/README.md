@@ -57,3 +57,4 @@
 | 032 | [データモデルの基本方針](032-data-model.md) | 決定 |
 | 033 | [試験運用は Cloud Run ＋ Neon（無料プラン）で動かす](033-cloud-run-neon-for-trial.md) | 決定 |
 | 034 | [今日の記録は「さっき」「N時間」で表示する](034-elapsed-hours-today.md) | 決定 |
+| 035 | [アイコンはすべての絵文字から選べるようにする（キーボードで入力）](035-any-emoji-icon.md) | 決定 |

@@ -5,7 +5,11 @@
     <input type="text" id="evName" name="name" maxlength="40" required placeholder="例：シーツ交換"
            value="{% if form %}{{ form.name }}{% elif event %}{{ event.name }}{% endif %}"></div>
   <fieldset class="field"><legend class="lbl">アイコン</legend>
-    <div class="emojis">{% for e in emojis %}<label class="emo-opt"><input type="radio" name="emoji" value="{{ e }}" {% if e == cur_emoji %}checked{% endif %}><span>{{ e }}</span></label>{% endfor %}</div>
+    <div class="emojis">{% for e in emojis %}<label class="emo-opt"><input type="radio" name="emoji" value="{{ e }}"{% if e == cur_emoji %} checked{% endif %}><span>{{ e }}</span></label>{% endfor %}</div>
+    <div class="emo-custom"><label for="evEmoji">ほかの絵文字を使う</label>
+      <input type="text" id="evEmoji" name="emoji_custom" value="{{ custom_emoji }}" maxlength="16" placeholder="😀"
+             autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-describedby="evEmojiNote"></div>
+    <p class="note" id="evEmojiNote">キーボードを絵文字に切り替えて、1つ入れてください</p>
   </fieldset>
   <fieldset class="field"><legend class="lbl">色</legend>
     <div class="colors">{% for c in colors %}<label class="color-opt c-{{ c }}"><input type="radio" name="color" value="{{ c }}" aria-label="{{ c }}" {% if c == cur_color %}checked{% endif %}><span></span></label>{% endfor %}</div>

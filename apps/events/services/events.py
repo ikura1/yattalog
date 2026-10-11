@@ -4,6 +4,7 @@ import unicodedata
 import uuid
 from datetime import date, datetime
 
+import regex
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
@@ -13,6 +14,8 @@ from apps.events.services.access import category_for, event_for
 from apps.events.services.dates import now_utc
 from apps.events.services.logs import When, record, refresh_event_cache
 from apps.spaces.services import personal_space
+
+EMOJI_MAX = 16  # Event.emoji の長さ。いちばん長い絵文字（肌の色つきの2人など）でも 10 文字ほど
 
 
 def _clean_name(name: str, max_len: int, label: str) -> str:
@@ -24,10 +27,20 @@ def _clean_name(name: str, max_len: int, label: str) -> str:
     return name
 
 
+# 見た目の1文字（書記素）で、絵文字として表示できるもの。国旗（地域指示記号2つ）と囲み数字（1️⃣ など）も含む
+_ONE_GRAPHEME = regex.compile(r"\X")
+_EMOJI_PART = regex.compile(r"\p{Extended_Pictographic}|\p{Regional_Indicator}{2}|[0-9#*]\uFE0F?\u20E3")
+
+
+def is_single_emoji(text: str) -> bool:
+    return bool(_ONE_GRAPHEME.fullmatch(text)) and bool(_EMOJI_PART.search(text))
+
+
 def _clean_emoji(emoji: str) -> str:
+    """アイコンは絵文字1つ（決定 035）。おすすめの一覧にないものでもよい。"""
     emoji = (emoji or "").strip()
-    if not emoji or len(emoji) > 16:
-        raise ValidationError("アイコンを選んでください", code="emoji")
+    if len(emoji) > EMOJI_MAX or not is_single_emoji(emoji):
+        raise ValidationError("アイコンには絵文字を1つ入れてください", code="emoji")
     return emoji
 
 

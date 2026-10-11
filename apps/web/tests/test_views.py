@@ -197,6 +197,67 @@ def test_前回やった日が壊れていたらフォームにエラーを出�
     assert r.status_code == 200 and not Event.objects.exists()
 
 
+# --- アイコン（決定 035） ---
+
+
+def test_おすすめのアイコンはすべて絵文字として通る(user):
+    from apps.web.views import EMOJIS
+
+    for emoji in EMOJIS:
+        assert ev_svc.create_event(user, name="x", emoji=emoji, color="sky").emoji == emoji
+
+
+def test_入力欄に絵文字を入れると_おすすめの選択より優先される(client_in):
+    r = client_in.post(
+        "/events/new/",
+        {"name": "ぎょうざ", "emoji": "✂️", "emoji_custom": "🥟", "color": "sky", "streak_unit": "day"},
+        HTTP_HX_REQUEST="true",
+    )
+    assert r.status_code == 204 and Event.objects.get(name="ぎょうざ").emoji == "🥟"
+
+
+def test_入力欄だけでアイコンを決められる(client_in):
+    r = client_in.post(
+        "/events/new/",
+        {"name": "ぎょうざ", "emoji_custom": "🥟", "color": "sky", "streak_unit": "day"},
+        HTTP_HX_REQUEST="true",
+    )
+    assert r.status_code == 204 and Event.objects.get(name="ぎょうざ").emoji == "🥟"
+
+
+def test_入力欄が絵文字でなければ_フォームにエラーを出して入力を残す(client_in):
+    r = client_in.post(
+        "/events/new/",
+        {"name": "ぎょうざ", "emoji": "✂️", "emoji_custom": "ぎょ", "color": "sky", "streak_unit": "day"},
+        HTTP_HX_REQUEST="true",
+    )
+    body = r.content.decode()
+    assert r.status_code == 200 and not Event.objects.exists()
+    assert "絵文字を1つ" in body and 'name="emoji_custom" value="ぎょ"' in body
+
+
+def test_編集シートでは_おすすめにないアイコンが入力欄に入っている(client_in, user):
+    e = ev_svc.create_event(user, name="ぎょうざ", emoji="🥟", color="sky")
+    body = client_in.get(f"/events/{e.id}/edit/").content.decode()
+    recommended = body.split('class="emojis"')[1].split("</div>")[0]
+    assert 'name="emoji_custom" value="🥟"' in body and " checked" not in recommended
+
+
+def test_編集シートでは_おすすめにあるアイコンは一覧で選ばれ_入力欄は空(client_in, event):
+    body = client_in.get(f"/events/{event.id}/edit/").content.decode()
+    assert 'name="emoji_custom" value=""' in body and 'value="🛏️" checked' in body
+
+
+def test_編集で入力欄の絵文字に変えられる(client_in, event):
+    r = client_in.post(
+        f"/events/{event.id}/edit/",
+        {"name": "シーツ交換", "emoji_custom": "🧸", "color": "sky", "streak_unit": "week"},
+        HTTP_HX_REQUEST="true",
+    )
+    event.refresh_from_db()
+    assert r.status_code == 204 and event.emoji == "🧸"
+
+
 def test_詳細の壊れたクエリは無視して表示する(client_in, event):
     r = client_in.get(f"/events/{event.id}/?y=abc&m=13&sy=x&day=nope")
     assert r.status_code == 200

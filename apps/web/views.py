@@ -337,10 +337,17 @@ def _event_form_ctx(request, event=None, form=None, **extra) -> dict:
     def pick(name, default):
         return form.get(name) or (getattr(event, name) if event else None) or default
 
+    # アイコンは、おすすめの一覧か入力欄のどちらか一方で決める（決定 035）
+    if form:
+        custom_emoji = (form.get("emoji_custom") or "").strip()
+    else:
+        custom_emoji = event.emoji if event and event.emoji not in EMOJIS else ""
+
     return {
         "event": event,
         "form": form,
-        "cur_emoji": pick("emoji", EMOJIS[0]),
+        "cur_emoji": "" if custom_emoji else pick("emoji", EMOJIS[0]),
+        "custom_emoji": custom_emoji,
         "cur_color": pick("color", "sky"),
         "cur_unit": pick("streak_unit", StreakUnit.DAY),
         "emojis": EMOJIS,
@@ -353,6 +360,11 @@ def _event_form_ctx(request, event=None, form=None, **extra) -> dict:
     }
 
 
+def _posted_emoji(post) -> str:
+    """入力欄に入っていればそれを、なければおすすめの一覧で選んだものを使う。"""
+    return (post.get("emoji_custom") or "").strip() or post.get("emoji", "")
+
+
 @login_required
 def event_new(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
@@ -361,7 +373,7 @@ def event_new(request: HttpRequest) -> HttpResponse:
             ev_svc.create_event(
                 request.user,
                 name=p.get("name", ""),
-                emoji=p.get("emoji", ""),
+                emoji=_posted_emoji(p),
                 color=p.get("color", ""),
                 streak_unit=p.get("streak_unit", StreakUnit.DAY),
                 category_id=p.get("category") or None,
@@ -384,7 +396,7 @@ def event_edit(request: HttpRequest, event_id) -> HttpResponse:
                 request.user,
                 event.id,
                 name=p.get("name", ""),
-                emoji=p.get("emoji", ""),
+                emoji=_posted_emoji(p),
                 color=p.get("color", ""),
                 streak_unit=p.get("streak_unit", StreakUnit.DAY),
                 category_id=p.get("category") or None,
