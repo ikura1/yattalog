@@ -89,3 +89,21 @@ def test_報告にはリクエスト数と状態ごとの数と遅い経路を�
 
 def test_何もなければ異常なしと書く():
     assert "異常なし" in build_report([request("/")], [], hours=24)
+
+
+def test_アプリの経路はすべて伏せずに出せる():
+    """経路を足したら KNOWN_ROOTS にも足す（足し忘れると、報告で /<その他> になる）。"""
+    from django.conf import settings
+    from django.urls import get_resolver
+
+    from apps.core.ops_report import KNOWN_ROOTS
+
+    admin_root = settings.ADMIN_URL.strip("/").split("/")[0]
+    roots = set()
+    for pattern in get_resolver().url_patterns:
+        prefix = str(pattern.pattern).lstrip("^").split("/")[0]
+        if prefix != admin_root:
+            roots.add(prefix)
+        for sub in getattr(pattern, "url_patterns", []) if prefix == "" else []:
+            roots.add(str(sub.pattern).lstrip("^").split("/")[0].split("<")[0])
+    assert roots - KNOWN_ROOTS == set()
