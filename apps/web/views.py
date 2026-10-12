@@ -18,6 +18,7 @@ from apps.core import clock
 from apps.events.models import COLORS, Category, Event, Log, StreakUnit
 from apps.events.services import access, stats
 from apps.events.services import events as ev_svc
+from apps.events.services import export as export_svc
 from apps.events.services import logs as log_svc
 from apps.events.services.dates import is_valid_timezone, today_in
 from apps.events.services.logs import When
@@ -484,6 +485,20 @@ def categories(request: HttpRequest) -> HttpResponse:
 def menu(request: HttpRequest) -> HttpResponse:
     archived = Event.objects.filter(space__members__user=request.user, is_archived=True).order_by("-archived_at")
     return render(request, "web/_menu_sheet.html", {"archived": archived, "user_tz": request.user.timezone})
+
+
+# --- データの書き出し -----------------------------------------------------------------
+
+
+@login_required
+@require_POST
+def export(request: HttpRequest) -> HttpResponse:
+    """自分の全データを ZIP でダウンロードする。その場で作るので、ファイルはどこにも残さない（決定 039）。"""
+    now = clock.now()
+    response = HttpResponse(export_svc.build_export(request.user, now), content_type="application/zip")
+    response["Content-Disposition"] = f'attachment; filename="{export_svc.export_filename(request.user, now)}"'
+    response["Cache-Control"] = "no-store"
+    return response
 
 
 # --- イベント詳細 ---------------------------------------------------------------------

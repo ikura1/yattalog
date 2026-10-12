@@ -12,7 +12,7 @@ from apps.events.models import Log
 from apps.events.services import events as ev_svc
 
 # テストを速くするため、上限を小さくして確かめる（本番の値は settings.RATE_LIMITS）
-SMALL = {"record": (3, 60), "write": (5, 60), "login": (2, 60), "all": (8, 60)}
+SMALL = {"record": (3, 60), "write": (5, 60), "login": (2, 60), "export": (2, 3600), "all": (8, 60)}
 
 
 @pytest.fixture
@@ -91,6 +91,14 @@ def test_接続元は_偽装できない末尾の値で見分ける(client, db):
         for i in range(3)
     ]
     assert codes == [200, 200, 429]
+
+
+@override_settings(RATE_LIMITS=SMALL)
+def test_書き出しは_1時間あたりの回数に上限がある(client_in):
+    assert [client_in.post("/export/").status_code for _ in range(3)] == [200, 200, 429]
+
+    with freezegun.freeze_time(NOW + timedelta(minutes=61)):
+        assert client_in.post("/export/").status_code == 200
 
 
 def test_ふつうの使い方では_本番の上限に当たらない(client_in, event):
