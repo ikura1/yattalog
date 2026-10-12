@@ -17,6 +17,7 @@
 - 並び順は分数インデックス（`services/sortkeys.py`）。列は `SortKeyField`（PostgreSQL では "C" 照合。外すと順序が壊れる）
 - タイルの経過時間は `services/dates.py` の `elapsed()`。今日の記録は「さっき」「N時間」、それ以外は暦日（決定 034）
 - アイコンとカテゴリの絵文字は「絵文字1つ」。判定は `services/events.py` の `is_single_emoji()`（`regex` を使用、決定 035・036）
+- データの書き出しは `services/export.py`。その場で ZIP を作って返す（写真が入るまで、決定 039）
 - レート制限は `apps/core/ratelimit.py` のミドルウェア。上限は `settings.RATE_LIMITS`、回数はプロセス内に持つ（決定 037）
 
 ## コマンド
@@ -47,6 +48,7 @@ uv run python manage.py makemigrations --check --dry-run
 - allauth：`User` に username 欄がないので `ACCOUNT_USER_MODEL_USERNAME_FIELD = None` が必要（外すとログイン完了時に 500）
 - E2E は `force_login` でログインするので、Google ログインの流れは通らない。ログインまわりは `apps/accounts/tests/test_google_login.py` で確かめる
 - 通常のテスト用クライアントは CSRF の検査を省く。確かめるときは `Client(enforce_csrf_checks=True)`
+- この開発機（Ubuntu 20.04）は Playwright の対応外。ブラウザの取得と E2E の実行には `PLAYWRIGHT_HOST_PLATFORM_OVERRIDE=ubuntu22.04-x64` を付ける
 - 手元（SQLite）の E2E は `database table is locked` でときどき落ちる（#52）。CI では落ちない。落ちたら流し直して見分ける
 - レート制限の回数はキャッシュに残る。テストでは `conftest.py` の `empty_cache` が毎回消している
 - 秘密の値を端末で貼り付けるとき（`read -rs`）は画面に出ないので、二重に貼りやすい。登録したら長さと形だけを確かめる（値は表示しない）

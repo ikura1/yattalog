@@ -16,6 +16,7 @@ from apps.core import clock
 TOO_MANY = "操作が多すぎます。しばらく待ってから、もう一度お試しください。"
 LOGIN_PREFIX = "/accounts/"
 RECORD_SUFFIX = "/record/"
+EXPORT_PATH = "/export/"
 
 
 @dataclass(frozen=True)
@@ -39,6 +40,8 @@ def rules_for(request: HttpRequest) -> list[str]:
     if request.method == "POST" and request.user.is_authenticated:
         if request.path.endswith(RECORD_SUFFIX):
             rules.append("record")
+        if request.path == EXPORT_PATH:
+            rules.append("export")
         rules.append("write")
     if request.path.startswith(LOGIN_PREFIX):
         rules.append("login")

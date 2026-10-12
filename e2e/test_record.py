@@ -112,3 +112,19 @@ def test_操作が多すぎると言われたら_その旨を知らせてタイ�
 
     expect(page.locator(".toast:not(.hint)")).to_contain_text("操作が多すぎます")
     expect(tile(page).locator(".ago")).to_have_text("まだ")
+
+
+# --- データの書き出し（決定 039） ---
+
+
+def test_メニューから書き出すと_ZIP_がダウンロードされる(home):
+    import zipfile
+
+    page = home
+    page.get_by_role("button", name="メニュー").click()
+    with page.expect_download() as download:
+        page.get_by_role("button", name="データを書き出す").click()
+
+    assert re.fullmatch(r"yattalog-\d{8}\.zip", download.value.suggested_filename)
+    with zipfile.ZipFile(download.value.path()) as z:
+        assert "シーツ交換" in z.read("events.csv").decode("utf-8")
