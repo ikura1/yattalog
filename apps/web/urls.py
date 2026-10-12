@@ -14,6 +14,7 @@ urlpatterns = [
     path("menu/", views.menu, name="menu"),
     path("timezone/", views.set_timezone, name="timezone"),
     path("categories/", views.categories, name="categories"),
+    path("starters/", views.starters, name="starters"),
     path("export/", views.export, name="export"),
     path("account/delete/", views.account_delete, name="account_delete"),
     path("events/new/", views.event_new, name="event_new"),

@@ -20,6 +20,7 @@
 - データの書き出しは `services/export.py`。その場で ZIP を作って返す（写真が入るまで、決定 039）
 - 退会は `apps/accounts/services.py` の `delete_account()`。その場で全データを消す（写真が入るまで、決定 040）
 - 規約とポリシーの本文は `templates/web/legal/`（変えるときの手順は `docs/legal/README.md`、決定 041）
+- はじめて使う人向けのテンプレートは `services/starter.py`。イベントが0個のホームに一覧を出す（決定 042）
 - レート制限は `apps/core/ratelimit.py` のミドルウェア。上限は `settings.RATE_LIMITS`、回数はプロセス内に持つ（決定 037）
 
 ## コマンド

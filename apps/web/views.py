@@ -23,6 +23,7 @@ from apps.events.services import access, stats
 from apps.events.services import events as ev_svc
 from apps.events.services import export as export_svc
 from apps.events.services import logs as log_svc
+from apps.events.services import starter as starter_svc
 from apps.events.services.dates import is_valid_timezone, today_in
 from apps.events.services.logs import When
 from apps.spaces.services import personal_space
@@ -199,6 +200,7 @@ def _home_ctx(request: HttpRequest) -> dict:
             counts[e.category_id] += 1
     return {
         "tiles": [tile(e, today) for e in events],
+        "starters": [] if events else starter_svc.starter_choices(request.user),
         "categories": [(c, counts[c.id]) for c in cats],
         "total": len(events),
         "user_tz": request.user.timezone,
@@ -497,6 +499,21 @@ def categories(request: HttpRequest) -> HttpResponse:
     if request.method == "POST" and not error:
         resp["HX-Trigger"] = json.dumps({"yl:changed": True})
     return resp
+
+
+# --- はじめて使うとき：テンプレート ---------------------------------------------------
+
+
+@login_required
+def starters(request: HttpRequest) -> HttpResponse:
+    if request.method == "POST":
+        try:
+            added = starter_svc.add_starters(request.user, request.POST.getlist("starter"))
+        except ValidationError as e:
+            ctx = {"starters": starter_svc.starter_choices(request.user)}
+            return _form_error(request, "web/_starters_sheet.html", ctx, e)
+        return _refresh(HttpResponse(status=204), f"{len(added)}件を追加しました")
+    return render(request, "web/_starters_sheet.html", {"starters": starter_svc.starter_choices(request.user)})
 
 
 # --- メニュー・アーカイブ ---------------------------------------------------------------
