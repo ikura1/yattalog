@@ -99,6 +99,16 @@ def test_カテゴリを絵文字つきで追加すると_タブに絵文字が�
     expect(page.locator('#tabs [role="tab"]', has_text="家事").locator(".cat-emo")).to_have_text("🧹")
 
 
+@pytest.mark.parametrize("opener", [".tab-add", "#grid .tile.add"])
+def test_シートを開いても入力欄にフォーカスせず_キーボードが出ない(home, opener):
+    page = home
+    page.locator(opener).click()
+    expect(page.locator("#sheet")).to_be_visible()
+    expect(page.locator("#sheet")).to_be_focused()  # 読み上げのため、フォーカスはシートに移す
+
+    assert page.evaluate("document.activeElement.matches('input, textarea')") is False
+
+
 # --- レート制限（決定 037） ---
 
 

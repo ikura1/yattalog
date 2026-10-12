@@ -108,6 +108,7 @@ a { color: inherit; }
 .scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 30; }
 .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 31; background: var(--surface); border-radius: 22px 22px 0 0; max-height: 88%; overflow: auto;
   padding: 8px 16px calc(20px + env(safe-area-inset-bottom, 0px)); max-width: 720px; margin: 0 auto; animation: up .22s ease-out; }
+.sheet:focus { outline: none; }
 @keyframes up { from { transform: translateY(30px); opacity: .5; } }
 .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 4px auto 10px; }
 .sheet h2 { font-family: var(--f-display); font-size: 20px; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
