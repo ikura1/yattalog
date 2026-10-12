@@ -25,7 +25,7 @@
 - 管理画面の入口は `apps/accounts/admin_site.py`（メールアドレスの許可と2段階認証、決定 045）。手順は `deploy/README.md`
 - レート制限は `apps/core/ratelimit.py` のミドルウェア。上限は `settings.RATE_LIMITS`、回数はプロセス内に持つ（決定 037）
 - 監視と運用は `docs/operations.md`（決定 046）。Claude は Google Cloud に入れないので、Actions の「Ops report」を手動で実行してサマリーと Issue（ラベル `ops`）を読む。報告は `apps/core/ops_report.py` で伏せる（リポジトリは公開）
-- 本番のログは1行1件の JSON（`apps/core/logging.py`）。`/healthz` は DB に触れない
+- 本番のログは1行1件の JSON（`apps/core/logging.py`）。`/health/` は DB に触れない（`/healthz` は Cloud Run の予約で 404 になる）
 
 ## コマンド
 ```sh

@@ -420,6 +420,13 @@ def test_メニューから_あとでもテンプレートを開ける(client_in
 
 def test_ヘルスチェックはログインなしでDBに触れずに200を返す(client, db, django_assert_num_queries):
     with django_assert_num_queries(0):
-        r = client.get("/healthz")
+        r = client.get("/health/")
     assert r.status_code == 200 and r.content == b"ok"
     assert "Set-Cookie" not in str(r.cookies) and not r.cookies
+
+
+def test_ヘルスチェックの経路はzで終わらない():
+    """Cloud Run は z で終わる経路（/healthz など）を予約していて、アプリに届く前に 404 を返す。"""
+    from django.urls import reverse
+
+    assert not reverse("health").rstrip("/").endswith("z")

@@ -5,7 +5,7 @@
 ## 自動で動いているもの
 | 名前 | いつ | 何をする | 異常のとき |
 |---|---|---|---|
-| Uptime（`.github/workflows/uptime.yml`） | 1時間ごと | `/healthz` が 200 を返すか（DB には触れない） | Issue「本番に繋がらない（死活監視）」（ラベル `ops`） |
+| Uptime（`.github/workflows/uptime.yml`） | 1時間ごと | `/health/` が 200 を返すか（DB には触れない） | Issue「本番に繋がらない（死活監視）」（ラベル `ops`） |
 | Ops report（`.github/workflows/ops-report.yml`） | 毎朝 9:07・手動 | 直近24時間のリクエストとエラーをまとめてサマリーに出す | エラーの種類ごとに Issue「本番のエラー：…」（`ops`） |
 | Error Reporting（Google Cloud） | 常に | 例外を種類ごとにまとめる | 新しい種類が出たらメール |
 | 予算アラート（Google Cloud） | 常に | 月 ¥500 を超えそうか | メール |
@@ -51,4 +51,4 @@ Claude が見られるのは、伏せた報告（経路の形、回数、例外�
 ドメインを変えたら（#13）、Variables に `APP_URL`（例：`https://yattalog.example`）を足す。足さなければ今の run.app の URL を見る。
 
 ## 費用
-増えない。公開リポジトリの Actions は無料。Cloud Logging の読み出し・Error Reporting・1日24回の `/healthz` は無料枠に収まる。`/healthz` は DB に触れないので、Neon の計算時間も使わない。
+増えない。公開リポジトリの Actions は無料。Cloud Logging の読み出し・Error Reporting・1日24回の `/health/` は無料枠に収まる。`/health/` は DB に触れないので、Neon の計算時間も使わない。
