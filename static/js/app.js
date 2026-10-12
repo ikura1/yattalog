@@ -61,8 +61,8 @@
   function openSheet() {
     sheet().hidden = false;
     $("#scrim").hidden = false;
-    const f = $("input:not([type=hidden]),textarea,button", sheet());
-    if (f) f.focus({ preventScroll: true });
+    // 入力欄には当てない（スマホでキーボードが開いて中身を隠すため）。読み上げのためにシート自体へ移す
+    sheet().focus({ preventScroll: true });
   }
   function closeSheet() {
     if (!sheet()) return;
