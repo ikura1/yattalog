@@ -18,7 +18,7 @@ from urllib.parse import urlsplit
 # 経路の先頭の部分。ここにないものは伏せる（経路を足したらここにも足す。足し忘れはテストが見つける）
 KNOWN_ROOTS = {
     "", "login", "logout", "manifest.webmanifest", "install", "terms", "privacy", "grid", "menu", "timezone",
-    "categories", "starters", "export", "account", "events", "logs", "accounts", "static", "healthz",
+    "categories", "starters", "export", "account", "events", "logs", "accounts", "static", "health",
 }  # fmt: skip
 ID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$|^\d+$", re.IGNORECASE)
 WORD = re.compile(r"^[a-z][a-z0-9_.-]*$")

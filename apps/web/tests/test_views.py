@@ -418,8 +418,18 @@ def test_メニューから_あとでもテンプレートを開ける(client_in
 # --- 死活監視 ---------------------------------------------------------------------
 
 
+def test_ヘルスチェックの経路は_z_で終わらない():
+    """Cloud Run（Google のフロントエンド）は、/healthz のように z で終わる経路の一部を横取りして 404 を返す。
+
+    アプリまで届かないので、本番では常に落ちているように見える（2026-10-13 に本番で確認）。
+    """
+    from django.urls import reverse
+
+    assert reverse("health") == "/health" and not reverse("health").endswith("z")
+
+
 def test_ヘルスチェックはログインなしでDBに触れずに200を返す(client, db, django_assert_num_queries):
     with django_assert_num_queries(0):
-        r = client.get("/healthz")
+        r = client.get("/health")
     assert r.status_code == 200 and r.content == b"ok"
     assert "Set-Cookie" not in str(r.cookies) and not r.cookies
