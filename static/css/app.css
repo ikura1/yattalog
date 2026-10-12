@@ -227,6 +227,7 @@ textarea { min-height: 84px; resize: vertical; }
 .login-copy { margin: 0; color: var(--muted); line-height: 1.8; }
 .gbtn { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); font-weight: 700; font-size: 16px; box-shadow: var(--shadow); }
 .login-legal { font-size: 12px; color: var(--muted); text-align: center; margin: 0; }
+.login-note { font-size: 13px; font-weight: 700; padding: 10px 14px; margin: 0; background: var(--surface); border-radius: 12px; }
 .messages { list-style: none; padding: 10px 14px; margin: 0; background: var(--surface); border-radius: 12px; color: var(--danger); font-weight: 700; }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }

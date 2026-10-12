@@ -149,6 +149,9 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
+# 登録できる人数の上限（決定 038）。達したら新しい登録を止める。登録済みの人はそのまま使える
+MAX_USERS = int(os.environ.get("YATTALOG_MAX_USERS", "20"))
+
 # --- セキュリティ（レビュー S5）---------------------------------------------
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
