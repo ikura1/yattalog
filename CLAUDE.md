@@ -24,6 +24,8 @@
 - アイコンの元データは `static/icons/*.svg`。PNG は `uv run python tools/build_icons.py` で作り直す（決定 043）
 - 管理画面の入口は `apps/accounts/admin_site.py`（メールアドレスの許可と2段階認証、決定 045）。手順は `deploy/README.md`
 - レート制限は `apps/core/ratelimit.py` のミドルウェア。上限は `settings.RATE_LIMITS`、回数はプロセス内に持つ（決定 037）
+- 監視と運用は `docs/operations.md`（決定 046）。Claude は Google Cloud に入れないので、Actions の「Ops report」を手動で実行してサマリーと Issue（ラベル `ops`）を読む。報告は `apps/core/ops_report.py` で伏せる（リポジトリは公開）
+- 本番のログは1行1件の JSON（`apps/core/logging.py`）。`/healthz` は DB に触れない
 
 ## コマンド
 ```sh

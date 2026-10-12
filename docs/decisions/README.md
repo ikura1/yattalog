@@ -68,3 +68,4 @@
 | 043 | [アプリのアイコンを決め、ホーム画面への追加を案内する](043-app-icon-and-install-guide.md) | 決定 |
 | 044 | [写真は β に入れず、反応を見てから決める](044-photos-after-beta.md) | 決定 |
 | 045 | [管理画面は、決めたメールアドレスと2段階認証で守る](045-admin-with-2fa.md) | 決定 |
+| 046 | [監視は GitHub Actions と Cloud Logging で行い、Claude は GitHub 経由で確かめて直す](046-ops-monitoring-via-github.md) | 決定 |

@@ -1,0 +1,87 @@
+# 本番の様子をまとめる（決定 046）。毎朝と、手動（Claude からも実行できる）で動く。
+# 結果は実行のサマリーに出し、新しいエラーは Issue（ラベル ops）にする。
+#
+# リポジトリは公開なので、Actions のログもサマリーも誰でも読める。
+# Cloud Logging の生のデータはファイルにだけ書き、画面に出すのは apps/core/ops_report.py が伏せたものだけにする。
+name: Ops report
+
+on:
+  schedule:
+    - cron: "7 0 * * *" # 毎朝 9:07（日本時間）
+  workflow_dispatch:
+    inputs:
+      hours:
+        description: 直近何時間ぶんを見るか
+        default: "24"
+
+concurrency:
+  group: ops-report
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+env:
+  HOURS: ${{ inputs.hours || '24' }}
+  FILTER: resource.type="cloud_run_revision" AND resource.labels.service_name="yattalog"
+
+jobs:
+  report:
+    if: ${{ vars.GCP_OPS_SA != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+      - run: uv python install
+
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_OPS_SA }}
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+
+      - name: Read logs（生のデータはファイルにだけ書く）
+        run: |
+          mkdir -p "$RUNNER_TEMP/ops"
+          gcloud logging read "$FILTER AND log_id(\"run.googleapis.com/requests\")" \
+            --project "${{ vars.GCP_PROJECT_ID }}" --freshness "${HOURS}h" --limit 20000 --format json \
+            > "$RUNNER_TEMP/ops/requests.json"
+          gcloud logging read "$FILTER AND severity>=ERROR AND NOT log_id(\"run.googleapis.com/requests\")" \
+            --project "${{ vars.GCP_PROJECT_ID }}" --freshness "${HOURS}h" --limit 1000 --format json \
+            > "$RUNNER_TEMP/ops/errors.json"
+
+      - name: Summarize（伏せたものだけを出す）
+        run: |
+          {
+            uv run --no-dev python -m apps.core.ops_report --hours "$HOURS" \
+              --requests "$RUNNER_TEMP/ops/requests.json" --errors "$RUNNER_TEMP/ops/errors.json" \
+              --issues "$RUNNER_TEMP/ops/issues.json"
+            echo "- いまのリビジョン：$(gcloud run services describe yattalog --region asia-southeast1 \
+              --project "${{ vars.GCP_PROJECT_ID }}" --format 'value(status.latestReadyRevisionName)')"
+          } >> "$GITHUB_STEP_SUMMARY"
+          rm "$RUNNER_TEMP/ops/requests.json" "$RUNNER_TEMP/ops/errors.json"
+
+      - name: Open or update issues for errors
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create ops --color B60205 --description "本番の監視が見つけたもの（決定 046）" --force
+          jq -c '.[]' "$RUNNER_TEMP/ops/issues.json" | while read -r item; do
+            title=$(jq -r .title <<<"$item")
+            n=$(gh issue list --label ops --state open --json number,title \
+              --jq "map(select(.title == $(jq -c .title <<<"$item")))[0].number // empty")
+            if [ -n "$n" ]; then
+              gh issue comment "$n" --body "直近 ${HOURS} 時間で $(jq -r .count <<<"$item") 回。$RUN_URL"
+            else
+              gh issue create --title "$title" --label ops --body "$(jq -r .body <<<"$item")
+
+          $RUN_URL"
+            fi
+          done

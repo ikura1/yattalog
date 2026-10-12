@@ -413,3 +413,13 @@ def test_メニューから_あとでもテンプレートを開ける(client_in
     body = client_in.get("/starters/").content.decode()
 
     assert 'value="sheets"' in body and "追加済み" in body
+
+
+# --- 死活監視 ---------------------------------------------------------------------
+
+
+def test_ヘルスチェックはログインなしでDBに触れずに200を返す(client, db, django_assert_num_queries):
+    with django_assert_num_queries(0):
+        r = client.get("/healthz")
+    assert r.status_code == 200 and r.content == b"ok"
+    assert "Set-Cookie" not in str(r.cookies) and not r.cookies

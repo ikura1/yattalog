@@ -14,6 +14,7 @@ POOL="github"
 PROVIDER="yattalog-repo"
 RUNTIME_SA="yattalog-run"
 DEPLOY_SA="yattalog-deploy"
+OPS_SA="yattalog-ops"               # 本番の様子を読むだけ（決定 046）
 
 say() { printf '\n\033[1m== %s\033[0m\n' "$*"; }
 
@@ -82,6 +83,17 @@ gcloud iam workload-identity-pools providers describe "$PROVIDER" --location glo
 gcloud iam service-accounts add-iam-policy-binding "$DEPLOY_EMAIL" --role roles/iam.workloadIdentityUser \
   --member "principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/$POOL/attribute.repository/$GITHUB_REPO" >/dev/null
 
+say "本番の様子を読むだけのアカウント（決定 046）"
+OPS_EMAIL="$OPS_SA@$PROJECT_ID.iam.gserviceaccount.com"
+gcloud iam service-accounts describe "$OPS_EMAIL" >/dev/null 2>&1 || \
+  gcloud iam service-accounts create "$OPS_SA" --display-name "$OPS_SA"
+# ログとサービスの設定を読めるだけ。書き込み・秘密の値・DB には触れない
+for role in roles/logging.viewer roles/run.viewer; do
+  gcloud projects add-iam-policy-binding "$PROJECT_ID" --member "serviceAccount:$OPS_EMAIL" --role "$role" --condition None >/dev/null
+done
+gcloud iam service-accounts add-iam-policy-binding "$OPS_EMAIL" --role roles/iam.workloadIdentityUser \
+  --member "principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/$POOL/attribute.repository/$GITHUB_REPO" >/dev/null
+
 HOST="yattalog-$PROJECT_NUMBER.$REGION.run.app"
 say "完了。GitHub の Settings → Secrets and variables → Actions → Variables に次を登録してください"
 cat <<OUT
@@ -89,6 +101,7 @@ cat <<OUT
   GCP_WIF_PROVIDER      = projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/$POOL/providers/$PROVIDER
   GCP_DEPLOY_SA         = $DEPLOY_EMAIL
   GCP_RUNTIME_SA        = $RUNTIME_EMAIL
+  GCP_OPS_SA            = $OPS_EMAIL
   DJANGO_ALLOWED_HOSTS  = $HOST
   GOOGLE_CLIENT_ID      = （OAuth クライアント ID）
 

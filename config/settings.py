@@ -215,7 +215,9 @@ ADMIN_URL = os.environ.get("DJANGO_ADMIN_URL", "admin").strip("/") + "/"  # 本�
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    # 本番は1行1件の JSON にして、重要度とトレースバックを Cloud Logging に伝える（決定 046）
+    "formatters": {"cloud_run": {"()": "apps.core.logging.CloudRunFormatter"}},
+    "handlers": {"console": {"class": "logging.StreamHandler", **({} if DEBUG else {"formatter": "cloud_run"})}},
     "root": {"handlers": ["console"], "level": "INFO"},
 }
 
