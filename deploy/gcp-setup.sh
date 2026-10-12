@@ -14,7 +14,7 @@ POOL="github"
 PROVIDER="yattalog-repo"
 RUNTIME_SA="yattalog-run"
 DEPLOY_SA="yattalog-deploy"
-OPS_SA="yattalog-ops"               # 本番の様子を読むだけ（決定 042）
+OPS_SA="yattalog-ops"               # 本番の様子を読むだけ（決定 046）
 
 say() { printf '\n\033[1m== %s\033[0m\n' "$*"; }
 
@@ -83,7 +83,7 @@ gcloud iam workload-identity-pools providers describe "$PROVIDER" --location glo
 gcloud iam service-accounts add-iam-policy-binding "$DEPLOY_EMAIL" --role roles/iam.workloadIdentityUser \
   --member "principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/$POOL/attribute.repository/$GITHUB_REPO" >/dev/null
 
-say "本番の様子を読むだけのアカウント（決定 042）"
+say "本番の様子を読むだけのアカウント（決定 046）"
 OPS_EMAIL="$OPS_SA@$PROJECT_ID.iam.gserviceaccount.com"
 gcloud iam service-accounts describe "$OPS_EMAIL" >/dev/null 2>&1 || \
   gcloud iam service-accounts create "$OPS_SA" --display-name "$OPS_SA"

@@ -108,6 +108,7 @@ a { color: inherit; }
 .scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 30; }
 .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 31; background: var(--surface); border-radius: 22px 22px 0 0; max-height: 88%; overflow: auto;
   padding: 8px 16px calc(20px + env(safe-area-inset-bottom, 0px)); max-width: 720px; margin: 0 auto; animation: up .22s ease-out; }
+.sheet:focus { outline: none; }
 @keyframes up { from { transform: translateY(30px); opacity: .5; } }
 .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 4px auto 10px; }
 .sheet h2 { font-family: var(--f-display); font-size: 20px; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
@@ -141,7 +142,7 @@ textarea { min-height: 84px; resize: vertical; }
 .color-opt span { display: block; width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--line); background: var(--tc); cursor: pointer; }
 .color-opt input:checked + span { border: 3px solid var(--fg); }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.chips span { display: block; border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 7px 14px; font-weight: 700; font-size: 14px; cursor: pointer; }
+.chips input + span { display: flex; align-items: center; border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 7px 14px; font-weight: 700; font-size: 14px; cursor: pointer; }
 .chips input:checked + span { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
 .inline-new { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
 .inline-new input { flex: 1; }
@@ -158,6 +159,23 @@ textarea { min-height: 84px; resize: vertical; }
 .menu { list-style: none; margin: 0; padding: 0; }
 .menu button { width: 100%; text-align: left; border: none; background: transparent; padding: 13px 4px; border-top: 1px solid var(--line); }
 .menu li:first-child button { border-top: none; }
+.welcome { background: var(--surface); border-radius: var(--r); padding: 16px; margin-bottom: 14px; }
+.welcome h2 { font-family: var(--f-display); font-size: 18px; margin: 0 0 4px; }
+.starter-list { list-style: none; margin: 0 0 12px; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 359px) { .starter-list { grid-template-columns: minmax(0, 1fr); } }
+.starter { display: flex; align-items: center; gap: 8px; padding: 10px; border-radius: 14px; background: var(--tc); color: var(--tile-fg); border: 2px solid transparent; cursor: pointer; min-height: 52px; }
+.starter input { position: absolute; opacity: 0; pointer-events: none; }
+.starter .emo { font-size: 22px; line-height: 1; }
+.starter-name { font-size: 13px; font-weight: 700; line-height: 1.3; min-width: 0; }
+.starter:has(input:checked) { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.starter:has(input:checked) .starter-name::after { content: " ✓"; color: var(--accent); }
+.starter:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
+.starter.added { opacity: .5; cursor: default; }
+.starter-note { margin-left: auto; font-size: 11px; white-space: nowrap; }
+.steps { margin: 0 0 12px; padding-left: 1.4em; }
+.steps li { margin: 8px 0; }
+.inline-ico { vertical-align: -4px; }
+.menu.gap li:first-child button { border-top: none; }
 .bullets { margin: 0 0 10px; padding-left: 1.3em; }
 .check { display: flex; gap: 10px; align-items: flex-start; font-weight: 700; margin: 0 0 12px; }
 .check input { width: 22px; height: 22px; flex: 0 0 auto; margin-top: 2px; accent-color: var(--danger); }
@@ -180,6 +198,9 @@ textarea { min-height: 84px; resize: vertical; }
 .legal table { border-collapse: collapse; width: 100%; font-size: 14px; }
 .legal th, .legal td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
 .legal th { background: var(--surface); }
+.secret { display: inline-block; margin-top: 4px; padding: 6px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; font-size: 15px; letter-spacing: .08em; word-break: break-all; user-select: all; }
+.otp-form { max-width: 320px; margin-top: 16px; }
+.otp-form input { font-size: 22px; letter-spacing: .2em; text-align: center; }
 .legal table.wide { min-width: 520px; }
 .login-legal a { color: inherit; }
 .menu button small { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }

@@ -1,7 +1,7 @@
 {% extends "web/base.html" %}
 {% block body %}
 <div class="app" id="app" data-grid-url="{% url 'web:grid' %}" data-tz-url="{% url 'web:timezone' %}"
-     data-user-tz="{{ user_tz }}" data-kept-tz="{{ user.timezone_kept_for }}" data-needs-tz="{{ needs_tz|yesno:'1,' }}">
+     data-user-tz="{{ user_tz }}" data-kept-tz="{{ user.timezone_kept_for }}" data-needs-tz="{{ needs_tz|yesno:'1,' }}" data-install-url="{% url 'web:install' %}">
   <header class="bar">
     <h1 class="logo">Yatta<b>log</b></h1>
     <button class="pill" id="editBtn" type="button" aria-pressed="false">編集</button>
@@ -9,6 +9,11 @@
             hx-get="{% url 'web:menu' %}" hx-target="#sheet-body">⋯</button>
   </header>
   <div class="banner" id="netBanner" hidden role="status">オフラインです。つながると記録できます</div>
+  <div class="banner" id="installBanner" hidden role="status">
+    <span>ホーム画面に追加すると、1タップで開けます</span>
+    <button type="button" class="btn small primary" id="installYes">追加する</button>
+    <button type="button" class="btn small" id="installNo" aria-label="この案内を閉じる">閉じる</button>
+  </div>
   <div class="banner" id="tzBanner" hidden role="status">
     <span>端末のタイムゾーン（<b id="tzName"></b>）に切り替えますか？</span>
     <button type="button" class="btn small primary" id="tzYes">切り替える</button>

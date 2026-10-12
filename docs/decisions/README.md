@@ -64,4 +64,8 @@
 | 039 | [写真が入るまで、書き出しはその場で作って返す](039-export-on-request.md) | 決定 |
 | 040 | [写真が入るまで、退会はその場で全データを消す](040-delete-account-immediately.md) | 決定 |
 | 041 | [規約とポリシーをアプリで表示し、問い合わせ先を公開と非公開の2つに分ける](041-legal-pages-and-contact.md) | 決定 |
-| 042 | [監視は GitHub Actions と Cloud Logging で行い、Claude は GitHub 経由で確かめて直す](042-ops-monitoring-via-github.md) | 決定 |
+| 042 | [テンプレートは、空のホームにそのまま出す](042-starters-on-empty-home.md) | 決定 |
+| 043 | [アプリのアイコンを決め、ホーム画面への追加を案内する](043-app-icon-and-install-guide.md) | 決定 |
+| 044 | [写真は β に入れず、反応を見てから決める](044-photos-after-beta.md) | 決定 |
+| 045 | [管理画面は、決めたメールアドレスと2段階認証で守る](045-admin-with-2fa.md) | 決定 |
+| 046 | [監視は GitHub Actions と Cloud Logging で行い、Claude は GitHub 経由で確かめて直す](046-ops-monitoring-via-github.md) | 決定 |

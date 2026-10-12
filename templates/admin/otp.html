@@ -1,0 +1,25 @@
+{% extends "web/base.html" %}
+{% block title %}2段階認証 — Yattalog 管理{% endblock %}
+{% block body %}
+<main class="legal">
+  <h1>2段階認証</h1>
+  {% if setup %}
+  <p>はじめに、スマホの<strong>認証アプリ</strong>（Google Authenticator、1Password など）に、この管理画面を登録します。</p>
+  <ol>
+    <li>スマホで開いている場合：<a href="{{ config_url }}">このリンク</a>を押すと、認証アプリが開きます。</li>
+    <li>パソコンで開いている場合：認証アプリで「キーを手で入力」を選び、次の鍵を入れます（種類は「時間ベース」）。<br>
+      <code class="secret">{{ secret }}</code></li>
+    <li>認証アプリに出た6桁のコードを、下に入れます。</li>
+  </ol>
+  <p class="note">この鍵は、登録が済むと二度と表示されません。ほかの人に見せないでください。</p>
+  {% else %}
+  <p>認証アプリに出ている、6桁のコードを入れてください。</p>
+  {% endif %}
+  <form method="post" class="otp-form">{% csrf_token %}
+    <div class="field"><label for="otpCode">6桁のコード</label>
+      <input type="text" id="otpCode" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]*" maxlength="7" required></div>
+    {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+    <div class="row"><button class="btn primary" type="submit">{% if setup %}登録して進む{% else %}進む{% endif %}</button></div>
+  </form>
+</main>
+{% endblock %}

@@ -9,6 +9,7 @@ from django.shortcuts import redirect
 from django.utils import timezone
 
 from apps.accounts.models import PRIVACY_VERSION, TERMS_VERSION, User
+from apps.accounts.services import sync_admin_flag
 
 SIGNUP_FULL = "ただいま満員のため、新しい登録を止めています。登録済みの方は、そのままログインできます。"
 
@@ -37,6 +38,8 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
             messages.error(request, SIGNUP_FULL)
             raise ImmediateHttpResponse(redirect("web:login"))
         user = sociallogin.user
+        if user.pk:
+            sync_admin_flag(user)
         if user.pk and not user.is_active:
             messages.error(request, "このアカウントは退会の手続き中です。")
             raise ImmediateHttpResponse(redirect("web:login"))
@@ -58,4 +61,5 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
         from apps.spaces.services import ensure_personal_space
 
         ensure_personal_space(user)
+        sync_admin_flag(user)
         return user
