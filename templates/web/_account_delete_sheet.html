@@ -1,0 +1,18 @@
+<h2>退会する</h2>
+<p>退会すると、次のデータが<strong>すべて削除され、元に戻せません</strong>。</p>
+<ul class="bullets">
+  <li>イベントとカテゴリ</li>
+  <li>記録（日付・時刻・メモ）</li>
+  <li>アカウントの情報（メールアドレス、表示名、タイムゾーン）</li>
+</ul>
+<p class="note">残しておきたい場合は、先にデータを書き出してください。</p>
+<form method="post" action="{% url 'web:export' %}" class="row gap">{% csrf_token %}
+  <button class="btn" type="submit">先にデータを書き出す</button>
+</form>
+<form method="post" action="{% url 'web:account_delete' %}" class="danger-zone">{% csrf_token %}
+  <label class="check"><input type="checkbox" name="confirm" id="delConfirm" required>
+    <span>すべてのデータが削除され、元に戻せないことを理解しました</span></label>
+  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+  <div class="row"><button class="btn danger" type="submit">退会してデータを削除する</button></div>
+</form>
+<p class="note gap">Google 側の連携は、Google アカウントの設定（セキュリティ → お使いのアカウントに接続されているアプリ）から解除できます。</p>

@@ -13,6 +13,7 @@ urlpatterns = [
     path("timezone/", views.set_timezone, name="timezone"),
     path("categories/", views.categories, name="categories"),
     path("export/", views.export, name="export"),
+    path("account/delete/", views.account_delete, name="account_delete"),
     path("events/new/", views.event_new, name="event_new"),
     path("events/<uuid:event_id>/", views.event_detail, name="event_detail"),
     path("events/<uuid:event_id>/edit/", views.event_edit, name="event_edit"),

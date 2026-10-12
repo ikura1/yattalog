@@ -5,6 +5,7 @@ import json
 import uuid
 from datetime import date, time
 
+from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -14,6 +15,7 @@ from django.template.loader import render_to_string
 from django.views.decorators.http import require_GET, require_POST
 
 from apps.accounts.adapters import signup_is_full
+from apps.accounts.services import delete_account
 from apps.core import clock
 from apps.events.models import COLORS, Category, Event, Log, StreakUnit
 from apps.events.services import access, stats
@@ -499,6 +501,28 @@ def export(request: HttpRequest) -> HttpResponse:
     response["Content-Disposition"] = f'attachment; filename="{export_svc.export_filename(request.user, now)}"'
     response["Cache-Control"] = "no-store"
     return response
+
+
+# --- 退会 -----------------------------------------------------------------------------
+
+LEFT = "退会しました。データはすべて削除しました。ご利用ありがとうございました。"
+
+
+@login_required
+def account_delete(request: HttpRequest) -> HttpResponse:
+    """確認の画面を出し、確認のチェックが入っていたら、その場で全データを消す（決定 040）。"""
+    if request.method != "POST":
+        return render(request, "web/_account_delete_sheet.html")
+    if request.POST.get("confirm") != "on":
+        error = "退会するには、確認のチェックを入れてください。"
+        return render(request, "web/account_delete.html", {"error": error})
+    user = request.user
+    logout(request)
+    delete_account(user)
+    messages.success(request, LEFT)
+    resp = redirect("web:login")
+    resp["Clear-Site-Data"] = '"cache", "storage"'  # 端末に残ったデータも消す（ログアウトと同じ）
+    return resp
 
 
 # --- イベント詳細 ---------------------------------------------------------------------
