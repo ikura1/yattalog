@@ -3,6 +3,7 @@
 #
 # リポジトリは公開なので、Actions のログもサマリーも誰でも読める。
 # Cloud Logging の生のデータはファイルにだけ書き、画面に出すのは apps/core/ops_report.py が伏せたものだけにする。
+# 取ってくるのも、集計に要る項目だけ（状態・応答時間・URL のパス・エラーの本文）。IP アドレスやブラウザの種類は取らない。
 name: Ops report
 
 on:
@@ -25,7 +26,6 @@ permissions:
 
 env:
   HOURS: ${{ inputs.hours || '24' }}
-  FILTER: resource.type="cloud_run_revision" AND resource.labels.service_name="yattalog"
 
 jobs:
   report:
@@ -45,15 +45,16 @@ jobs:
           service_account: ${{ vars.GCP_OPS_SA }}
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
 
-      - name: Read logs（生のデータはファイルにだけ書く）
+      - name: Read logs（集計に要る項目だけを取る。生のデータはファイルにだけ書く）
+        # gcloud logging read は、IP アドレスなども含めて丸ごと取ってきてしまう。
+        # apps/core/ops_fetch.py は、要る項目だけを Google の側で絞ってもらう（#72）
         run: |
           mkdir -p "$RUNNER_TEMP/ops"
-          gcloud logging read "$FILTER AND log_id(\"run.googleapis.com/requests\")" \
-            --project "${{ vars.GCP_PROJECT_ID }}" --freshness "${HOURS}h" --limit 20000 --format json \
-            > "$RUNNER_TEMP/ops/requests.json"
-          gcloud logging read "$FILTER AND severity>=ERROR AND NOT log_id(\"run.googleapis.com/requests\")" \
-            --project "${{ vars.GCP_PROJECT_ID }}" --freshness "${HOURS}h" --limit 1000 --format json \
-            > "$RUNNER_TEMP/ops/errors.json"
+          token="$(gcloud auth print-access-token)"
+          echo "::add-mask::$token"
+          GCP_ACCESS_TOKEN="$token" uv run --no-dev python -m apps.core.ops_fetch \
+            --project "${{ vars.GCP_PROJECT_ID }}" --hours "$HOURS" \
+            --requests "$RUNNER_TEMP/ops/requests.json" --errors "$RUNNER_TEMP/ops/errors.json"
 
       - name: Summarize（伏せたものだけを出す）
         run: |
