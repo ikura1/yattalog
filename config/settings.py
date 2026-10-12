@@ -34,13 +34,15 @@ if render_host := os.environ.get("RENDER_EXTERNAL_HOSTNAME"):
 CSRF_TRUSTED_ORIGINS = [f"https://{h}" for h in ALLOWED_HOSTS if h not in {"localhost", "127.0.0.1"}]
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
+    "apps.accounts.admin_config.SecureAdminConfig",  # django.contrib.admin に、入口の守りを足したもの
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_htmx",
+    "django_otp",
+    "django_otp.plugins.otp_totp",
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
@@ -59,6 +61,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django_otp.middleware.OTPMiddleware",  # 2段階認証を通したかどうか（管理画面で使う）
     "apps.core.ratelimit.RateLimitMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -154,6 +157,11 @@ OPERATOR_NAME = "ikura1"
 LEGAL_DATE = "2026年10月12日"  # 制定日。変えたら accounts.models の TERMS_VERSION / PRIVACY_VERSION もそろえる
 FEEDBACK_URL = "https://github.com/ikura1/yattalog/issues"  # 意見・不具合（公開の場）
 CONTACT_FORM_URL = os.environ.get("YATTALOG_CONTACT_URL", "")  # 個人情報に関わる問い合わせ（非公開の窓口）
+
+# --- 管理画面（レビュー S10、決定 045）---------------------------------------
+# 管理者にするメールアドレス（空白かカンマで区切る）。入るには、さらに2段階認証が要る
+ADMIN_EMAILS = [e for e in os.environ.get("YATTALOG_ADMIN_EMAILS", "").replace(",", " ").split() if e]
+OTP_TOTP_ISSUER = "Yattalog"
 
 # 登録できる人数の上限（決定 038）。達したら新しい登録を止める。登録済みの人はそのまま使える
 MAX_USERS = int(os.environ.get("YATTALOG_MAX_USERS", "20"))

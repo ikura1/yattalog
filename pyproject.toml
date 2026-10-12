@@ -9,6 +9,7 @@ dependencies = [
     "django-allauth[socialaccount]>=65.19.7",
     "django-htmx>=1.29.0",
     "django-ninja>=1.7.1",
+    "django-otp>=1.7.4",
     "gunicorn>=26.2.0",
     "psycopg[binary]>=3.3.6",
     "regex>=2026.9.29",

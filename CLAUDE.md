@@ -22,6 +22,7 @@
 - 規約とポリシーの本文は `templates/web/legal/`（変えるときの手順は `docs/legal/README.md`、決定 041）
 - はじめて使う人向けのテンプレートは `services/starter.py`。イベントが0個のホームに一覧を出す（決定 042）
 - アイコンの元データは `static/icons/*.svg`。PNG は `uv run python tools/build_icons.py` で作り直す（決定 043）
+- 管理画面の入口は `apps/accounts/admin_site.py`（メールアドレスの許可と2段階認証、決定 045）。手順は `deploy/README.md`
 - レート制限は `apps/core/ratelimit.py` のミドルウェア。上限は `settings.RATE_LIMITS`、回数はプロセス内に持つ（決定 037）
 
 ## コマンド

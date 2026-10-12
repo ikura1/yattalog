@@ -40,6 +40,33 @@ bash deploy/gcp-setup.sh <PROJECT_ID>
 `gcp-setup.sh` の最後に表示された値（`GOOGLE_CLIENT_ID` は 3. で控えたもの）を、リポジトリの **Settings → Secrets and variables → Actions → Variables** に登録する。
 登録したら Actions の「Deploy」を手動で実行する（以後は main にマージするたびに自動でデプロイされる）。
 
+## 管理者を作る・管理画面に入る（決定 045）
+管理画面に入れるのは、決めたメールアドレスの人が、Google でログインし、さらに2段階認証を通したときだけ。パスワードは使わない。
+
+### 管理者にする（初回だけ）
+1. GitHub の **Settings → Secrets and variables → Actions → Secrets** タブで、`ADMIN_EMAILS` という名前の **Secret** を作り、管理者にする Google アカウントのメールアドレスを入れる
+   - Variables ではなく **Secrets** に入れる（リポジトリが公開で、Actions のログも公開されるため。Secret はログで伏せられる）
+   - 複数にするときは、空白で区切る
+2. Actions の「Deploy」を手動で実行する（または、次に main へマージされるのを待つ）
+
+### 管理画面に入る
+1. 管理画面の URL を調べる（推測しにくい値にしてある）。手元のターミナルで：
+   ```sh
+   echo "https://yattalog-<プロジェクト番号>.asia-southeast1.run.app/$(gcloud secrets versions access latest --secret django-admin-url --project <PROJECT_ID>)/"
+   ```
+2. アプリに Google でログインした状態で、その URL を開く
+3. **はじめてのとき**：2段階認証の登録画面が出る。スマホの認証アプリ（Google Authenticator、1Password など）に登録し、6桁のコードを入れる
+   - 登録用の鍵は、このときしか表示されない
+4. **2回目から**：6桁のコードを入れるだけ。ブラウザを変えたり、ログインし直したりすると、もう一度コードが要る
+
+### 管理者をやめさせる・スマホをなくしたとき
+- やめさせる：`ADMIN_EMAILS` から外してデプロイする。すぐに入れなくなる
+- 認証アプリを入れたスマホをなくした：データベース（Neon のコンソール）で、`otp_totp_totpdevice` のその人の行を消す。次に開いたときに、登録し直しになる
+
+### 管理画面でできること
+ユーザーの一覧（メールアドレス、登録日、イベント数、記録数）、利用の停止、アカウントの削除（その人のデータもすべて消える）。
+記録やイベントの中身を見る画面は、用意していない。
+
 ## 費用を抑えるための設定
 - Cloud Run：最小0台・最大2台、リクエストを処理している間だけ課金
 - Artifact Registry：イメージは新しい5つだけを残す（無料枠0.5GBに収める）
