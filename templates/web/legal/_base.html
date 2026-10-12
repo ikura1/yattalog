@@ -1,0 +1,8 @@
+{% extends "web/base.html" %}
+{% block body %}
+<main class="legal">
+  <p class="legal-back"><a href="{% url 'web:home' %}">← Yattalog へ戻る</a></p>
+  {% block legal %}{% endblock %}
+  <p class="legal-end">以上</p>
+</main>
+{% endblock %}

@@ -9,5 +9,10 @@
 <div class="arch"><span aria-hidden="true">{{ e.emoji }}</span><span class="arch-name">{{ e.name }}</span>
   <button class="btn small" type="button" hx-post="{% url 'web:event_restore' e.id %}" hx-swap="none">戻す</button></div>
 {% empty %}<p class="note">アーカイブしたイベントはありません</p>{% endfor %}
+<ul class="menu gap">
+  <li><a href="{{ feedback_url }}/new/choose" target="_blank" rel="noopener">ご意見・不具合の報告<small>GitHub の Issue が開きます。書いた内容は誰でも読めます</small></a></li>
+  <li><a href="{% url 'web:terms' %}">利用規約</a></li>
+  <li><a href="{% url 'web:privacy' %}">プライバシーポリシー</a></li>
+</ul>
 <p class="note gap">タイムゾーン：{{ user_tz }}　・　α 版</p>
 <p class="note"><button type="button" class="linkbtn" hx-get="{% url 'web:account_delete' %}" hx-target="#sheet-body">退会する</button></p>

@@ -5,6 +5,7 @@ import json
 import uuid
 from datetime import date, time
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
@@ -166,6 +167,25 @@ def logout_view(request: HttpRequest) -> HttpResponse:
     resp = redirect("web:login")
     resp["Clear-Site-Data"] = '"cache", "storage"'  # 共用端末で前の人のデータが残らないように（レビュー E9）
     return resp
+
+
+def _legal_ctx() -> dict:
+    return {
+        "operator_name": settings.OPERATOR_NAME,
+        "legal_date": settings.LEGAL_DATE,
+        "feedback_url": settings.FEEDBACK_URL,
+        "contact_form_url": settings.CONTACT_FORM_URL,
+    }
+
+
+@require_GET
+def terms(request: HttpRequest) -> HttpResponse:
+    return render(request, "web/legal/terms.html", _legal_ctx())
+
+
+@require_GET
+def privacy(request: HttpRequest) -> HttpResponse:
+    return render(request, "web/legal/privacy.html", _legal_ctx())
 
 
 def _home_ctx(request: HttpRequest) -> dict:
@@ -486,7 +506,8 @@ def categories(request: HttpRequest) -> HttpResponse:
 @require_GET
 def menu(request: HttpRequest) -> HttpResponse:
     archived = Event.objects.filter(space__members__user=request.user, is_archived=True).order_by("-archived_at")
-    return render(request, "web/_menu_sheet.html", {"archived": archived, "user_tz": request.user.timezone})
+    ctx = {"archived": archived, "user_tz": request.user.timezone, "feedback_url": settings.FEEDBACK_URL}
+    return render(request, "web/_menu_sheet.html", ctx)
 
 
 # --- データの書き出し -----------------------------------------------------------------
