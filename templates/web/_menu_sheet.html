@@ -11,6 +11,7 @@
   <button class="btn small" type="button" hx-post="{% url 'web:event_restore' e.id %}" hx-swap="none">戻す</button></div>
 {% empty %}<p class="note">アーカイブしたイベントはありません</p>{% endfor %}
 <ul class="menu gap">
+  <li><button type="button" id="menuInstall">ホーム画面に追加する方法</button></li>
   <li><a href="{{ feedback_url }}/new/choose" target="_blank" rel="noopener">ご意見・不具合の報告<small>GitHub の Issue が開きます。書いた内容は誰でも読めます</small></a></li>
   <li><a href="{% url 'web:terms' %}">利用規約</a></li>
   <li><a href="{% url 'web:privacy' %}">プライバシーポリシー</a></li>

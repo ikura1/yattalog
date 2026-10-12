@@ -13,6 +13,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
+from django.templatetags.static import static
 from django.views.decorators.http import require_GET, require_POST
 
 from apps.accounts.adapters import signup_is_full
@@ -168,6 +169,47 @@ def logout_view(request: HttpRequest) -> HttpResponse:
     resp = redirect("web:login")
     resp["Clear-Site-Data"] = '"cache", "storage"'  # 共用端末で前の人のデータが残らないように（レビュー E9）
     return resp
+
+
+# --- ホーム画面への追加（PWA） --------------------------------------------------------
+
+BG_LIGHT = "#EEF1F6"  # static/css/app.css の --bg と同じ
+INSTALL_PLATFORMS = {"ios", "ios-other", "android"}
+
+
+@require_GET
+def manifest(request: HttpRequest) -> HttpResponse:
+    """アプリとして追加するための情報。アイコンの URL にハッシュが付くので、ここで組み立てる。"""
+    icons = [
+        {"src": static(f"icons/{name}"), "sizes": f"{size}x{size}", "type": "image/png", "purpose": purpose}
+        for name, size, purpose in [
+            ("icon-192.png", 192, "any"),
+            ("icon-512.png", 512, "any"),
+            ("icon-maskable-192.png", 192, "maskable"),
+            ("icon-maskable-512.png", 512, "maskable"),
+        ]
+    ]
+    data = {
+        "name": "Yattalog",
+        "short_name": "Yattalog",
+        "description": "前にやったのいつだっけ？ やったら1タップで記録。前回からの日数がひと目でわかる。",
+        "lang": "ja",
+        "start_url": "/",
+        "scope": "/",
+        "display": "standalone",
+        "background_color": BG_LIGHT,
+        "theme_color": BG_LIGHT,
+        "icons": icons,
+    }
+    return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/manifest+json")
+
+
+@login_required
+@require_GET
+def install_guide(request: HttpRequest) -> HttpResponse:
+    """ホーム画面に追加する方法。端末の種類は画面側（JS）で見分けて、?p= で渡す。分からなければ全部出す。"""
+    platform = request.GET.get("p", "")
+    return render(request, "web/_install_sheet.html", {"platform": platform if platform in INSTALL_PLATFORMS else ""})
 
 
 def _legal_ctx() -> dict:
