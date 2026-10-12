@@ -109,6 +109,47 @@ def test_シートを開いても入力欄にフォーカスせず_キーボー�
     assert page.evaluate("document.activeElement.matches('input, textarea')") is False
 
 
+def test_カテゴリのタブで追加を押すと_そのカテゴリが選ばれた状態で開く(home, user):
+    house = ev_svc.create_category(user, "家事")
+    page = home
+    page.reload()
+    page.locator('#tabs [role="tab"]', has_text="家事").click()
+
+    page.locator("#grid .tile.add").click()
+
+    expect(page.locator(f'#sheet input[name="category"][value="{house.id}"]')).to_be_checked()
+
+
+def test_すべてのタブで追加を押すと_カテゴリはなしのまま開く(home, user):
+    ev_svc.create_category(user, "家事")
+    page = home
+    page.reload()
+    page.locator('#tabs [role="tab"]', has_text="家事").click()
+    page.locator('#tabs [role="tab"]', has_text="すべて").click()
+
+    page.locator("#grid .tile.add").click()
+
+    expect(page.locator('#sheet input[name="category"][value=""]')).to_be_checked()
+
+
+def test_フォームのカテゴリは_絵文字があってもなくても同じ高さの1行で並ぶ(home, user):
+    ev_svc.create_category(user, "家事", emoji="🧹")
+    ev_svc.create_category(user, "買い物")
+    page = home
+    page.reload()
+    page.locator("#grid .tile.add").click()
+
+    expect(page.locator("#sheet .chips")).to_be_visible()
+    # シートは下から滑って出てくるので、2つは同じ瞬間に測る
+    with_emoji, without = page.locator("#sheet .chips label").evaluate_all(
+        """ls => ["家事", "買い物"]
+              .map(t => ls.find(l => l.textContent.includes(t)).querySelector(":scope > span"))
+              .map(s => s.getBoundingClientRect())
+              .map(r => ({ top: r.top, height: r.height }))"""
+    )
+    assert with_emoji == without
+
+
 # --- レート制限（決定 037） ---
 
 

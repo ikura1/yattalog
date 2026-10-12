@@ -452,6 +452,12 @@
     if (t.id === "grid-wrap") { gridLoadedAt = Date.now(); bindHome(); applyTab(currentTab()); }
     if (t.id === "detail") bindSeason(t);
   });
+  // カテゴリのタブを開いているときは、追加フォームでそのカテゴリを選んでおく
+  document.addEventListener("htmx:configRequest", (e) => {
+    if (e.detail.elt.id !== "addTile") return;
+    const tab = $('#tabs [aria-selected="true"]')?.dataset.tab;
+    if (tab && tab !== "all") e.detail.parameters.category = tab;
+  });
   document.addEventListener("yl:close-sheet", closeSheet);
   document.addEventListener("yl:toast", (e) => toast(e.detail.message));
   document.addEventListener("yl:go-home", () => { if (!$("#grid")) location.href = "/"; });
