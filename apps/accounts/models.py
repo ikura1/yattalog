@@ -4,8 +4,8 @@ from django.utils import timezone as dj_timezone
 
 from apps.core.models import new_id
 
-TERMS_VERSION = "2026-10-draft"
-PRIVACY_VERSION = "2026-10-draft"
+TERMS_VERSION = "2026-10-12"
+PRIVACY_VERSION = "2026-10-12"
 
 
 class UserManager(BaseUserManager):

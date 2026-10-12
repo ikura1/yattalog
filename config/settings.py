@@ -149,6 +149,12 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
+# --- 運営者と問い合わせ先（規約・プライバシーポリシーに出す、決定 041）---------
+OPERATOR_NAME = "ikura1"
+LEGAL_DATE = "2026年10月12日"  # 制定日。変えたら accounts.models の TERMS_VERSION / PRIVACY_VERSION もそろえる
+FEEDBACK_URL = "https://github.com/ikura1/yattalog/issues"  # 意見・不具合（公開の場）
+CONTACT_FORM_URL = os.environ.get("YATTALOG_CONTACT_URL", "")  # 個人情報に関わる問い合わせ（非公開の窓口）
+
 # 登録できる人数の上限（決定 038）。達したら新しい登録を止める。登録済みの人はそのまま使える
 MAX_USERS = int(os.environ.get("YATTALOG_MAX_USERS", "20"))
 
