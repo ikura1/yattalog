@@ -157,3 +157,21 @@ def test_メニューから退会すると_ログイン画面に戻り_データ
     expect(page.locator(".messages")).to_contain_text("退会しました")
     expect(page.get_by_role("button", name="Google でログイン")).to_be_visible()
     assert not User.objects.exists() and not Event.objects.exists()
+
+
+# --- はじめて使うとき：テンプレート（決定 042） ---
+
+
+def test_はじめての人は_テンプレートを選んで_すぐ記録を始められる(logged_in_page):
+    page = logged_in_page
+    page.goto(page.base_url + "/")
+    expect(page.locator("#welcome")).to_be_visible()
+
+    page.locator(".starter", has_text="シーツ交換").click()
+    page.locator(".starter", has_text="散髪").click()
+    page.locator("#welcome").get_by_role("button", name="追加する").click()
+
+    expect(page.locator("#grid .tile .name")).to_have_text(["シーツ交換", "散髪"])
+    expect(page.locator("#welcome")).to_have_count(0)
+    page.locator("#grid .tile", has_text="散髪").click()
+    expect(page.locator("#grid .tile", has_text="散髪").locator(".ago")).to_have_text("さっき")
