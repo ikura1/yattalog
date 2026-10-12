@@ -20,6 +20,8 @@
 - データの書き出しは `services/export.py`。その場で ZIP を作って返す（写真が入るまで、決定 039）
 - 退会は `apps/accounts/services.py` の `delete_account()`。その場で全データを消す（写真が入るまで、決定 040）
 - レート制限は `apps/core/ratelimit.py` のミドルウェア。上限は `settings.RATE_LIMITS`、回数はプロセス内に持つ（決定 037）
+- 監視と運用は `docs/operations.md`（決定 041）。Claude は Google Cloud に入れないので、Actions の「Ops report」を手動で実行してサマリーと Issue（ラベル `ops`）を読む。報告は `apps/core/ops_report.py` で伏せる（リポジトリは公開）
+- 本番のログは1行1件の JSON（`apps/core/logging.py`）。`/healthz` は DB に触れない
 
 ## コマンド
 ```sh

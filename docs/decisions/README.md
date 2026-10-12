@@ -63,3 +63,4 @@
 | 038 | [β は先着20人。登録できる人数に上限を設ける](038-user-cap-for-beta.md) | 決定 |
 | 039 | [写真が入るまで、書き出しはその場で作って返す](039-export-on-request.md) | 決定 |
 | 040 | [写真が入るまで、退会はその場で全データを消す](040-delete-account-immediately.md) | 決定 |
+| 041 | [監視は GitHub Actions と Cloud Logging で行い、Claude は GitHub 経由で確かめて直す](041-ops-monitoring-via-github.md) | 決定 |
