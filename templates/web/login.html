@@ -18,6 +18,6 @@
       Google でログイン
     </button>
   </form>
-  <p class="login-legal">続けると、利用規約とプライバシーポリシーに同意したことになります。</p>
+  <p class="login-legal">続けると、<a href="{% url 'web:terms' %}">利用規約</a>と<a href="{% url 'web:privacy' %}">プライバシーポリシー</a>に同意したことになります。</p>
 </main>
 {% endblock %}

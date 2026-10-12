@@ -1,4 +1,4 @@
-"""本番の様子をまとめる（決定 041）。
+"""本番の様子をまとめる（決定 042）。
 
 GitHub Actions が Cloud Logging から取り出した JSON を読み、Markdown の報告と、エラーごとの Issue の中身を作る。
 リポジトリは公開なので、**利用者のデータと秘密の値を一切含めない**。
@@ -17,7 +17,7 @@ from urllib.parse import urlsplit
 
 # 経路の先頭の部分。ここにないものは伏せる（apps/web/urls.py・config/urls.py と合わせる）
 KNOWN_ROOTS = {
-    "", "login", "logout", "grid", "menu", "timezone", "categories", "export", "account",
+    "", "login", "logout", "terms", "privacy", "grid", "menu", "timezone", "categories", "export", "account",
     "events", "logs", "accounts", "static", "healthz",
 }  # fmt: skip
 ID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$|^\d+$", re.IGNORECASE)

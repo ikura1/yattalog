@@ -41,7 +41,7 @@ bash deploy/gcp-setup.sh <PROJECT_ID>
 登録したら Actions の「Deploy」を手動で実行する（以後は main にマージするたびに自動でデプロイされる）。
 
 ## 監視
-死活監視・毎朝の報告・Error Reporting の通知。設定と、Claude への頼み方は `docs/operations.md`（決定 041）。
+死活監視・毎朝の報告・Error Reporting の通知。設定と、Claude への頼み方は `docs/operations.md`（決定 042）。
 
 ## 費用を抑えるための設定
 - Cloud Run：最小0台・最大2台、リクエストを処理している間だけ課金

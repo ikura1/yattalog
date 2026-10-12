@@ -1,4 +1,4 @@
-# 本番の様子をまとめる（決定 041）。毎朝と、手動（Claude からも実行できる）で動く。
+# 本番の様子をまとめる（決定 042）。毎朝と、手動（Claude からも実行できる）で動く。
 # 結果は実行のサマリーに出し、新しいエラーは Issue（ラベル ops）にする。
 #
 # リポジトリは公開なので、Actions のログもサマリーも誰でも読める。
@@ -72,7 +72,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          gh label create ops --color B60205 --description "本番の監視が見つけたもの（決定 041）" --force
+          gh label create ops --color B60205 --description "本番の監視が見つけたもの（決定 042）" --force
           jq -c '.[]' "$RUNNER_TEMP/ops/issues.json" | while read -r item; do
             title=$(jq -r .title <<<"$item")
             n=$(gh issue list --label ops --state open --json number,title \

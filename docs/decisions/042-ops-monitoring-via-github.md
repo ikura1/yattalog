@@ -1,4 +1,4 @@
-# 041. 監視は GitHub Actions と Cloud Logging で行い、Claude は GitHub 経由で確かめて直す
+# 042. 監視は GitHub Actions と Cloud Logging で行い、Claude は GitHub 経由で確かめて直す
 
 - 日付：2026-10-12
 - 状態：決定

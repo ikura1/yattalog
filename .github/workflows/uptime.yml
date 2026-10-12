@@ -1,4 +1,4 @@
-# 本番が応答しているかを1時間ごとに確かめる（決定 041）。落ちていたら Issue（ラベル ops）を開く。
+# 本番が応答しているかを1時間ごとに確かめる（決定 042）。落ちていたら Issue（ラベル ops）を開く。
 # /healthz は DB に触れないので、Neon は起こさない。
 name: Uptime
 
@@ -37,7 +37,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          gh label create ops --color B60205 --description "本番の監視が見つけたもの（決定 041）" --force
+          gh label create ops --color B60205 --description "本番の監視が見つけたもの（決定 042）" --force
           title="本番に繋がらない（死活監視）"
           n=$(gh issue list --label ops --state open --json number,title --jq "map(select(.title == \"$title\"))[0].number // empty")
           body="$(date -u +%FT%TZ) に /healthz が応答しませんでした。$RUN_URL"
