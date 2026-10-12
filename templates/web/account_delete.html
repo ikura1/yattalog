@@ -1,0 +1,8 @@
+{% extends "web/base.html" %}
+{% block title %}退会する — Yattalog{% endblock %}
+{% block body %}
+<main class="app page">
+  <p><a href="{% url 'web:home' %}">← ホームへ戻る</a></p>
+  {% include "web/_account_delete_sheet.html" %}
+</main>
+{% endblock %}

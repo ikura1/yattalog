@@ -10,3 +10,4 @@
   <button class="btn small" type="button" hx-post="{% url 'web:event_restore' e.id %}" hx-swap="none">戻す</button></div>
 {% empty %}<p class="note">アーカイブしたイベントはありません</p>{% endfor %}
 <p class="note gap">タイムゾーン：{{ user_tz }}　・　α 版</p>
+<p class="note"><button type="button" class="linkbtn" hx-get="{% url 'web:account_delete' %}" hx-target="#sheet-body">退会する</button></p>

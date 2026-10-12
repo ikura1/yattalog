@@ -9,7 +9,7 @@
     <h1 class="logo logo-lg">Yatta<b>log</b></h1>
     <p class="login-copy">「あれ、前にやったのいつだっけ？」<br>やったら1タップ。<br>前回からの日数がひと目でわかる。</p>
   </div>
-  {% if messages %}<ul class="messages">{% for m in messages %}<li>{{ m }}</li>{% endfor %}</ul>{% endif %}
+  {% if messages %}<ul class="messages">{% for m in messages %}<li class="{{ m.tags }}">{{ m }}</li>{% endfor %}</ul>{% endif %}
   {% if signup_full and not messages %}<p class="login-note">ただいま満員のため、新しい登録を止めています。登録済みの方は、そのままログインできます。</p>{% endif %}
   <form method="post" action="{% provider_login_url 'google' %}">
     {% csrf_token %}
