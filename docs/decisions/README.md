@@ -65,3 +65,4 @@
 | 040 | [写真が入るまで、退会はその場で全データを消す](040-delete-account-immediately.md) | 決定 |
 | 041 | [規約とポリシーをアプリで表示し、問い合わせ先を公開と非公開の2つに分ける](041-legal-pages-and-contact.md) | 決定 |
 | 042 | [テンプレートは、空のホームにそのまま出す](042-starters-on-empty-home.md) | 決定 |
+| 043 | [アプリのアイコンを決め、ホーム画面への追加を案内する](043-app-icon-and-install-guide.md) | 決定 |

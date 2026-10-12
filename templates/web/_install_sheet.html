@@ -1,0 +1,44 @@
+<h2>ホーム画面に追加</h2>
+<p class="note">ホーム画面に置くと、アプリのように1タップで開けます。</p>
+{% if platform == "ios" or not platform %}
+<section class="howto">
+  {% if not platform %}<h3 class="sub-h">iPhone・iPad（Safari）</h3>{% endif %}
+  <ol class="steps">
+    <li>画面の下（または上）にある<strong>共有ボタン</strong>
+      <svg class="inline-ico" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 15V4M8 7.5 12 3.5l4 4M6 11H5a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7a1 1 0 0 0-1-1h-1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      を押す</li>
+    <li>出てきたメニューを下へ送り、<strong>「ホーム画面に追加」</strong>を選ぶ</li>
+    <li>右上の<strong>「追加」</strong>を押す</li>
+  </ol>
+</section>
+{% endif %}
+{% if platform == "ios-other" %}
+<section class="howto">
+  <p>iPhone・iPad では、<strong>Safari で開き直す</strong>と、ホーム画面に追加できます。</p>
+  <ol class="steps">
+    <li>このページの URL をコピーする</li>
+    <li>Safari を開いて、URL を貼り付ける</li>
+    <li>Safari のメニューから、もう一度この案内を開く</li>
+  </ol>
+</section>
+{% endif %}
+{% if platform == "android" or not platform %}
+<section class="howto">
+  {% if not platform %}<h3 class="sub-h">Android（Chrome）</h3>{% endif %}
+  <ol class="steps">
+    <li>ブラウザ右上の<strong>メニュー（︙）</strong>を押す</li>
+    <li><strong>「ホーム画面に追加」</strong>または<strong>「アプリをインストール」</strong>を選ぶ</li>
+    <li>確認の画面で<strong>「インストール」</strong>を押す</li>
+  </ol>
+</section>
+{% endif %}
+{% if not platform %}
+<section class="howto">
+  <h3 class="sub-h">パソコン（Chrome・Edge）</h3>
+  <ol class="steps">
+    <li>アドレスバーの右端にある<strong>インストールのボタン</strong>を押す</li>
+    <li>確認の画面で<strong>「インストール」</strong>を押す</li>
+  </ol>
+</section>
+{% endif %}
+<div class="row gap"><button class="btn" type="button" data-close-sheet>閉じる</button></div>
