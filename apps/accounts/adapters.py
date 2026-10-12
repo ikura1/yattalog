@@ -3,11 +3,19 @@
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.core.exceptions import ImmediateHttpResponse
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
+from django.conf import settings
 from django.contrib import messages
 from django.shortcuts import redirect
 from django.utils import timezone
 
-from apps.accounts.models import PRIVACY_VERSION, TERMS_VERSION
+from apps.accounts.models import PRIVACY_VERSION, TERMS_VERSION, User
+
+SIGNUP_FULL = "ただいま満員のため、新しい登録を止めています。登録済みの方は、そのままログインできます。"
+
+
+def signup_is_full() -> bool:
+    """登録できる人数の上限に達しているか（決定 038）。退会の手続き中の人は数えない。"""
+    return User.objects.filter(is_active=True).count() >= settings.MAX_USERS
 
 
 class AccountAdapter(DefaultAccountAdapter):
@@ -18,12 +26,15 @@ class AccountAdapter(DefaultAccountAdapter):
 
 class SocialAccountAdapter(DefaultSocialAccountAdapter):
     def is_open_for_signup(self, request, sociallogin) -> bool:
-        return True
+        return not signup_is_full()
 
     def pre_social_login(self, request, sociallogin) -> None:
         data = sociallogin.account.extra_data or {}
         if sociallogin.account.provider == "google" and not data.get("email_verified", False):
             messages.error(request, "確認済みのメールアドレスを持つ Google アカウントでログインしてください。")
+            raise ImmediateHttpResponse(redirect("web:login"))
+        if not sociallogin.is_existing and signup_is_full():
+            messages.error(request, SIGNUP_FULL)
             raise ImmediateHttpResponse(redirect("web:login"))
         user = sociallogin.user
         if user.pk and not user.is_active:

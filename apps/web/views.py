@@ -13,6 +13,7 @@ from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_GET, require_POST
 
+from apps.accounts.adapters import signup_is_full
 from apps.core import clock
 from apps.events.models import COLORS, Category, Event, Log, StreakUnit
 from apps.events.services import access, stats
@@ -153,7 +154,7 @@ def parse_uuid(raw: str | None) -> uuid.UUID:
 def login_page(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         return redirect("web:home")
-    return render(request, "web/login.html")
+    return render(request, "web/login.html", {"signup_full": signup_is_full()})
 
 
 @require_POST
