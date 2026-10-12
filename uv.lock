@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.14"
 
 [[package]]
@@ -333,6 +333,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/55/0f/5c6811706676be4c5faf5a3fd0d3ad56293db7ce8f0cc62c3e2f8e23b26d/django_ninja-1.7.1.tar.gz", hash = "sha256:2183ee5426a8c95bfabae1b7f60c471a56c48022296eaaf1cc54b00010b07ee6", size = 2341814, upload-time = "2026-09-19T05:35:56.437Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a8/05/7bf91a79ac69632b15b878ad658371dcae58a4e2545da3709cfc55916da3/django_ninja-1.7.1-py3-none-any.whl", hash = "sha256:61137e9fbb97ca15a92cdbfdcf9f6a738464b328c6cb11090faf17042035ec69", size = 2376240, upload-time = "2026-09-19T05:35:54.89Z" },
+]
+
+[[package]]
+name = "django-otp"
+version = "1.7.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6a/56/a86b04c09242bc2f8e6a0e3294bb60d4235ab6d4436608482aace4c25c5f/django_otp-1.7.4.tar.gz", hash = "sha256:f3a970be59ca407d90fd278de3253979417364f91e9edcfcd7a9f05235859b27", size = 79413, upload-time = "2026-10-08T23:51:12.148Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c9/d7/1ac404fb204013b5875c3201a234c884b7c985cda0e50d51a2ac8c949b4d/django_otp-1.7.4-py3-none-any.whl", hash = "sha256:2fa56711167db887bf80ebdc35820355e756a3fdc0b9af0e34494b737312bc16", size = 73780, upload-time = "2026-10-08T23:51:11.009Z" },
 ]
 
 [[package]]
@@ -1024,6 +1036,7 @@ dependencies = [
     { name = "django-allauth", extra = ["socialaccount"] },
     { name = "django-htmx" },
     { name = "django-ninja" },
+    { name = "django-otp" },
     { name = "gunicorn" },
     { name = "psycopg", extra = ["binary"] },
     { name = "regex" },
@@ -1050,6 +1063,7 @@ requires-dist = [
     { name = "django-allauth", extras = ["socialaccount"], specifier = ">=65.19.7" },
     { name = "django-htmx", specifier = ">=1.29.0" },
     { name = "django-ninja", specifier = ">=1.7.1" },
+    { name = "django-otp", specifier = ">=1.7.4" },
     { name = "gunicorn", specifier = ">=26.2.0" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3.6" },
     { name = "regex", specifier = ">=2026.9.29" },
