@@ -1,0 +1,2 @@
+{# アクセス解析（決定 047）。ログインしていない人にだけ。Cookie を使わず、Do Not Track を守る #}
+{% if umami_website_id and not user.is_authenticated %}<script defer src="https://cloud.umami.is/script.js" data-website-id="{{ umami_website_id }}" data-do-not-track="true"></script>{% endif %}
