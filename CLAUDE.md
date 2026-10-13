@@ -7,6 +7,7 @@
 - `SPEC.md` — 仕様（正）。仕様を変えるときはここと決定記録を一緒に直す
 - `docs/decisions/NNN-*.md` — 決定記録（ADR）。新しい判断は次の番号で追加し、`docs/decisions/README.md` の索引も更新
 - `docs/data-model.md` — データモデル
+- `docs/wording.md` — 画面に出す文言の型と一覧。文言を足す・直すときに合わせる
 - 未決事項・レビュー指摘は GitHub Issues（ラベル `area:*` / `priority:*` / `review`）
 
 ## 構成

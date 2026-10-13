@@ -31,7 +31,7 @@ def resolve_when(when: When, tz_name: str, now: datetime) -> tuple[date, datetim
     if when.date is None:
         return (today, now, tz.key)
     if when.date > today:
-        raise ValidationError("未来の日付は記録できません。今日より前の日付を選んでください", code="future_date")
+        raise ValidationError("未来の日付は記録できません。今日までの日付を選んでください", code="future_date")
     if when.time is None:
         return (when.date, None, "")
     occurred = datetime.combine(when.date, when.time, tzinfo=tz)
