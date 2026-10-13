@@ -77,3 +77,4 @@
 | 052 | [費用は月 1,000円まで。超えそうなら、まず新しい登録を止める](052-budget-and-overrun-policy.md) | 決定 |
 | 053 | [シェアを β に入れる](053-share-in-beta.md) | 決定 |
 | 054 | [押し間違いは、10分以内なら長押しシートから取り消せる](054-undo-recent-from-sheet.md) | 決定 |
+| 055 | [記録した直後の知らせから、メモ・シェア・詳細へ行けるようにし、手ごたえを足す](055-record-toast-actions-and-feedback.md) | 決定 |
