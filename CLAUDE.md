@@ -22,7 +22,7 @@
 - 退会は `apps/accounts/services.py` の `delete_account()`。その場で全データを消す（写真が入るまで、決定 040）
 - 規約とポリシーの本文は `templates/web/legal/`（変えるときの手順は `docs/legal/README.md`、決定 041）
 - はじめて使う人向けのテンプレートは `services/starter.py`。イベントが0個のホームに一覧を出す（決定 042）
-- アイコンの元データは `static/icons/*.svg`。PNG は `uv run python tools/build_icons.py` で作り直す（決定 043）
+- アイコンの元データは `static/icons/*.svg`。PNG は `uv run python tools/build_icons.py` で作り直す（決定 043）。リンクのプレビュー用の画像（`og.png`）の元は `tools/og.html`
 - 管理画面の入口は `apps/accounts/admin_site.py`（メールアドレスの許可と2段階認証、決定 045）。手順は `deploy/README.md`
 - アクセス解析は Umami Cloud。ログイン前の画面だけで、`UMAMI_WEBSITE_ID` があるときに読み込む（`templates/web/_analytics.html`、決定 047）
 - Service Worker は `templates/web/sw.js`（`/sw.js`）。しまうのは静的ファイルとオフラインの案内だけ。ログインした人の画面はしまわない（決定 049）
