@@ -105,3 +105,30 @@ def test_端末が分からないときは_すべての方法を並べる(client
 
 def test_追加の方法は_ログインしていなければ開けない(client, db):
     assert "/login/" in client.get("/install/")["Location"]
+
+
+# --- リンクを貼ったときの見え方（シェアの投稿文に URL が付く。決定 053） ---
+
+
+def test_リンクのプレビュー用の画像が_1200x630_である():
+    assert png_size(ICONS / "og.png") == (1200, 630)
+
+
+@pytest.mark.parametrize("path", ["/login/", "/terms/"])
+def test_ログイン前の画面に_リンクのプレビューの情報がある(client, db, path):
+    body = client.get(path).content.decode()
+
+    assert '<meta property="og:site_name" content="Yattalog">' in body
+    assert '<meta property="og:title" content="Yattalog（やったログ）">' in body
+    assert '<meta property="og:type" content="website">' in body
+    assert '<meta name="twitter:card" content="summary_large_image">' in body
+    assert "前にやったの、いつだっけ？" in body and '<meta name="description" content="' in body
+
+
+def test_プレビューの画像と_URL_は_http_から始まる完全な形で出す(client, db):
+    """X や LINE は、相対パスの画像を読めない。"""
+    body = client.get("/login/").content.decode()
+
+    assert '<meta property="og:image" content="http://testserver/static/icons/og.png">' in body
+    assert '<meta property="og:url" content="http://testserver/">' in body
+    assert '<meta property="og:image:width" content="1200">' in body
