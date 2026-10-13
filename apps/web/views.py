@@ -216,6 +216,7 @@ def _legal_ctx() -> dict:
     return {
         "operator_name": settings.OPERATOR_NAME,
         "legal_date": settings.LEGAL_DATE,
+        "privacy_revised": settings.PRIVACY_REVISED,
         "feedback_url": settings.FEEDBACK_URL,
         "contact_form_url": settings.CONTACT_FORM_URL,
     }

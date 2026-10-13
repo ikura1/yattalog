@@ -82,6 +82,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "django.template.context_processors.csp",
+                "apps.core.context_processors.analytics",
             ],
         },
     },
@@ -155,6 +156,7 @@ SOCIALACCOUNT_PROVIDERS = {
 # --- 運営者と問い合わせ先（規約・プライバシーポリシーに出す、決定 041）---------
 OPERATOR_NAME = "ikura1"
 LEGAL_DATE = "2026年10月12日"  # 制定日。変えたら accounts.models の TERMS_VERSION / PRIVACY_VERSION もそろえる
+PRIVACY_REVISED = "2026年10月13日"  # ポリシーの改定日。変えたら accounts.models の PRIVACY_VERSION もそろえる
 FEEDBACK_URL = "https://github.com/ikura1/yattalog/issues"  # 意見・不具合（公開の場）
 CONTACT_FORM_URL = os.environ.get("YATTALOG_CONTACT_URL", "")  # 個人情報に関わる問い合わせ（非公開の窓口）
 
@@ -209,6 +211,12 @@ SECURE_CSP = {
     "base-uri": [CSP.SELF],
     "object-src": [CSP.NONE],
 }
+
+# アクセス解析（決定 047）。サイト ID があるときだけ、ログイン前の画面で Umami Cloud を読み込む
+UMAMI_WEBSITE_ID = os.environ.get("UMAMI_WEBSITE_ID", "")
+if UMAMI_WEBSITE_ID:
+    SECURE_CSP["script-src"].append("https://cloud.umami.is")
+    SECURE_CSP["connect-src"].append("https://gateway.umami.is")
 
 ADMIN_URL = os.environ.get("DJANGO_ADMIN_URL", "admin").strip("/") + "/"  # 本番では推測しにくい値にする（レビュー S10）
 

@@ -1,4 +1,5 @@
 {% extends "web/base.html" %}
+{% block analytics %}{% include "web/_analytics.html" %}{% endblock %}
 {% block body %}
 <main class="legal">
   <p class="legal-back"><a href="{% url 'web:home' %}">← Yattalog へ戻る</a></p>

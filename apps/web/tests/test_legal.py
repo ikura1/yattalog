@@ -72,7 +72,11 @@ def test_メニューから_規約とポリシーと報告の窓口を開ける(
     assert f'href="{ISSUES}/new/choose"' in body and "ご意見・不具合の報告" in body
 
 
-def test_登録のときに記録する版は_制定日と同じ():
+def test_登録のときに記録する版は_規約は制定日_ポリシーは改定日と同じ():
     from apps.accounts.models import PRIVACY_VERSION, TERMS_VERSION
 
-    assert (TERMS_VERSION, PRIVACY_VERSION) == ("2026-10-12", "2026-10-12")
+    assert (TERMS_VERSION, PRIVACY_VERSION) == ("2026-10-12", "2026-10-13")
+
+
+def test_ポリシーには改定日が出る(client, db):
+    assert "改定日：2026年10月13日" in client.get("/privacy/").content.decode()
