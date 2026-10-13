@@ -288,6 +288,26 @@ textarea { min-height: 84px; resize: vertical; }
 .login-tiles span:nth-child(2) { transform: translateY(-8px) rotate(3deg); }
 .login-copy { margin: 0; color: var(--muted); line-height: 1.8; }
 .gbtn { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); font-weight: 700; font-size: 16px; box-shadow: var(--shadow); }
+.about { max-width: 440px; margin: 0 auto; padding: 8px 16px 56px; display: flex; flex-direction: column; gap: 18px; }
+.about h2 { font-family: var(--f-display); font-size: 20px; margin: 18px 0 0; }
+.about-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.about-steps li { display: flex; gap: 14px; align-items: center; background: var(--surface); border-radius: var(--r); padding: 14px; }
+.about-steps h3 { margin: 0 0 2px; font-size: 16px; }
+.about-steps p { margin: 0; font-size: 13.5px; color: var(--muted); line-height: 1.7; }
+.about-art { flex: 0 0 104px; display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+.mini { position: relative; background: var(--tc); color: var(--tile-fg); border-radius: 12px; width: 50px; height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 18px; line-height: 1.2; }
+.mini b { font-family: var(--f-display); font-size: 10px; }
+.mini.done { width: 76px; height: 84px; font-size: 26px; border-radius: 16px; }
+.mini.done b { font-size: 14px; color: var(--accent); }
+.mini.done i { position: absolute; right: -6px; top: -6px; width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: var(--accent-fg); font-style: normal; font-weight: 800; font-size: 15px; display: grid; place-items: center; }
+.mini-card { background: var(--t-sky); border-radius: 10px; padding: 6px; width: 72px; aspect-ratio: 4 / 5; display: block; }
+.mini-card-in { background: #FFFFFF; color: #1B2333; border-radius: 7px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font-size: 20px; }
+.mini-card-in b { font-family: var(--f-display); font-size: 12px; color: #1F6F5C; }
+.mini-card-in em { font-style: normal; font-size: 7.5px; font-weight: 700; background: #D3E6FF; border-radius: 99px; padding: 1px 5px; }
+.about-values { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.about-values li { font-size: 13.5px; color: var(--muted); line-height: 1.7; padding-left: 14px; border-left: 3px solid var(--accent); }
+.about-values strong { display: block; color: var(--fg); font-size: 15px; }
+.login-more { text-align: center; font-size: 13px; color: var(--muted); margin: 0; }
 .login-legal { font-size: 12px; color: var(--muted); text-align: center; margin: 0; }
 .login-note { font-size: 13px; font-weight: 700; padding: 10px 14px; margin: 0; background: var(--surface); border-radius: 12px; }
 .messages { list-style: none; padding: 10px 14px; margin: 0; background: var(--surface); border-radius: 12px; color: var(--danger); font-weight: 700; }
