@@ -18,7 +18,7 @@ from urllib.parse import urlsplit
 # 経路の先頭の部分。ここにないものは伏せる（経路を足したらここにも足す。足し忘れはテストが見つける）
 KNOWN_ROOTS = {
     "", "login", "logout", "manifest.webmanifest", "install", "terms", "privacy", "grid", "menu", "timezone",
-    "categories", "starters", "export", "account", "events", "logs", "accounts", "static", "health",
+    "categories", "starters", "export", "account", "events", "logs", "accounts", "static", "health", "sw.js", "offline",
 }  # fmt: skip
 ID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$|^\d+$", re.IGNORECASE)
 # 2つ目以降の部分で、そのまま出してよい単語（アプリ自身の経路に出てくるものだけ）。

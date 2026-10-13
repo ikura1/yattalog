@@ -1,19 +1,23 @@
 """画面（Django テンプレート＋htmx）。処理はすべてサービス層に任せる（決定 027）。"""
 
 import functools
+import hashlib
 import json
 import uuid
 from datetime import date, time
+from pathlib import Path
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.staticfiles import finders
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
 from django.templatetags.static import static
+from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
 from apps.accounts.adapters import signup_is_full
@@ -202,6 +206,36 @@ def manifest(request: HttpRequest) -> HttpResponse:
         "icons": icons,
     }
     return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/manifest+json")
+
+
+# オフラインの案内を出すのに要るもの。Service Worker が先にしまっておく（決定 049）
+SW_PRECACHE = ["css/app.css", "icons/favicon.svg", "icons/icon.svg"]
+
+
+def _sw_version(urls: list[str]) -> str:
+    """しまっておくものが変わったら、版も変わる。本番は URL に中身のハッシュが入っている。"""
+    seed = [*urls, getattr(settings, "SW_EXTRA_VERSION", "")]
+    if settings.DEBUG:
+        # 開発中は URL にハッシュが入らないので、ファイルの更新時刻を混ぜる
+        seed += [str(Path(found).stat().st_mtime_ns) for name in SW_PRECACHE if (found := finders.find(name))]
+    return hashlib.sha256("|".join(seed).encode()).hexdigest()[:12]
+
+
+@require_GET
+def service_worker(request: HttpRequest) -> HttpResponse:
+    """Service Worker の本体。サイト全体を受け持つので、/sw.js で返す。"""
+    urls = [reverse("web:offline"), *[static(name) for name in SW_PRECACHE]]
+    ctx = {"precache": urls, "version": _sw_version(urls)}
+    response = render(request, "web/sw.js", ctx, content_type="text/javascript; charset=utf-8")
+    response["Cache-Control"] = "no-cache"  # 古い Service Worker が残り続けないように
+    response["Service-Worker-Allowed"] = "/"
+    return response
+
+
+@require_GET
+def offline(request: HttpRequest) -> HttpResponse:
+    """つながらないときに出す案内。だれが見ても同じ内容（利用者のデータを入れない）。"""
+    return render(request, "web/offline.html")
 
 
 @login_required

@@ -538,6 +538,8 @@
     bindSeason(document);
     initTimezone();
     initInstall();
+    // オフラインのときに案内を出し、静的ファイルをしまっておく（決定 049）。失敗しても、アプリはそのまま動く
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
     netBanner();
     document.addEventListener("visibilitychange", refreshIfStale);
     setInterval(refreshIfStale, 60 * 1000);
