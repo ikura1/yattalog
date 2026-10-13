@@ -32,4 +32,5 @@ urlpatterns = [
     path("logs/<uuid:log_id>/undo/", views.undo, name="undo"),
     path("logs/<uuid:log_id>/edit/", views.log_edit_sheet, name="log_edit"),
     path("logs/<uuid:log_id>/delete/", views.log_delete, name="log_delete"),
+    path("logs/<uuid:log_id>/share/", views.share_sheet, name="share"),
 ]
