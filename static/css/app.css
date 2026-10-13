@@ -176,6 +176,10 @@ textarea { min-height: 84px; resize: vertical; }
 .steps li { margin: 8px 0; }
 .inline-ico { vertical-align: -4px; }
 .menu.gap li:first-child button { border-top: none; }
+.offline { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 24px; text-align: center; }
+.offline h1 { font-family: var(--f-display); font-size: 22px; margin: 10px 0 0; }
+.offline p { margin: 4px 0; max-width: 28em; }
+.offline .btn { display: inline-block; flex: none; margin-top: 10px; }
 .bullets { margin: 0 0 10px; padding-left: 1.3em; }
 .check { display: flex; gap: 10px; align-items: flex-start; font-weight: 700; margin: 0 0 12px; }
 .check input { width: 22px; height: 22px; flex: 0 0 auto; margin-top: 2px; accent-color: var(--danger); }
