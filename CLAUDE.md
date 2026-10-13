@@ -46,6 +46,7 @@ uv run python manage.py makemigrations --check --dry-run
 ## 進め方
 - **テストを先に書き、落ちることを確かめてから直す**（t_wada 流の TDD）。テスト名は日本語で振る舞いを書く
 - テストの時計は `conftest.py` で `2026-10-10 03:00 UTC` に固定（E2E は固定しない）。共通の値・`new_user` は `apps/core/testing.py`
+- テストは機能ごとにファイルを分けている（`apps/web/tests/test_*_views.py`、`e2e/test_*.py`）。画面のテストで共有するもの（`client_in`・`event`）は `apps/web/tests/conftest.py`、E2E の `home` は `e2e/conftest.py`
 - PR を作って CI が通ってから main へ。main に入ると Cloud Run へ自動デプロイ（2〜3分）
   - main は保護されている（PR 必須、CI の `test`・`e2e`・`docker` が必須、直接の push は不可）
   - **マージは Yuki さんが行う**（Claude からの `gh pr merge` は権限で止められる）。マージ後は、Deploy の成功と新しいリビジョンを確認して報告する

@@ -7,12 +7,6 @@ SITE = "0f1e2d3c-0000-4000-8000-123456789abc"
 SCRIPT = 'src="https://cloud.umami.is/script.js"'
 
 
-@pytest.fixture
-def client_in(client, user):
-    client.force_login(user)
-    return client
-
-
 @pytest.mark.parametrize("path", ["/login/", "/terms/", "/privacy/"])
 @override_settings(UMAMI_WEBSITE_ID=SITE)
 def test_サイトIDがあれば_入口と規約の画面で解析を読み込む(client, db, path):
