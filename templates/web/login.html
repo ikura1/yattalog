@@ -20,5 +20,40 @@
     </button>
   </form>
   <p class="login-legal">続けると、<a href="{% url 'web:terms' %}">利用規約</a>と<a href="{% url 'web:privacy' %}">プライバシーポリシー</a>に同意したことになります。</p>
+  <p class="login-more"><a href="#aboutTitle">どんなアプリ？ ↓</a></p>
 </main>
+<section class="about" aria-labelledby="aboutTitle">
+  <h2 id="aboutTitle">どんなアプリ？</h2>
+  <ol class="about-steps">
+    <li>
+      <div class="about-art" aria-hidden="true"><span class="mini c-sky done">🛏️<b>さっき</b><i>✓</i></span></div>
+      <div><h3>やったら、タイルを1タップ</h3><p>アプリを開いて、タイルを押すだけ。文字を打つ必要はありません。</p></div>
+    </li>
+    <li>
+      <div class="about-art" aria-hidden="true"><span class="mini c-leaf">🪴<b>2日前</b></span><span class="mini c-grape">✂️<b>32日前</b></span><span class="mini c-teal">🌀<b>3か月前</b></span></div>
+      <div><h3>前にやったのは、いつ？</h3><p>前回からどれくらいたったかが、開いた瞬間に分かります。シーツ交換、散髪、フィルター掃除。つい忘れることに。</p></div>
+    </li>
+    <li>
+      <div class="about-art" aria-hidden="true"><span class="mini-card"><span class="mini-card-in">🛏️<b>やった！</b><em>🔥 5週連続</em></span></span></div>
+      <div><h3>やったことを、シェア</h3><p>記録を1枚の画像にして、インスタや X に投稿できます。画像は、あなたのスマホの中で作ります。</p></div>
+    </li>
+  </ol>
+
+  <h2>大事にしていること</h2>
+  <ul class="about-values">
+    <li><strong>期限も通知もありません</strong>「やらなきゃ」ではなく、「やった」を残すアプリです。追い立てません。</li>
+    <li><strong>データは、あなたのもの</strong>いつでも書き出せて、退会すれば、その場ですべて消えます。</li>
+    <li><strong>無料です</strong>広告はありません。いまは試験公開中で、登録は先着{{ max_users }}人までです。</li>
+  </ul>
+
+  {% if signup_full %}<p class="login-note">ただいま満員のため、新しい登録を止めています。登録済みの方は、そのままログインできます。</p>{% endif %}
+  <form method="post" action="{% provider_login_url 'google' %}">
+    {% csrf_token %}
+    <button class="gbtn" type="submit">
+      <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.6 13.2l7.8 6.1C12.3 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.8c4.3-4 6.9-9.9 6.9-17.2z"/><path fill="#FBBC05" d="M10.4 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6.1C1 16.5 0 20.1 0 24s1 7.5 2.6 10.8l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.8c-2.1 1.4-4.8 2.3-8.5 2.3-6.3 0-11.7-4.1-13.6-9.8l-7.8 6.1C6.6 42.6 14.6 48 24 48z"/></svg>
+      Google でログイン
+    </button>
+  </form>
+  <p class="login-legal"><a href="{% url 'web:terms' %}">利用規約</a>　<a href="{% url 'web:privacy' %}">プライバシーポリシー</a></p>
+</section>
 {% endblock %}

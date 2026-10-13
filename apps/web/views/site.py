@@ -22,7 +22,7 @@ from apps.web.views.common import clear_device_data
 def login_page(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         return redirect("web:home")
-    return render(request, "web/login.html", {"signup_full": signup_is_full()})
+    return render(request, "web/login.html", {"signup_full": signup_is_full(), "max_users": settings.MAX_USERS})
 
 
 @require_POST

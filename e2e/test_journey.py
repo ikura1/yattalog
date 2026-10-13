@@ -60,10 +60,10 @@ def test_テンプレートで始めて_記録し_詳細を見て_書き出し�
     page.get_by_label("すべてのデータが削除され、元に戻せないことを理解しました").check()
     page.get_by_role("button", name="退会してデータを削除する").click()
     expect(page.locator(".messages")).to_contain_text("退会しました")
-    expect(page.get_by_role("button", name="Google でログイン")).to_be_visible()
+    expect(page.get_by_role("button", name="Google でログイン").first).to_be_visible()
     counts = [m.objects.count() for m in (User, Space, Category, Event, Log)]
     assert counts == [0, 0, 0, 0, 0]
 
     # 6. 退会したあとは、ホームを開いてもログイン画面に送られる
     page.goto(page.base_url + "/")
-    expect(page.get_by_role("button", name="Google でログイン")).to_be_visible()
+    expect(page.get_by_role("button", name="Google でログイン").first).to_be_visible()
