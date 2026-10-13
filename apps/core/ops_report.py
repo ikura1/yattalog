@@ -21,7 +21,13 @@ KNOWN_ROOTS = {
     "categories", "starters", "export", "account", "events", "logs", "accounts", "static", "health",
 }  # fmt: skip
 ID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$|^\d+$", re.IGNORECASE)
-WORD = re.compile(r"^[a-z][a-z0-9_.-]*$")
+# 2つ目以降の部分で、そのまま出してよい単語（アプリ自身の経路に出てくるものだけ）。
+# 外から好きな単語を付けて、公開の報告に載せられないようにする（#74）。足し忘れはテストが見つける
+KNOWN_PARTS = {
+    "new", "edit", "remove", "restore", "move", "record", "record-sheet", "undo", "delete",  # イベントと記録
+    "google", "login", "callback", "logout", "signup",  # ログイン（/accounts/）
+    "css", "js", "icons", "vendor",  # 静的ファイルの置き場所（ファイル名は出さない）
+}  # fmt: skip
 FRAME = re.compile(r'^\s*File "(?:/app/)?((?:apps|config)/[^"]+)", line (\d+), in (\w+)')
 EXCEPTION = re.compile(r"^([A-Za-z_][\w.]*(?:Error|Exception|Warning|Exit|Interrupt|DoesNotExist))\b")
 
@@ -31,11 +37,11 @@ def route_of(url: str) -> str:
     parts = urlsplit(url).path.split("/")[1:]
     if not parts or parts[0] not in KNOWN_ROOTS:
         return "/<その他>"
-    shown = []
-    for part in parts:
+    shown = [parts[0]]
+    for part in parts[1:]:
         if ID.match(part):
             shown.append("<id>")
-        elif part == "" or WORD.match(part):
+        elif part == "" or part in KNOWN_PARTS:
             shown.append(part)
         else:
             shown.append("<?>")
