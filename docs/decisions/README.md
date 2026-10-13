@@ -70,3 +70,4 @@
 | 045 | [管理画面は、決めたメールアドレスと2段階認証で守る](045-admin-with-2fa.md) | 決定 |
 | 046 | [監視は GitHub Actions と Cloud Logging で行い、Claude は GitHub 経由で確かめて直す](046-ops-monitoring-via-github.md) | 決定 |
 | 047 | [アクセス数と流入元は、ログイン前の画面だけ Umami Cloud で数える](047-access-analytics-umami.md) | 決定 |
+| 048 | [経過時間には「前」を付けて「N日前」と表示する](048-elapsed-with-ago.md) | 決定 |

@@ -85,12 +85,12 @@ def test_さっきやったイベントの読み上げ():
 def test_数時間前にやったイベントの読み上げ():
     e = make_event(last_local_date=TODAY, last_occurred_at=NOW - timedelta(hours=3))
     t = tile(e, TODAY, NOW)
-    assert (t.number, t.unit, t.is_today) == ("3", "時間", True)
+    assert (t.number, t.unit, t.is_today) == ("3", "時間前", True)
     assert "シーツ交換、3時間前にやった" in t.aria_label
 
 
 def test_経過日数の読み上げ():
-    assert "前回から5日" in tile(make_event(last_local_date=TODAY - timedelta(5)), TODAY).aria_label
+    assert "シーツ交換、5日前にやった" in tile(make_event(last_local_date=TODAY - timedelta(5)), TODAY).aria_label
 
 
 def test_今日はまだの連続記録も読み上げる():

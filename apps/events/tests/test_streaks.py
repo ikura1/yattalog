@@ -79,9 +79,9 @@ def test_streak_matches_naive(offsets, unit):
 def test_elapsed_labels():
     assert elapsed(None, D).label == ("—", "")
     assert elapsed(D, D).label == ("今日", "")
-    assert elapsed(D - timedelta(59), D).label == ("59", "日")
-    assert elapsed(D - timedelta(60), D).label == ("2", "か月")
-    assert elapsed(D - timedelta(730), D).label == ("2", "年")
+    assert elapsed(D - timedelta(59), D).label == ("59", "日前")
+    assert elapsed(D - timedelta(60), D).label == ("2", "か月前")
+    assert elapsed(D - timedelta(730), D).label == ("2", "年前")
 
 
 def test_elapsed_never_negative_after_crossing_timezones():
@@ -129,8 +129,8 @@ def test_タイムゾーン名の検証():
 def test_今日の時刻ありの記録は_1時間未満なら_さっき_それ以上は_N時間():
     assert elapsed(D, D, NOW - timedelta(seconds=30), NOW).label == ("さっき", "")
     assert elapsed(D, D, NOW - timedelta(minutes=59), NOW).label == ("さっき", "")
-    assert elapsed(D, D, NOW - timedelta(minutes=60), NOW).label == ("1", "時間")
-    assert elapsed(D, D, NOW - timedelta(hours=5, minutes=50), NOW).label == ("5", "時間")
+    assert elapsed(D, D, NOW - timedelta(minutes=60), NOW).label == ("1", "時間前")
+    assert elapsed(D, D, NOW - timedelta(hours=5, minutes=50), NOW).label == ("5", "時間前")
 
 
 def test_今日の時刻なしの記録は_今日_のまま():
@@ -138,7 +138,7 @@ def test_今日の時刻なしの記録は_今日_のまま():
 
 
 def test_日付が変わったら_2時間前の記録でも_1日():
-    assert elapsed(D - timedelta(1), D, NOW - timedelta(hours=2), NOW).label == ("1", "日")
+    assert elapsed(D - timedelta(1), D, NOW - timedelta(hours=2), NOW).label == ("1", "日前")
 
 
 def test_時計のずれで記録が少し先の時刻でも_さっき():

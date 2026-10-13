@@ -60,7 +60,10 @@ class Elapsed:
 
     @property
     def label(self) -> tuple[str, str]:
-        """(数字, 単位)。例：("5", "日")、("3", "時間")、("さっき", "")、("今日", "")、("—", "")。"""
+        """(数字, 単位)。例：("5", "日前")、("3", "時間前")、("さっき", "")、("今日", "")、("—", "")。
+
+        単位には「前」を付ける（決定 048）。「1日」だけだと、間隔や期限のようにも読めるため。
+        """
         d = self.days
         if d is None:
             return ("—", "")
@@ -69,12 +72,12 @@ class Elapsed:
                 return ("今日", "")
             if self.minutes < 60:
                 return ("さっき", "")
-            return (str(self.minutes // 60), "時間")
+            return (str(self.minutes // 60), "時間前")
         if d < 60:
-            return (str(d), "日")
+            return (str(d), "日前")
         if d < 730:
-            return (str(d // 30), "か月")
-        return (str(d // 365), "年")
+            return (str(d // 30), "か月前")
+        return (str(d // 365), "年前")
 
 
 def elapsed(
