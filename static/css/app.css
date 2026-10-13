@@ -184,6 +184,7 @@ textarea { min-height: 84px; resize: vertical; }
 .share-prev img { width: min(240px, 64%); height: auto; aspect-ratio: 1080 / 1350; border-radius: 14px; box-shadow: var(--shadow); background: var(--bg); }
 .share-opt { font-weight: 500; margin-bottom: 6px; }
 .share-opt input { accent-color: var(--accent); }
+.recent-undo { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; background: var(--bg); border-radius: 12px; padding: 8px 12px; margin-bottom: 14px; font-size: 13px; }
 .bullets { margin: 0 0 10px; padding-left: 1.3em; }
 .check { display: flex; gap: 10px; align-items: flex-start; font-weight: 700; margin: 0 0 12px; }
 .check input { width: 22px; height: 22px; flex: 0 0 auto; margin-top: 2px; accent-color: var(--danger); }

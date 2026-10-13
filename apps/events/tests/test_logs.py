@@ -245,3 +245,41 @@ def test_連続記録の単位がなしなら演出は出ない(user):
     e = ev_svc.create_event(user, name="歯医者", emoji="🦷", color="pink", streak_unit="none")
     record_on(user, e, 1)
     assert record_on(user, e).streak_grew is False
+
+
+# --- さっきの記録（長押しシートから、後からでも取り消せるようにする。決定 054） ---
+
+
+def test_さっきの記録は_10分以内に付けた_いちばん新しい記録(user, event):
+    old = log_svc.record(user, event.id, uuid.uuid7()).log
+    latest = log_svc.record(user, event.id, uuid.uuid7()).log
+    Log.objects.filter(pk=old.pk).update(created_at=NOW - timedelta(minutes=30))
+    Log.objects.filter(pk=latest.pk).update(created_at=NOW - timedelta(minutes=9))
+
+    assert log_svc.recent_log(user, event.id, NOW) == latest
+
+
+def test_10分より前の記録は_さっきの記録として出さない(user, event):
+    old = log_svc.record(user, event.id, uuid.uuid7()).log
+    Log.objects.filter(pk=old.pk).update(created_at=NOW - timedelta(minutes=11))
+
+    assert log_svc.recent_log(user, event.id, NOW) is None
+
+
+def test_さっきかどうかは_記録の日付ではなく_操作した時刻で決める(user, event):
+    """昨日の日付で、いま付けた記録も、押し間違いなら取り消したい。"""
+    backdated = log_svc.record(user, event.id, uuid.uuid7(), When(date=TODAY - timedelta(1))).log
+
+    assert log_svc.recent_log(user, event.id, NOW) == backdated
+
+
+def test_記録がなければ_さっきの記録はない(user, event):
+    assert log_svc.recent_log(user, event.id, NOW) is None
+
+
+def test_ほかの人のイベントの_さっきの記録は見えない(user, other_user):
+    theirs = ev_svc.create_event(other_user, name="散髪", emoji="✂️", color="grape")
+    log_svc.record(other_user, theirs.id, uuid.uuid7())
+
+    with pytest.raises(Event.DoesNotExist):
+        log_svc.recent_log(user, theirs.id, NOW)

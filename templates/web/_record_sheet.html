@@ -1,5 +1,11 @@
 {% load yl %}
 <h2><span aria-hidden="true">{{ event.emoji }}</span>{{ event.name }}</h2>
+{% if recent %}
+<div class="recent-undo" role="group" aria-label="さっきの記録">
+  <span>{{ recent|log_when:today }} に記録しました</span>
+  <button class="btn small danger" type="button" hx-post="{% url 'web:log_delete' recent.id %}" hx-vals='{"undo":"1"}' hx-swap="none">さっきの記録を取り消す</button>
+</div>
+{% endif %}
 <form id="recForm" class="rec-form"
       {% if log %}hx-post="{% url 'web:log_edit' log.id %}"{% else %}hx-post="{% url 'web:record_sheet' event.id %}"{% endif %}
       hx-swap="none" data-today="{{ today|iso }}" data-yesterday="{{ yesterday|iso }}" data-day-before="{{ day_before|iso }}">

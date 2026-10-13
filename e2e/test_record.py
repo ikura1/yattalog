@@ -56,3 +56,17 @@ def test_操作が多すぎると言われたら_その旨を知らせてタイ�
 
     expect(page.locator(".toast:not(.hint)")).to_contain_text("操作が多すぎます")
     expect(tile(page).locator(".ago")).to_have_text("まだ")
+
+
+def test_取り消しの知らせが消えたあとでも_長押しシートから_さっきの記録を取り消せる(home):
+    page = home
+    tile(page).click()
+    expect(page.locator(".toast:not(.hint)")).to_contain_text("シーツ交換 を記録しました")
+    expect(page.locator(".toast:not(.hint)")).to_have_count(0, timeout=8000)  # 取り消しのボタンが消えるのを待つ
+
+    tile(page).click(button="right")  # 長押しと同じシートが開く
+    page.get_by_role("button", name="さっきの記録を取り消す").click()
+
+    expect(page.locator(".toast:not(.hint)")).to_contain_text("取り消しました")
+    expect(tile(page).locator(".ago")).to_have_text("まだ")
+    assert Log.objects.count() == 0

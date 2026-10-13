@@ -60,14 +60,17 @@ def clear_device_data(response: HttpResponse) -> HttpResponse:
 
 
 def _refresh(resp: HttpResponse, toast: str | None = None, **extra) -> HttpResponse:
-    """htmx に「ホーム（や詳細）を更新して、シートを閉じて」と伝える。"""
-    trig: dict = {
-        "yl:changed": True,
-        "yl:close-sheet": True,
-        **{f"yl:{k.replace('_', '-')}": v for k, v in extra.items()},
-    }
+    """htmx に「知らせを出して、ホーム（や詳細）を更新して、シートを閉じて」と伝える。
+
+    合図は、書いた順に、操作したボタンから送られる。シートを閉じるとそのボタンが画面から消え、
+    後の合図はどこにも届かなくなる。だから、シートを閉じる合図は、いちばん最後に置く。
+    """
+    trig: dict = {}
     if toast:
         trig["yl:toast"] = {"message": toast}
+    trig["yl:changed"] = True
+    trig |= {f"yl:{k.replace('_', '-')}": v for k, v in extra.items()}
+    trig["yl:close-sheet"] = True
     resp["HX-Trigger"] = json.dumps(trig)  # ASCII のみ（ヘッダーに日本語をそのまま入れない）
     return resp
 

@@ -95,3 +95,16 @@ def test_フォームのカテゴリは_絵文字があってもなくても同�
               .map(r => ({ top: r.top, height: r.height }))"""
     )
     assert with_emoji == without
+
+
+def test_シートから追加すると_追加しましたと知らせが出る(home):
+    """シートからの操作のあとの知らせが、出ていなかったことがある（合図の順番の問題）。"""
+    page = home
+    page.locator("#addTile").click()
+    page.locator("#evName").fill("歯医者")
+
+    page.get_by_role("button", name="追加する").click()
+
+    expect(page.locator(".toast:not(.hint)")).to_contain_text("追加しました")
+    expect(page.locator("#sheet")).to_be_hidden()
+    expect(page.locator("#grid .tile", has_text="歯医者")).to_be_visible()
