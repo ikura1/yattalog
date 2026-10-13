@@ -24,7 +24,7 @@ ID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
 # 2つ目以降の部分で、そのまま出してよい単語（アプリ自身の経路に出てくるものだけ）。
 # 外から好きな単語を付けて、公開の報告に載せられないようにする（#74）。足し忘れはテストが見つける
 KNOWN_PARTS = {
-    "new", "edit", "remove", "restore", "move", "record", "record-sheet", "undo", "delete",  # イベントと記録
+    "new", "edit", "remove", "restore", "move", "record", "record-sheet", "undo", "delete", "share",  # イベントと記録
     "google", "login", "callback", "logout", "signup",  # ログイン（/accounts/）
     "css", "js", "icons", "vendor",  # 静的ファイルの置き場所（ファイル名は出さない）
 }  # fmt: skip

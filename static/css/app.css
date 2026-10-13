@@ -180,6 +180,10 @@ textarea { min-height: 84px; resize: vertical; }
 .offline h1 { font-family: var(--f-display); font-size: 22px; margin: 10px 0 0; }
 .offline p { margin: 4px 0; max-width: 28em; }
 .offline .btn { display: inline-block; flex: none; margin-top: 10px; }
+.share-prev { display: grid; place-items: center; margin-bottom: 12px; }
+.share-prev img { width: min(240px, 64%); height: auto; aspect-ratio: 1080 / 1350; border-radius: 14px; box-shadow: var(--shadow); background: var(--bg); }
+.share-opt { font-weight: 500; margin-bottom: 6px; }
+.share-opt input { accent-color: var(--accent); }
 .bullets { margin: 0 0 10px; padding-left: 1.3em; }
 .check { display: flex; gap: 10px; align-items: flex-start; font-weight: 700; margin: 0 0 12px; }
 .check input { width: 22px; height: 22px; flex: 0 0 auto; margin-top: 2px; accent-color: var(--danger); }

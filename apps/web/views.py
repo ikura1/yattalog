@@ -6,6 +6,7 @@ import json
 import uuid
 from datetime import date, time
 from pathlib import Path
+from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib import messages
@@ -28,6 +29,7 @@ from apps.events.services import access, stats
 from apps.events.services import events as ev_svc
 from apps.events.services import export as export_svc
 from apps.events.services import logs as log_svc
+from apps.events.services import share as share_svc
 from apps.events.services import starter as starter_svc
 from apps.events.services.dates import is_valid_timezone, today_in
 from apps.events.services.logs import When
@@ -350,6 +352,7 @@ def record(request: HttpRequest, event_id) -> JsonResponse:
             "log_id": str(result.log.id),
             "created": result.created,
             "tile_html": render_to_string("web/_tile.html", {"t": t}, request=request),
+            "share_url": reverse("web:share", args=[result.log.id]),
             "streak_grew": result.streak_grew,
             "streak_text": t.streak.text if t.streak else "",
         }
@@ -611,6 +614,19 @@ def menu(request: HttpRequest) -> HttpResponse:
     return render(request, "web/_menu_sheet.html", ctx)
 
 
+# --- シェア ---------------------------------------------------------------------------
+
+
+@login_required
+@owned_or_404
+@require_GET
+def share_sheet(request: HttpRequest, log_id) -> HttpResponse:
+    """シェア画像の材料と投稿文を出す。画像は端末で作る（サーバーには送らない、決定 017・053）。"""
+    info = share_svc.share_info(request.user, log_id, request.build_absolute_uri("/"))
+    x_url = "https://x.com/intent/post?" + urlencode({"text": info.text})
+    return render(request, "web/_share_sheet.html", {"info": info, "x_url": x_url})
+
+
 # --- データの書き出し -----------------------------------------------------------------
 
 
@@ -692,6 +708,7 @@ def event_detail(request: HttpRequest, event_id) -> HttpResponse:
         "sel_date": sel_date,
         "today": today,
         "logs": logs[:200],
+        "latest_log": event.logs.first(),  # 「シェア」の対象（最新の記録）
     }
     template = "web/_detail.html" if request.htmx and not request.htmx.boosted else "web/detail.html"
     return render(request, template, ctx)

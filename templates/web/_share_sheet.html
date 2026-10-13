@@ -1,0 +1,17 @@
+<h2>シェア</h2>
+{# 画像は、この材料から端末で作る（static/js/app.js の drawShareCard）。サーバーには送らない #}
+<div class="share-prev" id="shareCard"
+     data-emoji="{{ info.event.emoji }}" data-name="{{ info.event.name }}" data-color="{{ info.event.color }}"
+     data-headline="{{ info.headline }}" data-when="{{ info.when }}" data-memo="{{ info.memo }}" data-text="{{ info.text }}">
+  <img id="shareImg" alt="シェア画像のプレビュー：{{ info.event.name }}、やった！、{{ info.headline }}" width="1080" height="1350">
+</div>
+<label class="check share-opt"><input type="checkbox" id="shareMemo"{% if not info.memo %} disabled{% endif %}>
+  <span>メモも載せる{% if not info.memo %}（メモなし）{% endif %}</span></label>
+<p class="note">投稿文：{{ info.text }}</p>
+<div class="row"><button class="btn primary" type="button" id="shareDo">共有する（インスタ・X など）</button></div>
+<div class="row gap-t">
+  <a class="btn" id="shareSave" download="yattalog.png" hidden>画像を保存する</a>
+  <a class="btn" href="{{ x_url }}" target="_blank" rel="noopener">X の投稿画面を開く</a>
+</div>
+<p class="note gap-t" id="shareNote" hidden role="status"></p>
+<p class="note gap-t">画像は、この端末の中で作っています。「共有する」を押すまで、どこにも送られません。</p>
