@@ -97,3 +97,27 @@ def test_今日はまだの連続記録も読み上げる():
     yesterday = TODAY - timedelta(1)
     e = make_event(last_local_date=yesterday, streak_count=3, streak_period=period_index(yesterday, "day"))
     assert "3日連続（今日はまだ）" in tile(e, TODAY).aria_label
+
+
+# --- 詳細画面：月や年で丸めたときは、正確な日数も出す（レビュー D9） ---
+
+
+def test_月や年で丸めて出すときは_正確な日数も持つ():
+    assert tile(make_event(last_local_date=TODAY - timedelta(63)), TODAY).exact_days == "63日前"
+    assert tile(make_event(last_local_date=TODAY - timedelta(800)), TODAY).exact_days == "800日前"
+
+
+def test_日数や時間でそのまま出しているときは_正確な日数を重ねて出さない():
+    assert tile(make_event(last_local_date=TODAY - timedelta(59)), TODAY).exact_days == ""
+    assert tile(make_event(last_local_date=TODAY), TODAY).exact_days == ""
+    assert tile(make_event(), TODAY).exact_days == ""
+
+
+def test_前回の日付は_年が違うときは年も出す():
+    from datetime import date
+
+    from apps.web.templatetags.yl import rel_day
+
+    assert rel_day(date(2026, 8, 8), TODAY) == "8月8日"
+    assert rel_day(date(2024, 8, 1), TODAY) == "2024年8月1日"
+    assert rel_day(TODAY - timedelta(1), TODAY) == "昨日"

@@ -466,3 +466,18 @@ def test_カテゴリなしのタブから追加するときは_カテゴリの�
     body = client_in.get("/events/new/?category=none").content.decode()
 
     assert '<input type="radio" name="category" value="" checked>' in body
+
+
+# --- 詳細画面の正確な日数（レビュー D9） ---
+
+
+def test_詳細画面では_2か月前と一緒に_正確な日数と日付も出る(client_in, user):
+    from datetime import timedelta
+
+    from apps.core.testing import TODAY
+
+    e = ev_svc.create_event(user, name="散髪", emoji="✂️", color="grape", last_done=TODAY - timedelta(63))
+
+    body = client_in.get(f"/events/{e.id}/").content.decode()
+
+    assert "2<small>か月前</small>" in body and "前回 8月8日（63日前）" in body

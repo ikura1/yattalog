@@ -12,7 +12,7 @@
     <div class="sub">
       {% if t.streak %}🔥 {{ t.streak.text }}{% if not t.streak.current %}{{ t.streak.pending_text }}{% endif %} ・ {% endif %}
       {% if event.category %}{{ event.category.name }} ・ {% endif %}
-      {% if event.last_local_date %}前回 {{ event.last_local_date|rel_day:today }}{% else %}まだ記録がありません{% endif %}
+      {% if event.last_local_date %}前回 {{ event.last_local_date|rel_day:today }}{% if t.exact_days %}（{{ t.exact_days }}）{% endif %}{% else %}まだ記録がありません{% endif %}
     </div>
   </div>
   <div class="big">{% if t.never %}—{% else %}{{ t.number }}<small>{{ t.unit }}</small>{% endif %}</div>
