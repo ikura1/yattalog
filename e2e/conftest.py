@@ -10,6 +10,8 @@ import pytest
 from django.conf import settings
 from django.test import Client
 
+from apps.events.services import events
+
 # Playwright の同期 API はイベントループ上で動くので、同じスレッドの ORM を Django が止める。テストに限り許可する
 os.environ.setdefault("DJANGO_ALLOW_ASYNC_UNSAFE", "true")
 
@@ -22,4 +24,12 @@ def logged_in_page(page, live_server, transactional_db, user):
     session_id = client.cookies[settings.SESSION_COOKIE_NAME].value
     page.context.add_cookies([{"name": settings.SESSION_COOKIE_NAME, "value": session_id, "url": live_server.url}])
     page.base_url = live_server.url
+    return page
+
+
+@pytest.fixture
+def home(logged_in_page, user):
+    events.create_event(user, name="シーツ交換", emoji="🛏️", color="sky", streak_unit="week")
+    page = logged_in_page
+    page.goto(page.base_url + "/")
     return page

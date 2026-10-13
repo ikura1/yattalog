@@ -17,12 +17,6 @@ def png_size(path: Path) -> tuple[int, int]:
     return struct.unpack(">II", data[16:24])
 
 
-@pytest.fixture
-def client_in(client, user):
-    client.force_login(user)
-    return client
-
-
 @pytest.mark.parametrize(
     "name,size",
     [

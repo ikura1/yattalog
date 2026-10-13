@@ -7,12 +7,6 @@ FORM = "https://forms.example.com/yattalog-contact"
 ISSUES = "https://github.com/ikura1/yattalog/issues"
 
 
-@pytest.fixture
-def client_in(client, user):
-    client.force_login(user)
-    return client
-
-
 @pytest.mark.parametrize("path,title", [("/terms/", "利用規約"), ("/privacy/", "プライバシーポリシー")])
 def test_規約とポリシーは_ログインしなくても読める(client, db, path, title):
     r = client.get(path)

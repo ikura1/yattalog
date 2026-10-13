@@ -16,12 +16,6 @@ SMALL = {"record": (3, 60), "write": (5, 60), "login": (2, 60), "export": (2, 36
 
 
 @pytest.fixture
-def client_in(client, user):
-    client.force_login(user)
-    return client
-
-
-@pytest.fixture
 def event(user):
     return ev_svc.create_event(user, name="水やり", emoji="🪴", color="leaf")
 
