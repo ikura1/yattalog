@@ -36,21 +36,15 @@ def is_single_emoji(text: str) -> bool:
     return bool(_ONE_GRAPHEME.fullmatch(text)) and bool(_EMOJI_PART.search(text))
 
 
-def _clean_emoji(emoji: str) -> str:
-    """アイコンは絵文字1つ（決定 035）。おすすめの一覧にないものでもよい。"""
+def _clean_emoji(emoji: str, *, optional: bool = False) -> str:
+    """絵文字1つ（決定 035・036）。おすすめの一覧にないものでもよい。optional なら、空でもよい（カテゴリ）。"""
     emoji = (emoji or "").strip()
-    if len(emoji) > EMOJI_MAX or not is_single_emoji(emoji):
-        raise ValidationError("アイコンには絵文字を1つ入れてください", code="emoji")
-    return emoji
-
-
-def _clean_optional_emoji(emoji: str) -> str:
-    """付けなくてもよい絵文字（カテゴリ）。入れるなら絵文字1つ。"""
-    emoji = (emoji or "").strip()
-    if not emoji:
+    if optional and not emoji:
         return ""
     if len(emoji) > EMOJI_MAX or not is_single_emoji(emoji):
-        raise ValidationError("カテゴリの絵文字は、絵文字を1つ入れるか空にしてください", code="emoji")
+        if optional:
+            raise ValidationError("カテゴリの絵文字は、絵文字を1つ入れるか空にしてください", code="emoji")
+        raise ValidationError("アイコンには絵文字を1つ入れてください", code="emoji")
     return emoji
 
 
@@ -180,6 +174,17 @@ def move_event(user, event_id, *, before_id=None, after_id=None) -> Event:
     return event
 
 
+def list_events(user):
+    """ホームに出すイベント（アーカイブしていないもの）。並び順のとおり。"""
+    space = personal_space(user)
+    return Event.objects.filter(space=space, is_archived=False).select_related("category").order_by("sort_key")
+
+
+def list_archived(user):
+    """アーカイブしたイベント。新しくアーカイブした順。"""
+    return Event.objects.filter(space__members__user=user, is_archived=True).order_by("-archived_at")
+
+
 # --- カテゴリ -----------------------------------------------------------------
 
 
@@ -187,7 +192,7 @@ def move_event(user, event_id, *, before_id=None, after_id=None) -> Event:
 def create_category(user, name: str, emoji: str = "") -> Category:
     space = personal_space(user)
     name = _clean_name(name, 20, "カテゴリ名")
-    emoji = _clean_optional_emoji(emoji)
+    emoji = _clean_emoji(emoji, optional=True)
     if existing := Category.objects.filter(space=space, name=name).first():
         return existing
     last = Category.objects.filter(space=space).order_by("-sort_key").values_list("sort_key", flat=True).first()
@@ -203,7 +208,7 @@ def rename_category(user, category_id, name: str, emoji: str | None = None) -> C
         raise ValidationError("同じ名前のカテゴリがあります", code="duplicate")
     cat.name = name
     if emoji is not None:
-        cat.emoji = _clean_optional_emoji(emoji)
+        cat.emoji = _clean_emoji(emoji, optional=True)
     cat.save(update_fields=["name", "emoji", "updated_at"])
     return cat
 
@@ -235,3 +240,8 @@ def shift_category(user, category_id, direction: int) -> Category:
     if direction < 0:
         return move_category(user, cat.id, after_id=siblings[j].id)
     return move_category(user, cat.id, before_id=siblings[j].id)
+
+
+def list_categories(user):
+    """カテゴリ。タブの並び順のとおり。"""
+    return Category.objects.filter(space__members__user=user).order_by("sort_key")

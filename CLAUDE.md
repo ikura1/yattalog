@@ -12,7 +12,7 @@
 
 ## 構成
 - Django 6.1 + Python 3.14、uv で管理。画面は Django テンプレート + htmx（`static/vendor/` に同梱）
-- **処理はサービス層** `apps/events/services/` に置く。ビュー（`apps/web/views.py`）と将来の API はサービスを呼ぶだけ（決定 027）
+- **処理はサービス層** `apps/events/services/`・`apps/accounts/services.py` に置く。ビュー（`apps/web/views/`、機能ごとにファイルを分けている）と将来の API はサービスを呼ぶだけ（決定 027）。ビューから DB を直接読まない（一覧も `list_events()` などを通す）
 - 他人のデータは**サービス層で** `DoesNotExist` にし、ビューは `@owned_or_404` で 404 にする
 - 記録の ID は端末で作る UUID（冪等・楽観的更新、決定 028）。`local_date` は記録時点の日付で固定（決定 026）
 - 並び順は分数インデックス（`services/sortkeys.py`）。列は `SortKeyField`（PostgreSQL では "C" 照合。外すと順序が壊れる）

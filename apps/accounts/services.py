@@ -1,9 +1,13 @@
-"""アカウントの処理（退会、管理者かどうか）。"""
+"""アカウントの処理（退会、管理者かどうか、タイムゾーン）。"""
+
+from datetime import datetime
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import transaction
 
+from apps.events.services.dates import is_valid_timezone
 from apps.spaces.models import Space
 
 
@@ -37,4 +41,22 @@ def sync_admin_flag(user):
     stale = get_user_model().objects.filter(pk=user.pk).exclude(is_staff=wanted, is_superuser=wanted)
     stale.update(is_staff=wanted, is_superuser=wanted)
     user.is_staff = user.is_superuser = wanted
+    return user
+
+
+def set_timezone(user, tz_name: str, *, keep: bool, now: datetime):
+    """タイムゾーンを設定する（決定 023）。
+
+    keep=True は「このまま」を選んだとき。タイムゾーンは変えず、その端末の値を覚えて、もう聞かないようにする。
+    はじめて呼ばれたときに、使い始めた時刻（onboarded_at）を入れる。
+    """
+    if not is_valid_timezone(tz_name):
+        raise ValidationError("タイムゾーンが正しくありません", code="timezone")
+    if keep:
+        user.timezone_kept_for = tz_name
+    else:
+        user.timezone = tz_name
+    if user.onboarded_at is None:
+        user.onboarded_at = now
+    user.save(update_fields=["timezone", "timezone_kept_for", "onboarded_at"])
     return user
