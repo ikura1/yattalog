@@ -76,6 +76,7 @@
 
   /* ---------- ホーム：タブ ---------- */
   const app = () => $("#app");
+  const NO_CATEGORY_TAB = "none";
   const currentTab = () => store.get("yl:tab") || "all";
   function applyTab(tab, dir = 0) {
     const tabs = $("#tabs");
@@ -85,7 +86,8 @@
     $$("[data-tab]", tabs).forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === tab)));
     let shown = 0;
     $$("#grid > li[data-id]").forEach((li) => {
-      const on = tab === "all" || li.dataset.category === tab;
+      // "none" は「カテゴリなし」のタブ。カテゴリに入っていないイベントだけを出す（決定 050）
+      const on = tab === "all" || li.dataset.category === (tab === NO_CATEGORY_TAB ? "" : tab);
       li.hidden = !on;
       if (on) shown++;
     });
@@ -510,7 +512,7 @@
   document.addEventListener("htmx:configRequest", (e) => {
     if (e.detail.elt.id !== "addTile") return;
     const tab = $('#tabs [aria-selected="true"]')?.dataset.tab;
-    if (tab && tab !== "all") e.detail.parameters.category = tab;
+    if (tab && tab !== "all") e.detail.parameters.category = tab; // "none" も送る。サーバーが「なし」として扱う
   });
   document.addEventListener("yl:close-sheet", closeSheet);
   document.addEventListener("yl:toast", (e) => toast(e.detail.message));
