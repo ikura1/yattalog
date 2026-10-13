@@ -1,10 +1,11 @@
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 
-from hypothesis import given
+import pytest
+from hypothesis import example, given
 from hypothesis import strategies as st
 
 from apps.core.testing import NOW
-from apps.events.services.dates import Elapsed, elapsed, friendly_interval, period_index
+from apps.events.services.dates import Elapsed, elapsed, friendly_interval, period_index, today_in
 from apps.events.services.streaks import compute_streak, streak_state
 
 
@@ -143,3 +144,77 @@ def test_日付が変わったら_2時間前の記録でも_1日():
 
 def test_時計のずれで記録が少し先の時刻でも_さっき():
     assert elapsed(D, D, NOW + timedelta(seconds=40), NOW).label == ("さっき", "")
+
+
+# --- 日付の境目（レビュー E10）。不具合が出やすいところを、値を決めて確かめる ---------------
+
+
+def test_うるう日をはさんでも_毎日の連続は途切れない():
+    days = [date(2028, 3, 1), date(2028, 2, 29), date(2028, 2, 28)]
+    assert compute_streak(days, "day")[0] == 3
+
+
+def test_うるう年でない年は_2月28日の次が3月1日():
+    assert compute_streak([date(2027, 3, 1), date(2027, 2, 28)], "day")[0] == 2
+    assert period_index(date(2027, 3, 1), "day") - period_index(date(2027, 2, 28), "day") == 1
+
+
+def test_月末と月初は_別の月として数える():
+    jan31, feb1 = date(2026, 1, 31), date(2026, 2, 1)
+    assert period_index(feb1, "month") == period_index(jan31, "month") + 1
+    assert compute_streak([feb1, jan31], "month")[0] == 2
+
+
+def test_年末と年始は_同じ週のことがある():
+    """2026-12-31（木）と 2027-01-01（金）は、月曜始まりの同じ週。週単位では1回と数える。"""
+    assert period_index(date(2026, 12, 31), "week") == period_index(date(2027, 1, 1), "week")
+    assert compute_streak([date(2027, 1, 1), date(2026, 12, 31)], "week")[0] == 1
+
+
+@pytest.mark.parametrize(
+    "utc,tz,expected",
+    [
+        (datetime(2026, 10, 10, 14, 59, tzinfo=UTC), "Asia/Tokyo", date(2026, 10, 10)),  # 23:59
+        (datetime(2026, 10, 10, 15, 0, tzinfo=UTC), "Asia/Tokyo", date(2026, 10, 11)),  # 0:00 ちょうど
+        (datetime(2026, 12, 31, 15, 0, tzinfo=UTC), "Asia/Tokyo", date(2027, 1, 1)),  # 年をまたぐ
+        (datetime(2026, 10, 10, 6, 59, tzinfo=UTC), "America/Los_Angeles", date(2026, 10, 9)),  # 夏時間（UTC-7）
+        (datetime(2026, 11, 1, 8, 30, tzinfo=UTC), "America/Los_Angeles", date(2026, 11, 1)),  # 夏時間が終わる夜
+        (datetime(2026, 3, 8, 9, 59, tzinfo=UTC), "America/Los_Angeles", date(2026, 3, 8)),  # 夏時間が始まる夜
+        (datetime(2026, 10, 10, 3, 0, tzinfo=UTC), "Pacific/Kiritimati", date(2026, 10, 10)),  # UTC+14
+        (datetime(2026, 10, 10, 3, 0, tzinfo=UTC), "Pacific/Pago_Pago", date(2026, 10, 9)),  # UTC-11
+    ],
+)
+def test_今日の日付は_その人のタイムゾーンの0時で切り替わる(utc, tz, expected):
+    assert today_in(tz, utc) == expected
+
+
+def test_保存されたタイムゾーンが壊れていても_日本時間として動く():
+    assert today_in("No/Such_Zone", datetime(2026, 10, 10, 15, 0, tzinfo=UTC)) == date(2026, 10, 11)
+
+
+@given(st.dates(min_value=date(2000, 1, 1), max_value=date(2100, 12, 31)), st.integers(min_value=0, max_value=4000))
+@example(date(2026, 10, 10), 0)
+@example(date(2026, 10, 10), 1)
+@example(date(2026, 10, 10), 59)
+@example(date(2026, 10, 10), 60)
+@example(date(2026, 10, 10), 729)
+@example(date(2026, 10, 10), 730)
+def test_経過の表示は_どの日付でも_日数と食い違わない(today, ago):
+    """「N日前」「Nか月前」「N年前」の数字は、実際の日数から決まる。境目（59・60、729・730）は必ず確かめる。"""
+    label = elapsed(today - timedelta(ago), today).label
+    if ago == 0:
+        assert label == ("今日", "")
+    elif ago < 60:
+        assert label == (str(ago), "日前")
+    elif ago < 730:
+        assert label == (str(ago // 30), "か月前")
+    else:
+        assert label == (str(ago // 365), "年前")
+
+
+@given(
+    st.datetimes(min_value=datetime(2020, 1, 1), max_value=datetime(2035, 1, 1), timezones=st.just(UTC)),
+    st.sampled_from(["Asia/Tokyo", "America/Los_Angeles", "Europe/London", "Pacific/Kiritimati", "Pacific/Pago_Pago"]),
+)
+def test_今日の日付は_UTC_の日付から1日より大きくはずれない(now, tz):
+    assert abs((today_in(tz, now) - now.date()).days) <= 1
