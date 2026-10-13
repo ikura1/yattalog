@@ -165,8 +165,14 @@ CONTACT_FORM_URL = os.environ.get("YATTALOG_CONTACT_URL", "")  # 個人情報に
 ADMIN_EMAILS = [e for e in os.environ.get("YATTALOG_ADMIN_EMAILS", "").replace(",", " ").split() if e]
 OTP_TOTP_ISSUER = "Yattalog"
 
+
 # 登録できる人数の上限（決定 038）。達したら新しい登録を止める。登録済みの人はそのまま使える
-MAX_USERS = int(os.environ.get("YATTALOG_MAX_USERS", "20"))
+def max_users_from(value: str | None) -> int:
+    """環境変数が空（GitHub の Variable が未登録）なら、既定の 20 人にする。"""
+    return int(value.strip()) if value and value.strip() else 20
+
+
+MAX_USERS = max_users_from(os.environ.get("YATTALOG_MAX_USERS"))
 
 # --- セキュリティ（レビュー S5）---------------------------------------------
 SESSION_COOKIE_HTTPONLY = True

@@ -1,0 +1,5 @@
+{% extends "admin/index.html" %}
+{% block content %}
+<p><a href="{% url 'admin:usage' %}">利用状況を見る</a>（人数と件数。β の成功の基準）</p>
+{{ block.super }}
+{% endblock %}

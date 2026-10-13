@@ -26,6 +26,7 @@
 - 管理画面の入口は `apps/accounts/admin_site.py`（メールアドレスの許可と2段階認証、決定 045）。手順は `deploy/README.md`
 - アクセス解析は Umami Cloud。ログイン前の画面だけで、`UMAMI_WEBSITE_ID` があるときに読み込む（`templates/web/_analytics.html`、決定 047）
 - Service Worker は `templates/web/sw.js`（`/sw.js`）。しまうのは静的ファイルとオフラインの案内だけ。ログインした人の画面はしまわない（決定 049）
+- 利用状況の集計は `apps/accounts/usage.py`（人数と件数だけ。管理画面の「利用状況」に出す、決定 051）。費用の上限は月 1,000円（決定 052）
 - レート制限は `apps/core/ratelimit.py` のミドルウェア。上限は `settings.RATE_LIMITS`、回数はプロセス内に持つ（決定 037）
 - 監視と運用は `docs/operations.md`（決定 046）。Claude は Google Cloud に入れないので、Actions の「Ops report」を手動で実行してサマリーと Issue（ラベル `ops`）を読む。報告は `apps/core/ops_report.py` で伏せる（リポジトリは公開）
 - 本番のログは1行1件の JSON（`apps/core/logging.py`）。`/health` は DB に触れない（`/healthz` は使えない。Cloud Run が z で終わる経路の一部を横取りして 404 を返す）

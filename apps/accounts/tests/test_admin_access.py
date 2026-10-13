@@ -214,3 +214,13 @@ def test_管理画面から_ユーザーを作ることはできない(inside):
 def test_ポリシーに_運営者がデータを見る条件を書いている(client):
     body = client.get("/privacy/").content.decode()
     assert "問い合わせへの対応" in body and "閲覧する" in body
+
+
+def test_管理画面に_2段階認証の鍵を見る画面は置かない(inside, boss):
+    """django-otp は、鍵の一覧と QR コードの画面を管理画面に足す。登録が済んだ鍵は、どこにも出さない。"""
+    device = TOTPDevice.objects.get(user=boss)
+
+    assert inside.get(ADMIN + "otp_totp/totpdevice/").status_code == 404
+    assert inside.get(ADMIN + f"otp_totp/totpdevice/{device.id}/change/").status_code == 404
+    assert device.key not in inside.get(ADMIN).content.decode()
+    assert "otp_totp" not in inside.get(ADMIN).content.decode()

@@ -1,6 +1,10 @@
 """管理画面で扱うもの（決定 045）。ユーザーの一覧と、停止・削除だけ。記録の中身を見る画面は用意しない。"""
 
+import contextlib
+
 from django.contrib import admin
+from django.contrib.admin.exceptions import NotRegistered
+from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from apps.accounts.models import User
 from apps.accounts.services import delete_account
@@ -36,3 +40,10 @@ class UserAdmin(admin.ModelAdmin):
     def delete_queryset(self, request, queryset) -> None:
         for user in queryset:
             delete_account(user)
+
+
+# django-otp は、2段階認証の鍵の一覧と QR コードの画面を管理画面に足す。
+# 登録が済んだ鍵をどこにも出さないため（決定 045）、その画面は外す。
+# スマホをなくしたときは、DB で行を消す（deploy/README.md）
+with contextlib.suppress(NotRegistered):
+    admin.site.unregister(TOTPDevice)
