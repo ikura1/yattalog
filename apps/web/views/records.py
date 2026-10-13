@@ -12,6 +12,7 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
+from apps.core import clock
 from apps.events.models import Event, Log
 from apps.events.services import logs as log_svc
 from apps.events.services import share as share_svc
@@ -79,6 +80,8 @@ def _record_ctx(request, event: Event, log: Log | None = None, **extra) -> dict:
         "yesterday": date.fromordinal(today.toordinal() - 1),
         "day_before": date.fromordinal(today.toordinal() - 2),
         "new_log_id": uuid.uuid7(),
+        # 新しく記録するシートでだけ、さっきの記録を取り消せるようにする（編集のシートでは出さない）
+        "recent": None if log else log_svc.recent_log(request.user, event.id, clock.now()),
         **extra,
     }
 
@@ -134,7 +137,8 @@ def log_edit_sheet(request: HttpRequest, log_id) -> HttpResponse:
 def log_delete(request: HttpRequest, log_id) -> HttpResponse:
     _log(request, log_id)  # 他人の記録は 404
     log_svc.undo(request.user, log_id)
-    return _refresh(HttpResponse(status=204), "記録を削除しました")
+    # 長押しシートの「さっきの記録を取り消す」からは、取り消しの言い方で知らせる
+    return _refresh(HttpResponse(status=204), "取り消しました" if request.POST.get("undo") else "記録を削除しました")
 
 
 @login_required

@@ -13,6 +13,7 @@ from apps.events.services.dates import now_utc, zone
 from apps.events.services.streaks import STREAK_MIN, compute_streak
 
 MEMO_MAX = 1000
+RECENT_WINDOW = timedelta(minutes=10)  # この間は、長押しシートから「さっきの記録」を取り消せる（決定 054）
 FUTURE_GRACE = timedelta(seconds=60)  # 端末とサーバーの時計のずれを許す幅
 
 
@@ -71,6 +72,18 @@ def refresh_event_cache(event: Event) -> Event:
         ]
     )
     return event
+
+
+def recent_log(user, event_id, now: datetime) -> Log | None:
+    """さっき付けた記録（いちばん新しいもの）。RECENT_WINDOW より前なら None（決定 054）。
+
+    「さっき」は、記録の日付ではなく、実際に操作した時刻で決める。押し間違いを、後からでも取り消せるようにするため。
+    """
+    event = event_for(user, event_id)
+    latest = Log.objects.filter(event=event).order_by("-created_at").first()
+    if latest is None or latest.created_at < now - RECENT_WINDOW:
+        return None
+    return latest
 
 
 @dataclass(frozen=True)

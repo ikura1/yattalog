@@ -6,6 +6,7 @@ import uuid
 import pytest
 
 from apps.events.models import Log
+from apps.events.services import logs as log_svc
 
 
 def test_同じIDで2回記録しても1件(client_in, event):
@@ -76,3 +77,53 @@ def test_長押しシートで壊れた時刻はフォームにエラーを出�
 def test_長押しシートは昨日と一昨日の日付をサーバーから渡す(client_in, event):
     body = client_in.get(f"/events/{event.id}/record-sheet/").content.decode()
     assert 'data-yesterday="2026-10-09"' in body and 'data-day-before="2026-10-08"' in body
+
+
+# --- 長押しシートから、さっきの記録を取り消す（決定 054） ---
+
+
+def test_記録した直後の長押しシートには_さっきの記録を取り消すボタンが出る(client_in, user, event):
+    lid = uuid.uuid4()
+    log_svc.record(user, event.id, lid)
+
+    body = client_in.get(f"/events/{event.id}/record-sheet/").content.decode()
+
+    assert "さっきの記録を取り消す" in body and f'hx-post="/logs/{lid}/delete/"' in body
+
+
+def test_しばらくたった記録や_記録がないときは_取り消すボタンを出さない(client_in, user, event):
+    from datetime import timedelta
+
+    from apps.core.testing import NOW
+
+    assert "さっきの記録を取り消す" not in client_in.get(f"/events/{event.id}/record-sheet/").content.decode()
+
+    result = log_svc.record(user, event.id, uuid.uuid4())
+    Log.objects.filter(pk=result.log.pk).update(created_at=NOW - timedelta(minutes=30))
+
+    assert "さっきの記録を取り消す" not in client_in.get(f"/events/{event.id}/record-sheet/").content.decode()
+
+
+def test_シートから取り消すと_記録が消えて_取り消しましたと知らせる(client_in, user, event):
+    lid = uuid.uuid4()
+    log_svc.record(user, event.id, lid)
+
+    r = client_in.post(f"/logs/{lid}/delete/", {"undo": "1"}, HTTP_HX_REQUEST="true")
+
+    assert r.status_code == 204 and not Log.objects.exists()
+    assert json.loads(r["HX-Trigger"])["yl:toast"]["message"] == "取り消しました"
+
+
+def test_シートを閉じる合図より先に_知らせの合図を送る(client_in, user, event):
+    """シートを閉じると、合図を出したボタンが画面から消える。その後に送った合図は、どこにも届かない。
+
+    知らせ（トースト）を閉じる合図より後に送っていたので、シートからの操作では、知らせが出ていなかった。
+    """
+    lid = uuid.uuid4()
+    log_svc.record(user, event.id, lid)
+
+    r = client_in.post(f"/logs/{lid}/delete/", {"undo": "1"}, HTTP_HX_REQUEST="true")
+
+    order = list(json.loads(r["HX-Trigger"]))
+    assert order.index("yl:toast") < order.index("yl:close-sheet")
+    assert order.index("yl:changed") < order.index("yl:close-sheet")
