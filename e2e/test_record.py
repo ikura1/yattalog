@@ -52,6 +52,9 @@ def test_サーバーが失敗したらタイルを元に戻して知らせる(h
     page.unroute("**/record/")
     page.locator(".toast:not(.hint)").get_by_role("button", name="もう一度").click()
     expect(tile(page).locator(".ago")).to_have_text("さっき")
+    # 「さっき」は返事を待たずに出る（楽観的更新）。サーバーが書き終わったことは、成功のトーストで確かめる。
+    # 待たずに DB を読むと、書き込みの途中にぶつかって SQLite が「table is locked」を返すことがある（#52）
+    expect(page.locator(".toast:not(.hint)")).to_contain_text("シーツ交換 を記録しました")
     assert Log.objects.count() == 1
 
 

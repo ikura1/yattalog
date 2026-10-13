@@ -57,7 +57,7 @@ uv run python manage.py makemigrations --check --dry-run
 - E2E は `force_login` でログインするので、Google ログインの流れは通らない。ログインまわりは `apps/accounts/tests/test_google_login.py` で確かめる
 - 通常のテスト用クライアントは CSRF の検査を省く。確かめるときは `Client(enforce_csrf_checks=True)`
 - この開発機（Ubuntu 20.04）は Playwright の対応外。ブラウザの取得と E2E の実行には `PLAYWRIGHT_HOST_PLATFORM_OVERRIDE=ubuntu22.04-x64` を付ける
-- 手元（SQLite）の E2E は `database table is locked` でときどき落ちる（#52）。CI では落ちない。落ちたら流し直して見分ける
+- E2E で DB を読むのは、サーバーが書き終わったことを画面（成功のトーストなど）で確かめてから。「さっき」は返事の前に出る（楽観的更新）ので、それを合図にすると、書き込みの途中にぶつかって SQLite が `table is locked` を返す（#52 の原因だった）
 - レート制限の回数はキャッシュに残る。テストでは `conftest.py` の `empty_cache` が毎回消している
 - 秘密の値を端末で貼り付けるとき（`read -rs`）は画面に出ないので、二重に貼りやすい。登録したら長さと形だけを確かめる（値は表示しない）
 
