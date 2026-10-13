@@ -1,6 +1,8 @@
 // Yattalog のクライアント側。タップで記録（楽観的更新、決定 028）、長押し、タブ、編集モード、シート、トースト。
 (() => {
   "use strict";
+  // このページが読み込んだ、このスクリプトの URL（本番は、名前に中身のハッシュが入る）
+  const BOOT_JS = (document.currentScript && document.currentScript.getAttribute("src")) || "";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const store = {
@@ -69,6 +71,7 @@
     sheet().hidden = true;
     $("#scrim").hidden = true;
     $("#sheet-body").innerHTML = "";
+    reloadIfPending(); // シートを開いている間に見送った読み込み直しを、ここで行う
   }
   function loadSheet(url) {
     if (window.htmx) window.htmx.ajax("GET", url, { target: "#sheet-body" });
@@ -119,6 +122,7 @@
     b.textContent = on ? "完了" : "編集";
     b.setAttribute("aria-pressed", String(on));
     $("#editHint").hidden = !on;
+    if (!on) reloadIfPending();
   }
 
   function replaceTile(li, html) {
@@ -388,10 +392,31 @@
   let gridLoadedAt = Date.now();
   function refreshIfStale() {
     if (document.hidden || !$("#grid") || !navigator.onLine) return;
-    if (editing || press || $(".pending-net") || (sheet() && !sheet().hidden)) return;
+    if (busy()) return;
+    if (reloadPending) { reloadIfNewBuild(); return; }
     if (Date.now() - gridLoadedAt < STALE_MS) return;
     refreshHome();
   }
+
+  /* ---------- デプロイのあと、開いたままの画面を新しいスクリプトに切り替える ----------
+     ホーム画面に追加したアプリは、閉じない限り、古いスクリプトを持ったまま動き続ける。
+     そこへ新しい版の一覧（HTML）が届くと、動きが食い違う（例：新しく増えたタブを開いても、何も出ない）。
+     一覧に付いているスクリプトの URL が、自分の読み込んだものと違っていたら、ページを読み込み直す。 */
+  const RELOADED_KEY = "yl:reloaded-for";
+  let reloadPending = false;
+  const busy = () => editing || press || $(".pending-net") || (sheet() && !sheet().hidden);
+  function reloadIfNewBuild() {
+    const current = $("#grid")?.dataset.appJs;
+    if (!BOOT_JS || !current || current === BOOT_JS) { reloadPending = false; return; }
+    // 読み込み直しても合わないときに、繰り返さない（同じ版に向けては1回だけ）
+    let done = null;
+    try { done = sessionStorage.getItem(RELOADED_KEY); } catch (_) { return; }
+    if (done === current) return;
+    if (busy()) { reloadPending = true; return; } // 操作の途中では行わない。手が空いたら行う
+    try { sessionStorage.setItem(RELOADED_KEY, current); } catch (_) { return; }
+    location.reload();
+  }
+  const reloadIfPending = () => { if (reloadPending) reloadIfNewBuild(); };
 
   /* ---------- 左右スワイプでタブ切り替え（画面の端は除く、レビュー D5） ---------- */
   let sw = null;
@@ -505,7 +530,7 @@
   document.addEventListener("htmx:afterSwap", (e) => {
     const t = e.detail.target;
     if (t.id === "sheet-body") { openSheet(); bindRecordForm(t); bindEmojiField(t); }
-    if (t.id === "grid-wrap") { gridLoadedAt = Date.now(); bindHome(); applyTab(currentTab()); }
+    if (t.id === "grid-wrap") { gridLoadedAt = Date.now(); bindHome(); applyTab(currentTab()); reloadIfNewBuild(); }
     if (t.id === "detail") bindSeason(t);
   });
   // カテゴリのタブを開いているときは、追加フォームでそのカテゴリを選んでおく

@@ -466,3 +466,12 @@ def test_カテゴリなしのタブから追加するときは_カテゴリの�
     body = client_in.get("/events/new/?category=none").content.decode()
 
     assert '<input type="radio" name="category" value="" checked>' in body
+
+
+# --- デプロイのあと、開いたままの画面が古いスクリプトで動き続けないように ---
+
+
+def test_ホームの一覧は_いまのスクリプトの_URL_を持っている(client_in, event):
+    """画面側は、自分が読み込んだスクリプトと見比べて、違っていたら読み込み直す。"""
+    for path in ("/", "/grid/"):
+        assert 'data-app-js="/static/js/app.js"' in client_in.get(path).content.decode()
