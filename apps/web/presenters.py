@@ -8,6 +8,8 @@ from apps.events.models import Event
 from apps.events.services.dates import elapsed, now_utc
 from apps.events.services.streaks import StreakState, streak_state
 
+ROUNDED_FROM_DAYS = 60  # これ以上は「Nか月前」「N年前」に丸める（SPEC 3.3）
+
 
 @dataclass(frozen=True)
 class Tile:
@@ -17,6 +19,14 @@ class Tile:
     is_today: bool
     never: bool
     streak: StreakState | None
+    days: int | None = None  # 最新の記録からの日数（暦日）。一度も記録していなければ None
+
+    @property
+    def exact_days(self) -> str:
+        """月や年に丸めて出しているときの、正確な日数（「63日前」）。丸めていなければ空（レビュー D9）。"""
+        if self.days is None or self.days < ROUNDED_FROM_DAYS:
+            return ""
+        return f"{self.days}日前"
 
     @property
     def streak_unit_label(self) -> str:
@@ -49,6 +59,7 @@ def tile(event: Event, today: date, now: datetime | None = None) -> Tile:
         is_today=el.days == 0,
         never=el.days is None,
         streak=streak_state(event.streak_count, event.streak_period, event.streak_unit, today),
+        days=el.days,
     )
 
 

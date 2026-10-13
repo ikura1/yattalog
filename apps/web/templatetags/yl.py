@@ -28,6 +28,8 @@ def rel_day(d: date, today: date) -> str:
         return "昨日"
     if diff == 2:
         return "一昨日"
+    if d.year != today.year:
+        return f"{d.year}年{d.month}月{d.day}日"
     return f"{d.month}月{d.day}日"
 
 
