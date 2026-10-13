@@ -61,8 +61,10 @@ uv run python manage.py makemigrations --check --dry-run
 - レート制限の回数はキャッシュに残る。テストでは `conftest.py` の `empty_cache` が毎回消している
 - 秘密の値を端末で貼り付けるとき（`read -rs`）は画面に出ないので、二重に貼りやすい。登録したら長さと形だけを確かめる（値は表示しない）
 
-## 現状（2026-10-12）
-- **α は本番で動いている**：https://yattalog-332057063162.asia-southeast1.run.app （Cloud Run シンガポール + Neon、Google Cloud のプロジェクトは `yattalog-511302`）
+## 現状（2026-10-13）
+- **本番で動いている**：https://yattalog-332057063162.asia-southeast1.run.app （Cloud Run シンガポール + Neon、Google Cloud のプロジェクトは `yattalog-511302`）
   - ログインできるのは、OAuth のテストユーザー（いまは Yuki さんだけ）
+  - β に入れる機能は実装済み。残りは `docs/handoff.md` の「本番に切り替える前のチェック」（ほとんどが Yuki さんの手作業）
+- **ほかのセッションも、このリポジトリで PR を出している。** 作業の前に `gh pr list` と `git pull`。決定記録の番号は、取る前に `docs/decisions/` と開いている PR を確かめる
 - 経緯・やり残し・次の候補は `docs/handoff.md`。リリース計画は `SPEC.md` 7章（α → β → v1 → v1.x）
 - PoC（`poc/index.html`）は仕様確認用。本体とは別物
