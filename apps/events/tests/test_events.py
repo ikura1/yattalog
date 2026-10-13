@@ -1,12 +1,12 @@
 """イベント・カテゴリの操作と統計。"""
 
 import uuid
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 from django.core.exceptions import ValidationError
 
-from apps.core.testing import TODAY
+from apps.core.testing import NOW, TODAY
 from apps.events.models import Category, Event
 from apps.events.services import events as ev_svc
 from apps.events.services import logs as log_svc
@@ -185,3 +185,33 @@ def test_カテゴリの絵文字が正しくなければ_名前も変わらな�
         ev_svc.rename_category(user, house.id, "そうじ", emoji="abc")
     house.refresh_from_db()
     assert (house.name, house.emoji) == ("家事", "🧹")
+
+
+# --- 一覧（画面からは、ここを通して読む。決定 027） ---
+
+
+def test_ホームに出すイベントは_自分のもので_アーカイブしていないものを_並び順で(user, other_user):
+    make(user, "a")
+    b = make(user, "b")
+    make(other_user, "よその人の")
+    ev_svc.set_archived(user, b.id, True)
+    make(user, "c")
+
+    assert [e.name for e in ev_svc.list_events(user)] == ["c", "a"]
+
+
+def test_アーカイブしたイベントは_新しくアーカイブした順で(user, other_user):
+    a, b = make(user, "a"), make(user, "b")
+    ev_svc.set_archived(other_user, make(other_user, "よその人の").id, True)
+    ev_svc.set_archived(user, a.id, True, now=NOW)
+    ev_svc.set_archived(user, b.id, True, now=NOW + timedelta(minutes=1))
+
+    assert [e.name for e in ev_svc.list_archived(user)] == ["b", "a"]
+
+
+def test_カテゴリの一覧は_自分のものを_タブの並び順で(user, other_user):
+    ev_svc.create_category(user, "家事")
+    ev_svc.create_category(other_user, "よその人の")
+    ev_svc.create_category(user, "趣味")
+
+    assert [c.name for c in ev_svc.list_categories(user)] == ["家事", "趣味"]
