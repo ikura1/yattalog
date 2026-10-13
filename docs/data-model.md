@@ -43,7 +43,7 @@ Django のカスタムユーザー。パスワードは使わない（Google ロ
 | onboarded_at | timestamptz null | テンプレート選択を終えた日時 |
 | terms_version / privacy_version | varchar(20) | 同意した利用規約・ポリシーの版 |
 | terms_accepted_at | timestamptz | |
-| is_active | bool | 退会の手続き中は false（すぐにログインできなくなる） |
+| is_active | bool | 管理画面で利用を止めると false（ログインできなくなる、決定 045）。写真を入れたら、退会の手続き中にも使う（決定 040） |
 | deletion_requested_at | timestamptz null | 退会を受け付けた日時。削除ジョブが完了したら行ごと消える |
 | created_at / last_login | timestamptz | |
 

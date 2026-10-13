@@ -11,11 +11,15 @@ from django.utils import timezone
 from apps.accounts.models import PRIVACY_VERSION, TERMS_VERSION, User
 from apps.accounts.services import sync_admin_flag
 
+ACCOUNT_STOPPED = (
+    "このアカウントは、利用を停止しています。"
+    "心当たりがない場合は、プライバシーポリシーにある問い合わせ先までご連絡ください。"
+)
 SIGNUP_FULL = "ただいま満員のため、新しい登録を止めています。登録済みの方は、そのままログインできます。"
 
 
 def signup_is_full() -> bool:
-    """登録できる人数の上限に達しているか（決定 038）。退会の手続き中の人は数えない。"""
+    """登録できる人数の上限に達しているか（決定 038）。利用を止めた人は数えない。"""
     return User.objects.filter(is_active=True).count() >= settings.MAX_USERS
 
 
@@ -41,7 +45,7 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
         if user.pk:
             sync_admin_flag(user)
         if user.pk and not user.is_active:
-            messages.error(request, "このアカウントは退会の手続き中です。")
+            messages.error(request, ACCOUNT_STOPPED)
             raise ImmediateHttpResponse(redirect("web:login"))
 
     def populate_user(self, request, sociallogin, data):
