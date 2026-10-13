@@ -58,6 +58,7 @@ def test_操作が多すぎると言われたら_その旨を知らせてタイ�
     expect(tile(page).locator(".ago")).to_have_text("まだ")
 
 
+<<<<<<< Updated upstream
 def test_取り消しの知らせが消えたあとでも_長押しシートから_さっきの記録を取り消せる(home):
     page = home
     tile(page).click()
@@ -70,3 +71,48 @@ def test_取り消しの知らせが消えたあとでも_長押しシートか�
     expect(page.locator(".toast:not(.hint)")).to_contain_text("取り消しました")
     expect(tile(page).locator(".ago")).to_have_text("まだ")
     assert Log.objects.count() == 0
+=======
+# --- 記録した直後の知らせから、次の操作へ（決定 055） ---
+
+
+def test_記録した直後の知らせから_取り消し_メモ_シェア_詳細へ行ける(home):
+    page = home
+    tile(page).click()
+
+    toast = page.locator(".toast:not(.hint)")
+    expect(toast).to_contain_text("シーツ交換 を記録しました")
+    expect(toast.get_by_role("button")).to_have_text(["取り消す", "メモ", "シェア", "詳細"])
+
+
+def test_知らせの_詳細_を押すと_イベントの詳細が開く(home):
+    page = home
+    tile(page).click()
+
+    page.locator(".toast:not(.hint)").get_by_role("button", name="詳細").click()
+
+    expect(page.get_by_role("heading", name="シーツ交換")).to_be_visible()
+    expect(page.locator(".stat", has_text="記録回数").locator(".v")).to_have_text("1回")
+
+
+def test_知らせの_シェア_を押すと_その記録のシェアが開く(home):
+    page = home
+    tile(page).click()
+
+    page.locator(".toast:not(.hint)").get_by_role("button", name="シェア").click()
+
+    expect(page.locator("#sheet")).to_contain_text("#Yattalog")
+    expect(page.locator("#shareCard")).to_have_attribute("data-headline", "はじめての記録")
+
+
+def test_記録すると_手ごたえがある_震えと_タイルの印(home):
+    page = home
+    page.add_init_script(
+        "navigator.vibrate = (ms) => { (window.__vibrated = window.__vibrated || []).push(ms); return true; };"
+    )
+    page.reload()
+
+    tile(page).click()
+
+    expect(tile(page)).to_have_class(re.compile(r"\bstamp\b"))
+    assert page.evaluate("window.__vibrated") == [12]
+>>>>>>> Stashed changes
