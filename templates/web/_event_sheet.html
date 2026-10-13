@@ -27,7 +27,7 @@
   {% if not event %}
   <div class="field"><label for="evLast">前回やった日（わかれば）</label>
     <input type="date" id="evLast" name="last_done" max="{{ today|iso }}" value="{{ form.last_done|default:'' }}">
-    <span class="note">入れておくと、最初から「前回から○日」が出ます</span></div>
+    <span class="note">入れておくと、最初から「○日前」と出ます</span></div>
   {% endif %}
   {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
   <div class="row"><button class="btn primary" type="submit">{% if event %}保存する{% else %}追加する{% endif %}</button></div>

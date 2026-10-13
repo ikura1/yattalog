@@ -29,10 +29,10 @@ class Tile:
         e = self.event
         if self.never:
             state = "まだ記録なし"
-        elif self.is_today:
-            state = f"{self.number}{self.unit}前にやった" if self.unit else f"{self.number}やった"
+        elif self.unit:
+            state = f"{self.number}{self.unit}にやった"  # 「3時間前にやった」「5日前にやった」
         else:
-            state = f"前回から{self.number}{self.unit}"
+            state = f"{self.number}やった"  # 「さっきやった」「今日やった」
         s = f"{e.name}、{state}"
         if self.streak:
             s += f"、{self.streak.text}" + ("" if self.streak.current else self.streak.pending_text)
