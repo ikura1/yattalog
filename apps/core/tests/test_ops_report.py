@@ -46,6 +46,39 @@ def test_知らない経路は伏せる_管理画面のURLは秘密のため():
     assert route_of("https://h/manage-0123456789abcdef/auth/user/") == "/<その他>"
 
 
+def test_外から選んだ単語は_経路に出さない():
+    """知っている経路の後ろに好きな単語を付けて、公開の報告に落書きされないようにする（#74）。"""
+    assert route_of("https://h/static/buy-cheap.example.com") == "/static/<?>"
+    assert route_of("https://h/login/hello-from-attacker/") == "/login/<?>/"
+    assert route_of("https://h/events/new/x.y.z") == "/events/new/<?>"
+
+
+def test_アプリが使っている単語は_そのまま出す():
+    assert route_of(f"https://h/events/{UUID}/record-sheet/") == "/events/<id>/record-sheet/"
+    assert route_of(f"https://h/logs/{UUID}/undo/") == "/logs/<id>/undo/"
+    assert route_of("https://h/accounts/google/login/callback/") == "/accounts/google/login/callback/"
+    assert route_of("https://h/account/delete/") == "/account/delete/"
+    assert route_of("https://h/static/css/app.0123abcd.css") == "/static/css/<?>"
+
+
+def test_アプリの経路に出てくる単語は_すべて伏せずに出せる():
+    """経路を足したら KNOWN_PARTS にも足す（足し忘れると、報告で <?> になる）。"""
+    import re
+
+    from django.urls import get_resolver
+
+    from apps.core.ops_report import KNOWN_PARTS
+
+    words = set()
+    for pattern in get_resolver().url_patterns:
+        if str(pattern.pattern) != "":
+            continue
+        for sub in pattern.url_patterns:
+            literal = re.sub(r"<[^>]+>", "", str(sub.pattern))
+            words |= {part for part in literal.split("/")[1:] if part}
+    assert words - KNOWN_PARTS == set()
+
+
 def test_トップページの経路():
     assert route_of("https://h/?x=1") == "/"
 
