@@ -1,4 +1,4 @@
-<nav class="tabs" id="tabs" role="tablist" aria-label="カテゴリ">
+{% load static %}<nav class="tabs" id="tabs" role="tablist" aria-label="カテゴリ">
   <button type="button" role="tab" data-tab="all" aria-selected="true">すべて<span class="n">{{ total }}</span></button>
   {% for c, n in categories %}<button type="button" role="tab" data-tab="{{ c.id }}" aria-selected="false">{% if c.emoji %}<span class="cat-emo" aria-hidden="true">{{ c.emoji }}</span>{% endif %}{{ c.name }}<span class="n">{{ n }}</span></button>{% endfor %}
   {% if uncategorized %}<button type="button" role="tab" data-tab="none" aria-selected="false">カテゴリなし<span class="n">{{ uncategorized }}</span></button>{% endif %}
@@ -11,7 +11,7 @@
   {% include "web/_starters.html" %}
 </section>
 {% endif %}
-<ul class="grid" id="grid" role="tabpanel">
+<ul class="grid" id="grid" role="tabpanel" data-app-js="{% static 'js/app.js' %}">
   {% for t in tiles %}{% include "web/_tile.html" %}{% endfor %}
   <li class="add-li"><button class="tile add" type="button" id="addTile" hx-get="{% url 'web:event_new' %}" hx-target="#sheet-body"><span class="emo" aria-hidden="true">＋</span>追加</button></li>
 </ul>

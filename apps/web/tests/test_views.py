@@ -481,3 +481,12 @@ def test_詳細画面では_2か月前と一緒に_正確な日数と日付も�
     body = client_in.get(f"/events/{e.id}/").content.decode()
 
     assert "2<small>か月前</small>" in body and "前回 8月8日（63日前）" in body
+
+
+# --- デプロイのあと、開いたままの画面が古いスクリプトで動き続けないように ---
+
+
+def test_ホームの一覧は_いまのスクリプトの_URL_を持っている(client_in, event):
+    """画面側は、自分が読み込んだスクリプトと見比べて、違っていたら読み込み直す。"""
+    for path in ("/", "/grid/"):
+        assert 'data-app-js="/static/js/app.js"' in client_in.get(path).content.decode()
