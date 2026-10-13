@@ -433,3 +433,36 @@ def test_ヘルスチェックはログインなしでDBに触れずに200を返
         r = client.get("/health")
     assert r.status_code == 200 and r.content == b"ok"
     assert "Set-Cookie" not in str(r.cookies) and not r.cookies
+
+
+# --- 「カテゴリなし」のタブ（決定 050） ---
+
+
+def test_カテゴリがあって_入っていないイベントもあれば_カテゴリなしのタブが件数つきで出る(client_in, user, event):
+    house = ev_svc.create_category(user, "家事")
+    ev_svc.create_event(user, name="水やり", emoji="🪴", color="leaf", category_id=house.id)
+    ev_svc.create_event(user, name="散髪", emoji="✂️", color="grape")
+
+    body = client_in.get("/").content.decode()
+
+    assert 'data-tab="none"' in body and 'カテゴリなし<span class="n">2</span>' in body
+    assert body.index('data-tab="none"') > body.index(f'data-tab="{house.id}"')
+
+
+def test_カテゴリが1つもなければ_カテゴリなしのタブは出さない(client_in, event):
+    assert 'data-tab="none"' not in client_in.get("/").content.decode()
+
+
+def test_どのイベントもカテゴリに入っていれば_カテゴリなしのタブは出さない(client_in, user):
+    house = ev_svc.create_category(user, "家事")
+    ev_svc.create_event(user, name="水やり", emoji="🪴", color="leaf", category_id=house.id)
+
+    assert 'data-tab="none"' not in client_in.get("/").content.decode()
+
+
+def test_カテゴリなしのタブから追加するときは_カテゴリの欄で_なし_が選ばれている(client_in, user):
+    ev_svc.create_category(user, "家事")
+
+    body = client_in.get("/events/new/?category=none").content.decode()
+
+    assert '<input type="radio" name="category" value="" checked>' in body

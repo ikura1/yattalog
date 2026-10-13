@@ -266,6 +266,9 @@ def privacy(request: HttpRequest) -> HttpResponse:
     return render(request, "web/legal/privacy.html", _legal_ctx())
 
 
+NO_CATEGORY_TAB = "none"  # 「カテゴリなし」のタブの印（static/js/app.js と合わせる）
+
+
 def _home_ctx(request: HttpRequest) -> dict:
     space = personal_space(request.user)
     today = _today(request)
@@ -279,6 +282,8 @@ def _home_ctx(request: HttpRequest) -> dict:
         "tiles": [tile(e, today) for e in events],
         "starters": [] if events else starter_svc.starter_choices(request.user),
         "categories": [(c, counts[c.id]) for c in cats],
+        # 「カテゴリなし」のタブ（決定 050）。カテゴリがあり、入っていないイベントもあるときだけ出す
+        "uncategorized": sum(1 for e in events if e.category_id is None) if cats else 0,
         "total": len(events),
         "user_tz": request.user.timezone,
         "needs_tz": request.user.onboarded_at is None,
@@ -435,6 +440,8 @@ def log_delete(request: HttpRequest, log_id) -> HttpResponse:
 def _event_form_ctx(request, event=None, form=None, **extra) -> dict:
     """フォームの初期値は、送られた値 → 編集中のイベント → 既定値 の順で決める（テンプレートでは決めない）。"""
     tab = request.GET.get("category") or request.POST.get("category") or ""
+    if tab == NO_CATEGORY_TAB:
+        tab = ""  # 「カテゴリなし」のタブから追加するときは、カテゴリを付けない
     form = form or {}
 
     def pick(name, default):
