@@ -73,3 +73,5 @@
 | 048 | [経過時間には「前」を付けて「N日前」と表示する](048-elapsed-with-ago.md) | 決定 |
 | 049 | [Service Worker は、静的ファイルとオフラインの案内だけをしまう](049-service-worker-static-only.md) | 決定 |
 | 050 | [カテゴリに入っていないイベントは、「カテゴリなし」のタブで見られるようにする](050-uncategorized-tab.md) | 決定 |
+| 051 | [β の成功の基準は「続けて使っている人が20人中5人以上」](051-beta-success-metric.md) | 決定 |
+| 052 | [費用は月 1,000円まで。超えそうなら、まず新しい登録を止める](052-budget-and-overrun-policy.md) | 決定 |

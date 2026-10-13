@@ -1,0 +1,21 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<p>人数と件数だけを出しています。だれが使っているか、何を記録しているかは、ここには出ません。</p>
+<table>
+  <caption>β の成功の基準（決定 051）</caption>
+  <tbody>
+    <tr><th scope="row">続けて使っている人</th><td><strong>{{ s.retained }} 人</strong>{% if s.retained_percent is not None %}（{{ s.settled }} 人中、{{ s.retained_percent }}%）{% endif %}</td><td>登録から2週間以上たち、直近7日に1回以上記録した人</td></tr>
+    <tr><th scope="row">目標</th><td>{{ s.goal }} 人以上 … {% if s.goal_met %}<strong>届いています</strong>{% else %}まだ届いていません{% endif %}</td><td>登録できる人数 {{ max_users }} 人のうち</td></tr>
+  </tbody>
+</table>
+<table>
+  <caption>全体</caption>
+  <tbody>
+    <tr><th scope="row">登録している人</th><td>{{ s.users }} 人 / 上限 {{ max_users }} 人</td><td>利用を止めた人を除く</td></tr>
+    <tr><th scope="row">直近7日に記録した人</th><td>{{ s.active_7d }} 人</td><td>登録したばかりの人も含む</td></tr>
+    <tr><th scope="row">登録から2週間以上たった人</th><td>{{ s.settled }} 人</td><td>「続けて使っている人」を数える対象</td></tr>
+    <tr><th scope="row">1人あたりのイベント数</th><td>{% if s.median_events is None %}—{% else %}{{ s.median_events }} 個{% endif %}</td><td>まん中の人の値（中央値）</td></tr>
+    <tr><th scope="row">記録の総数</th><td>{{ s.logs }} 件</td><td></td></tr>
+  </tbody>
+</table>
+{% endblock %}

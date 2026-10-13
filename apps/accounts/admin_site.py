@@ -19,6 +19,8 @@ from django.views.decorators.cache import never_cache
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from apps.accounts.services import is_admin, sync_admin_flag
+from apps.accounts.usage import usage_summary
+from apps.core import clock
 
 DEVICE_NAME = "認証アプリ"
 WRONG_CODE = (
@@ -63,7 +65,17 @@ class SecureAdminSite(admin.AdminSite):
         return redirect("admin:index" if request.user.is_verified() else "admin:otp")
 
     def get_urls(self):
-        return [path("otp/", self.otp_view, name="otp"), *super().get_urls()]
+        return [
+            path("otp/", self.otp_view, name="otp"),
+            path("usage/", self.admin_view(self.usage_view), name="usage"),
+            *super().get_urls(),
+        ]
+
+    def usage_view(self, request: HttpRequest) -> HttpResponse:
+        """利用状況（人数と件数だけ）。成功の基準を測るのに使う（決定 051）。"""
+        ctx = {**self.each_context(request), "title": "利用状況", "s": usage_summary(clock.now())}
+        ctx["max_users"] = settings.MAX_USERS
+        return render(request, "admin/usage.html", ctx)
 
     @method_decorator(never_cache)
     def otp_view(self, request: HttpRequest) -> HttpResponse:

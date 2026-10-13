@@ -70,6 +70,10 @@ bash deploy/gcp-setup.sh <PROJECT_ID>
 ## 監視
 死活監視・毎朝の報告・Error Reporting の通知。設定と、Claude への頼み方は `docs/operations.md`（決定 046）。
 
+## 登録できる人数の上限を変える（決定 038・052）
+GitHub の **Variables** に `MAX_USERS` を登録して、Deploy を実行する。未登録なら 20 人。
+費用が上限（月 1,000円）を超えそうなときは、いまの登録人数（管理画面の「利用状況」で分かる）を入れると、新しい登録だけが止まる。
+
 ## 費用を抑えるための設定
 - Cloud Run：最小0台・最大2台、リクエストを処理している間だけ課金
 - Artifact Registry：イメージは新しい5つだけを残す（無料枠0.5GBに収める）
