@@ -26,7 +26,7 @@ def test_メニューからふりかえりを開き_マスを押すとその日�
     page.get_by_role("link", name="ふりかえり").click()
 
     expect(page.get_by_role("heading", name="ふりかえり")).to_be_visible()
-    expect(page.locator(".review-sum")).to_contain_text("2 回、2 日やった")
+    expect(page.locator("#reviewSum")).to_contain_text("2 回、2 日やった")
     expect(page.locator("#reviewDay")).to_contain_text("シーツ交換")
 
     page.get_by_label(f"{day.month}月{day.day}日", exact=False).first.click()
@@ -34,5 +34,5 @@ def test_メニューからふりかえりを開き_マスを押すとその日�
     expect(page.locator("#reviewDay")).not_to_contain_text("シーツ交換")
 
     page.get_by_role("link", name="シーツ交換").first.click()
-    expect(page.locator(".review-sum")).to_contain_text("1 回、1 日やった")
+    expect(page.locator("#reviewSum")).to_contain_text("1 回、1 日やった")
     expect(page).to_have_url(f"{page.base_url}/review/?event={sheets.id}&day={day.isoformat()}")

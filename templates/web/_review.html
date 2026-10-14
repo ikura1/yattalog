@@ -8,12 +8,13 @@
   {% for e in events %}<a href="?event={{ e.id }}&amp;day={{ day|iso }}" aria-current="{% if review.event.id == e.id %}true{% else %}false{% endif %}" hx-get="?event={{ e.id }}&amp;day={{ day|iso }}" hx-target="#review" hx-push-url="true"><span aria-hidden="true">{{ e.emoji }}</span>{{ e.name }}</a>{% endfor %}
 </nav>
 <section class="review{% if review.event %} c-{{ review.event.color }}{% endif %}">
-  <p class="review-sum">この12か月で <b>{{ review.total }}</b> 回、<b>{{ review.active_days }}</b> 日やった</p>
-  <div class="months">
-    {% for mo in months %}<div class="mon">
-      <h2>{{ mo.label }}<span>{{ mo.total }}回</span></h2>
-      <div class="mgrid">{% for week in mo.weeks %}{% for c in week %}{% if not c %}<span></span>{% elif c.is_future %}<span class="hm future"></span>{% else %}<a class="hm l{{ c.level }}{% if c.date == day %} sel{% endif %}" href="?{% if review.event %}event={{ review.event.id }}&amp;{% endif %}day={{ c.date|iso }}" hx-get="?{% if review.event %}event={{ review.event.id }}&amp;{% endif %}day={{ c.date|iso }}" hx-target="#review" aria-label="{{ c.date|md_wd }}：{% if c.logs %}{{ c.logs }}回{% else %}記録なし{% endif %}"></a>{% endif %}{% endfor %}{% endfor %}</div>
-    </div>{% endfor %}
+  <p class="review-sum" id="reviewSum">この1年で <b>{{ review.total }}</b> 回、<b>{{ review.active_days }}</b> 日やった</p>
+  {# GitHub の草と同じ並び：縦が曜日（日曜が上）、横が週。右端が今週。rtl で、はじめから右端（今週）が見える #}
+  <div class="hm-wrap">
+    <div class="hm-days" aria-hidden="true"><span></span><span></span><span>月</span><span></span><span>水</span><span></span><span>金</span><span></span></div>
+    <div class="hm-scroll">
+      <div class="hm-grid">{% for label, week in grid.columns %}<span class="hm-m">{{ label }}</span>{% for c in week %}{% if c.is_future %}<span class="hm future"></span>{% else %}<a class="hm l{{ c.level }}{% if c.date == day %} sel{% endif %}" href="?{% if review.event %}event={{ review.event.id }}&amp;{% endif %}day={{ c.date|iso }}" hx-get="?{% if review.event %}event={{ review.event.id }}&amp;{% endif %}day={{ c.date|iso }}" hx-target="#review" aria-label="{{ c.date|md_wd }}：{% if c.logs %}{{ c.logs }}回{% else %}記録なし{% endif %}"></a>{% endif %}{% endfor %}{% endfor %}</div>
+    </div>
   </div>
   {% if review.event %}<p class="legend"><i class="hm l1"></i>やった日</p>
   {% else %}<p class="legend">やったイベントの数　1つ<i class="hm l1"></i><i class="hm l2"></i><i class="hm l3"></i><i class="hm l4"></i>4つ以上</p>{% endif %}
@@ -24,4 +25,11 @@
     {% endfor %}</ul>
     {% else %}<p class="note">この日の記録はありません</p>{% endif %}
   </div>
+</section>
+<section class="review weekdays{% if review.event %} c-{{ review.event.color }}{% endif %}" aria-labelledby="wdTitle">
+  <h2 id="wdTitle">よくやる曜日</h2>
+  <p class="wd-head">{{ weekdays.headline }}</p>
+  <ol class="wbars">{% for b in weekday_bars %}
+    <li class="wbar{% if b.is_peak %} peak{% endif %}" aria-label="{{ b.name }}曜：{{ b.count }}回"><span class="wn" aria-hidden="true">{{ b.count }}</span><svg class="wcol" viewBox="0 0 10 100" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="{{ b.y }}" width="10" height="{{ b.height }}"/></svg><span class="wd" aria-hidden="true">{{ b.name }}</span></li>{% endfor %}
+  </ol>
 </section>

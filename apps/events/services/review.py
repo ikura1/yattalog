@@ -5,14 +5,16 @@
 """
 
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, timedelta
 
 from django.db.models import Count, F
 
 from apps.events.models import Event, Log
 from apps.events.services.access import event_for
+from apps.events.services.stats import SEASON_RATIO
 
-MONTHS = 12  # 今月を含めて、12か月分を出す
+WEEKS = 53  # 今週を含めて53週（GitHub の草と同じ）
+WEEKDAY_NAMES = "日月火水木金土"  # 日曜始まり（カレンダーと同じ）
 
 
 @dataclass(frozen=True)
@@ -37,10 +39,34 @@ class YearReview:
         return len(self.days)
 
 
-def first_month(today: date) -> date:
-    """期間の始まり：今月を含めて12か月前の月の1日。"""
-    m = today.year * 12 + today.month - MONTHS
-    return date(m // 12, m % 12 + 1, 1)
+@dataclass(frozen=True)
+class WeekdaySummary:
+    counts: list[int]  # 日曜から土曜までの、記録の回数
+    headline: str
+    peaks: list[bool]  # 見出しに挙げた曜日
+
+
+def weekday_summary(review: YearReview) -> WeekdaySummary:
+    """よくやる曜日。1年分の記録を曜日ごとに数える。決め方は「よくやる時期」と同じ（最多の7割以上）。"""
+    counts = [0] * 7
+    for day, count in review.days.items():
+        counts[(day.weekday() + 1) % 7] += count.logs
+    total, top = sum(counts), max(counts)
+    peaks = [False] * 7
+    if total < 3:
+        headline = "記録が増えると、よくやる曜日がわかります"
+    elif all(c >= top * SEASON_RATIO for c in counts):
+        headline = "どの曜日も同じくらい"
+    else:
+        peaks = [c >= top * SEASON_RATIO for c in counts]
+        headline = f"よくやるのは {'・'.join(n for n, p in zip(WEEKDAY_NAMES, peaks, strict=True) if p)}曜"
+    return WeekdaySummary(counts=counts, headline=headline, peaks=peaks)
+
+
+def first_day(today: date) -> date:
+    """期間の始まり：今週の日曜から52週前の日曜。"""
+    sunday = today - timedelta((today.weekday() + 1) % 7)
+    return sunday - timedelta(weeks=WEEKS - 1)
 
 
 def _logs(user, event: Event | None):
@@ -49,9 +75,9 @@ def _logs(user, event: Event | None):
 
 
 def year_review(user, today: date, event_id=None) -> YearReview:
-    """12か月分の、日ごとの記録の数。ほかの人のイベントで絞ろうとしたら Event.DoesNotExist。"""
+    """1年分（53週）の、日ごとの記録の数。ほかの人のイベントで絞ろうとしたら Event.DoesNotExist。"""
     event = event_for(user, event_id) if event_id else None
-    start = first_month(today)
+    start = first_day(today)
     rows = (
         _logs(user, event)
         .filter(local_date__range=(start, today))

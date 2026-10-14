@@ -24,8 +24,8 @@ def test_ふりかえりには_12か月の草と_やった回数と日数が出�
 
     body = client_in.get("/review/").content.decode()
 
-    assert "この12か月で" in body and ">2</b> 回" in body and ">2</b> 日" in body
-    assert "2025年11月" in body and "2026年1月" in body
+    assert "この1年で" in body and ">2</b> 回" in body and ">2</b> 日" in body
+    assert '<span class="hm-m">11月</span>' in body and '<span class="hm-m">1月</span>' in body
     assert 'aria-label="10月10日（土）：1回"' in body
 
 
@@ -75,3 +75,23 @@ def test_画面の中の切り替えでは_中身だけを返す(client_in):
 
 def test_ログインしていないと_ログイン画面へ(client):
     assert client.get("/review/")["Location"].startswith("/login/")
+
+
+def test_ふりかえりには_よくやる曜日が出て_絞ったイベントにも効く(client_in, user, event):
+    water = ev_svc.create_event(user, name="水やり", emoji="🪴", color="leaf")
+    for days in (0, 7, 14):  # 2026-10-10 は土曜
+        record(user, event, days)
+    record(user, water, 3)
+
+    body = client_in.get("/review/").content.decode()
+    only_water = client_in.get(f"/review/?event={water.id}").content.decode()
+
+    assert "よくやる曜日" in body and "よくやるのは 土曜" in body
+    assert 'class="wbar peak" aria-label="土曜：3回"' in body and 'aria-label="水曜：1回"' in body
+    assert "記録が増えると、よくやる曜日がわかります" in only_water
+
+
+def test_ふりかえりの画面は_style_属性を使わない(client_in, user, event):
+    """CSP で style 属性は止まる（style-src に unsafe-inline がない）。高さや色は、クラスか SVG の属性で渡す。"""
+    record(user, event)
+    assert "style=" not in client_in.get("/review/").content.decode()

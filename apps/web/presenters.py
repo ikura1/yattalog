@@ -2,11 +2,11 @@
 
 import calendar
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from apps.events.models import Event
 from apps.events.services.dates import elapsed, now_utc
-from apps.events.services.review import YearReview
+from apps.events.services.review import WEEKDAY_NAMES, WeekdaySummary, YearReview
 from apps.events.services.streaks import StreakState, streak_state
 
 ROUNDED_FROM_DAYS = 60  # これ以上は「Nか月前」「N年前」に丸める（SPEC 3.3）
@@ -159,7 +159,7 @@ def shift_month(year: int, month: int, delta: int) -> tuple[int, int]:
     return (m // 12, m % 12 + 1)
 
 
-# --- ふりかえり：1年の草（月ごとの小さなカレンダー、決定 058） ------------------------
+# --- ふりかえり：1年の草（GitHub と同じ横並び、決定 058） ------------------------------
 
 MAX_LEVEL = 4  # 濃さの段階（0 は記録なし）
 
@@ -173,24 +173,27 @@ class HeatCell:
 
 
 @dataclass(frozen=True)
-class HeatMonth:
-    label: str  # 「2026年1月」「2月」
-    total: int  # その月の記録の回数
-    weeks: list[list[HeatCell | None]]  # 日曜始まり。月の外のマスは None
+class HeatGrid:
+    weeks: list[list[HeatCell]]  # 古い週から。1週は日曜から土曜
+    month_labels: list[str]  # 週ごとの、上に出す月（その月の1日がある週だけ「11月」。ほかは空）
+
+    @property
+    def columns(self) -> list[tuple[str, list[HeatCell]]]:
+        """テンプレート用：（月の見出し、その週の7日）の組。"""
+        return list(zip(self.month_labels, self.weeks, strict=True))
 
 
-def year_months(review: YearReview, today: date) -> list[HeatMonth]:
-    """12か月分を古い順に。濃さは、すべてならやったイベントの種類の数、1つに絞っていれば記録があるかどうか。"""
-    months = []
-    y, m = review.start.year, review.start.month
-    for i in range(12):
-        cal = calendar.Calendar(firstweekday=6).monthdatescalendar(y, m)
-        weeks = [[_heat_cell(d, review, today) if d.month == m else None for d in week] for week in cal]
-        total = sum(c.logs for week in weeks for c in week if c)
-        label = f"{y}年{m}月" if i == 0 or m == 1 else f"{m}月"
-        months.append(HeatMonth(label=label, total=total, weeks=weeks))
-        y, m = shift_month(y, m, 1)
-    return months
+def year_weeks(review: YearReview, today: date) -> HeatGrid:
+    """53週分を古い順に。濃さは、すべてならやったイベントの種類の数、1つに絞っていれば記録があるかどうか。"""
+    weeks, labels = [], []
+    start = review.start
+    while start <= today:
+        week = [_heat_cell(start + timedelta(i), review, today) for i in range(7)]
+        first = next((c.date for c in week if c.date.day == 1), None)
+        weeks.append(week)
+        labels.append(f"{first.month}月" if first else "")
+        start += timedelta(weeks=1)
+    return HeatGrid(weeks=weeks, month_labels=labels)
 
 
 def _heat_cell(d: date, review: YearReview, today: date) -> HeatCell:
@@ -202,3 +205,24 @@ def _heat_cell(d: date, review: YearReview, today: date) -> HeatCell:
     else:
         level = min(count.kinds, MAX_LEVEL)
     return HeatCell(date=d, level=level, logs=count.logs if count else 0, is_future=d > today)
+
+
+@dataclass(frozen=True)
+class WeekdayBar:
+    name: str  # 「土」
+    count: int
+    height: int  # 一番多い曜日を 100 とした高さ
+    is_peak: bool
+
+    @property
+    def y(self) -> int:
+        """SVG（高さ 100）での、棒の上端。CSP で style 属性が使えないので、高さは SVG の属性で渡す。"""
+        return 100 - self.height
+
+
+def weekday_bars(summary: WeekdaySummary) -> list[WeekdayBar]:
+    top = max(summary.counts) or 1
+    return [
+        WeekdayBar(name=n, count=c, height=round(c * 100 / top), is_peak=p)
+        for n, c, p in zip(WEEKDAY_NAMES, summary.counts, summary.peaks, strict=True)
+    ]

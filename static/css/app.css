@@ -329,17 +329,18 @@ textarea { min-height: 84px; resize: vertical; }
 .tabs a { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 14px; font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 6px; white-space: nowrap; text-decoration: none; }
 .tabs a[aria-current="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 .review { background: var(--surface); border-radius: var(--r); padding: 16px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow); }
-.review-sum { font-family: var(--f-display); font-weight: 800; font-size: 17px; margin: 0; }
+.review-sum, .wd-head { font-family: var(--f-display); font-weight: 800; font-size: 17px; margin: 0; }
 .review-sum b { color: var(--accent); font-size: 22px; }
-.months { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 10px; }
-@media (min-width: 560px) { .months { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-.mon h2 { font-family: var(--f-display); font-weight: 800; font-size: 12.5px; margin: 0 0 4px; display: flex; justify-content: space-between; gap: 4px; }
-.mon h2 span { color: var(--muted); font-weight: 500; font-family: var(--f-body); font-size: 11px; font-variant-numeric: tabular-nums; }
-.mgrid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
-.mgrid > * { aspect-ratio: 1; }
+/* 草：縦が曜日（日曜が上）、横が週。スマホでは半年ほどが見え、古い方へ横にスクロールする */
+.hm-wrap { display: flex; gap: 4px; min-width: 0; }
+.hm-days, .hm-grid { display: grid; grid-template-rows: 14px repeat(7, 13px); gap: 3px; }
+.hm-days span { font-size: 10px; line-height: 13px; color: var(--muted); }
+.hm-scroll { flex: 1; min-width: 0; overflow-x: auto; direction: rtl; padding-bottom: 6px; scrollbar-width: thin; }
+.hm-grid { direction: ltr; grid-auto-flow: column; grid-auto-columns: 13px; width: max-content; padding: 2px; }
+.hm-m { font-size: 10.5px; line-height: 14px; color: var(--muted); white-space: nowrap; width: 0; overflow: visible; }
 .hm { display: block; border-radius: 3px; background: var(--g0); }
 .hm.l1 { background: var(--ev, var(--g1)); } .hm.l2 { background: var(--g2); } .hm.l3 { background: var(--g3); } .hm.l4 { background: var(--g4); }
-.hm.future { opacity: .35; }
+.hm.future { visibility: hidden; }
 .hm.sel { outline: 2px solid var(--fg); outline-offset: 1px; }
 .review.c-tomato { --ev: var(--s-tomato); } .review.c-tangerine { --ev: var(--s-tangerine); } .review.c-sun { --ev: var(--s-sun); } .review.c-leaf { --ev: var(--s-leaf); }
 .review.c-teal { --ev: var(--s-teal); } .review.c-sky { --ev: var(--s-sky); } .review.c-grape { --ev: var(--s-grape); } .review.c-pink { --ev: var(--s-pink); }
@@ -352,3 +353,15 @@ textarea { min-height: 84px; resize: vertical; }
 .review-day li a { display: inline-flex; gap: 6px; font-weight: 700; text-decoration: none; }
 .review-day li small { color: var(--muted); font-size: 12.5px; min-width: 0; overflow-wrap: anywhere; }
 .review-day .t { margin-left: auto; color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.weekdays h2 { font-family: var(--f-display); font-weight: 800; font-size: 13px; color: var(--muted); margin: 0 0 -8px; }
+.wbars { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.wbar { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.wbar .wn { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.wbar .wcol { width: 100%; max-width: 28px; height: 84px; display: block; }
+.wbar .wcol rect { fill: var(--g2); }
+.wbar.peak .wcol rect { fill: var(--accent); }
+.review.c-tomato .wcol rect, .review.c-tangerine .wcol rect, .review.c-sun .wcol rect, .review.c-leaf .wcol rect,
+.review.c-teal .wcol rect, .review.c-sky .wcol rect, .review.c-grape .wcol rect, .review.c-pink .wcol rect { fill: var(--ev); opacity: .45; }
+.review[class*="c-"] .wbar.peak .wcol rect { opacity: 1; }
+.wbar .wd { font-family: var(--f-display); font-weight: 800; font-size: 13px; }
+.wbar.peak .wn { color: var(--fg); font-weight: 700; }
