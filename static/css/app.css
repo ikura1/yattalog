@@ -331,7 +331,7 @@ textarea { min-height: 84px; resize: vertical; }
 .tabs a { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 14px; font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 6px; white-space: nowrap; text-decoration: none; }
 .tabs a[aria-current="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 .review { background: var(--surface); border-radius: var(--r); padding: 16px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow); }
-.review-sum, .wd-head { font-family: var(--f-display); font-weight: 800; font-size: 17px; margin: 0; }
+.review-sum { font-family: var(--f-display); font-weight: 800; font-size: 17px; margin: 0; }
 .review-sum b { color: var(--accent); font-size: 22px; }
 /* 草：縦が曜日（日曜が上）、横が週。スマホでは半年ほどが見え、古い方へ横にスクロールする */
 .hm-wrap { display: flex; gap: 4px; min-width: 0; }
@@ -355,20 +355,24 @@ textarea { min-height: 84px; resize: vertical; }
 .review-day li a { display: inline-flex; gap: 6px; font-weight: 700; text-decoration: none; }
 .review-day li small { color: var(--muted); font-size: 12.5px; min-width: 0; overflow-wrap: anywhere; }
 .review-day .t { margin-left: auto; color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
-.weekdays .note { margin: -4px 0 0; font-size: 11.5px; }
-.weekdays h2 { font-family: var(--f-display); font-weight: 800; font-size: 13px; color: var(--muted); margin: 0 0 -8px; }
+/* そのイベントのくせ：よくやる曜日・時間帯・日にち（決定 060） */
+.tendency { display: flex; flex-direction: column; gap: 10px; }
+.tendency h3 { margin: 0; }
+.tendency .wd-head { font-family: var(--f-display); font-weight: 800; font-size: 15px; margin: 0; }
+.tendency .note { margin: 0; font-size: 11.5px; }
 .wbars { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
 .wbars.n4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 .wbars.n4 .wcol { max-width: 40px; }
 .wbar { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .wbar .wn { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.wbar .wcol { width: 100%; max-width: 28px; height: 84px; display: block; }
+.wbar .wcol { width: 100%; max-width: 28px; height: 72px; display: block; }
 .wbar .wcol rect { fill: var(--g2); }
 .wbar.peak .wcol rect { fill: var(--accent); }
-.review.c-tomato .wcol rect, .review.c-tangerine .wcol rect, .review.c-sun .wcol rect, .review.c-leaf .wcol rect,
-.review.c-teal .wcol rect, .review.c-sky .wcol rect, .review.c-grape .wcol rect, .review.c-pink .wcol rect { fill: var(--ev); opacity: .45; }
-.review[class*="c-"] .wbar.peak .wcol rect { opacity: 1; }
 .wbar .wd { font-family: var(--f-display); font-weight: 800; font-size: 13px; }
 .wbar.peak .wn { color: var(--fg); font-weight: 700; }
+.mdays { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.md { aspect-ratio: 1; display: grid; place-items: center; border-radius: 8px; background: var(--g0); font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--muted); }
+.md.l1 { background: var(--g1); color: var(--fg); } .md.l2 { background: var(--g2); color: var(--fg); }
+.md.l3 { background: var(--g3); color: var(--accent-fg); } .md.l4 { background: var(--g4); color: var(--accent-fg); }
 .note.since { margin: -6px 0 14px; font-size: 12.5px; }
 .review + .review { margin-top: 12px; }

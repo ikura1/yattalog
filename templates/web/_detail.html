@@ -58,6 +58,14 @@
   </div>
   <table class="sr-only"><caption>月別の記録回数</caption><tr><th>月</th><th>回数</th></tr>{% for b in chart.bars %}<tr><td>{{ b.month }}月</td><td>{{ b.count }}</td></tr>{% endfor %}</table>
 </section>
+{# そのイベントのくせ（決定 060）。これまでの全部の記録で数える #}
+{% include "web/_tendency.html" with key="wd" title="よくやる曜日" t=weekdays bars=weekday_bars suffix="曜" %}
+{% include "web/_tendency.html" with key="tod" title="よくやる時間帯" t=times bars=time_bars suffix="" note="時刻つきの記録だけで数えます（朝 4〜11時、昼 11〜16時、夕方 16〜19時、夜 19〜4時）" %}
+<section class="card tendency" aria-labelledby="mdTitle">
+  <h3 id="mdTitle">よくやる日にち</h3>
+  <p class="wd-head">{{ mdays.tendency.headline }}</p>
+  <ol class="mdays">{% for c in mday_cells %}<li class="md l{{ c.level }}" aria-label="{{ c.day }}日：{{ c.count }}回">{{ c.day }}</li>{% endfor %}</ol>
+</section>
 {% endif %}
 
 <section class="card">

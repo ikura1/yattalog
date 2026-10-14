@@ -1,7 +1,7 @@
 """イベント・カテゴリの操作と統計。"""
 
 import uuid
-from datetime import date, timedelta
+from datetime import date, time, timedelta
 
 import pytest
 from django.core.exceptions import ValidationError
@@ -290,3 +290,74 @@ def test_詳細の統計に_はじめて記録した日を持つ(user):
 )
 def test_はじめての記録が_どれくらい前かを言う(first, expected):
     assert stats.since_text(first, TODAY) == expected
+
+
+# --- そのイベントのくせ：よくやる曜日・時間帯・日にち（決定 060） ---
+
+
+def at(user, event, day, hh, mm=0):
+    log_svc.record(user, event.id, uuid.uuid7(), When(date=day, time=time(hh, mm)))
+
+
+def test_よくやる曜日は_そのイベントのこれまでの記録を_日曜から数える(user):
+    e = ev_svc.create_event(user, name="ジョギング", emoji="🏃", color="leaf")
+    other = ev_svc.create_event(user, name="水やり", emoji="🪴", color="leaf")
+    logs_on(user, e, date(2025, 3, 1), date(2026, 9, 26), date(2026, 10, 3), date(2026, 10, 7))  # 土×3、水
+    logs_on(user, other, date(2026, 10, 5))
+
+    t = stats.weekday_tendency(e)
+
+    assert (t.counts, t.headline) == ([0, 0, 0, 1, 0, 0, 3], "よくやるのは 土曜")
+
+
+def test_よくやる曜日は_記録が少ないうちは_わかるようになると伝える(user):
+    e = ev_svc.create_event(user, name="ヨガ", emoji="🧘", color="teal")
+    logs_on(user, e, date(2026, 10, 3))
+    assert stats.weekday_tendency(e).headline == "記録が増えると、よくやる曜日がわかります"
+
+
+def test_時間帯は_朝昼夕方夜の4つに分けて数える_時刻なしの記録は数えない(user):
+    e = ev_svc.create_event(user, name="水やり", emoji="🪴", color="leaf")
+    d = TODAY - timedelta(1)
+    at(user, e, d, 4)  # 朝：4:00〜10:59
+    at(user, e, d, 10, 59)
+    at(user, e, d, 11)  # 昼：11:00〜15:59
+    at(user, e, d, 18, 59)  # 夕方：16:00〜18:59
+    at(user, e, d, 3, 59)  # 夜：19:00〜3:59
+    logs_on(user, e, d)  # 時刻なし
+
+    t = stats.time_tendency(e)
+
+    assert (t.counts, t.headline) == ([2, 1, 1, 1], "よくやるのは 朝")
+
+
+def test_時間帯は_記録したときのタイムゾーンで数える(user):
+    user.timezone = "America/New_York"
+    user.save()
+    e = ev_svc.create_event(user, name="水やり", emoji="🪴", color="leaf")
+    at(user, e, TODAY - timedelta(1), 7)  # ニューヨークの朝7時（日本では夜）
+    assert stats.time_tendency(e).counts == [1, 0, 0, 0]
+
+
+def test_時刻つきの記録が少ないうちは_時間帯はわかるようになると伝える(user):
+    e = ev_svc.create_event(user, name="水やり", emoji="🪴", color="leaf")
+    logs_on(user, e, date(2026, 10, 1), date(2026, 10, 2), date(2026, 10, 3))
+    assert stats.time_tendency(e).headline == "時刻つきの記録が増えると、よくやる時間帯がわかります"
+
+
+def test_よくやる日にちは_1日から31日で数え_上旬中旬下旬で見出しにする(user):
+    e = ev_svc.create_event(user, name="家計簿", emoji="📒", color="sun")
+    logs_on(user, e, date(2026, 7, 1), date(2026, 8, 1), date(2026, 9, 2), date(2026, 10, 5), date(2026, 8, 31))
+
+    days = stats.month_days(e)
+
+    assert days.counts[0] == 2 and days.counts[1] == 1 and days.counts[4] == 1 and days.counts[30] == 1
+    assert len(days.counts) == 31
+    assert days.tendency.headline == "よくやるのは 上旬"
+
+
+def test_よくやる日にちの濃さは_一番多い日を4として段階に分ける(user):
+    e = ev_svc.create_event(user, name="家計簿", emoji="📒", color="sun")
+    logs_on(user, e, date(2026, 7, 1), date(2026, 8, 1), date(2026, 9, 1), date(2026, 10, 1), date(2026, 10, 2))
+    levels = stats.month_days(e).levels
+    assert (levels[0], levels[1], levels[2]) == (4, 1, 0)

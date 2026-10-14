@@ -204,3 +204,18 @@ def test_詳細に_はじめて記録した日と_どれくらい前かを出す
     body = client_in.get(f"/events/{event.id}/").content.decode()
 
     assert "はじめての記録 2025年8月3日（1年2か月前）" in body
+
+
+def test_詳細に_よくやる曜日と時間帯と日にちを出す(client_in, user, event):
+    from datetime import time
+
+    for d in (date(2026, 9, 26), date(2026, 10, 3)):  # 土曜
+        log_svc.record(user, event.id, uuid.uuid4(), When(date=d, time=time(8)))
+    log_svc.record(user, event.id, uuid.uuid4(), When(date=date(2026, 10, 1), time=time(21)))
+
+    body = client_in.get(f"/events/{event.id}/").content.decode()
+
+    assert "よくやる曜日" in body and "よくやるのは 土曜" in body and 'aria-label="土曜：2回"' in body
+    assert "よくやる時間帯" in body and "よくやるのは 朝" in body and 'aria-label="朝：2回"' in body
+    assert "よくやる日にち" in body and 'aria-label="3日：1回"' in body and 'aria-label="26日：1回"' in body
+    assert "style=" not in body

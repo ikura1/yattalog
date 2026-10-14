@@ -77,34 +77,13 @@ def test_ログインしていないと_ログイン画面へ(client):
     assert client.get("/review/")["Location"].startswith("/login/")
 
 
-def test_ふりかえりには_よくやる曜日が出て_絞ったイベントにも効く(client_in, user, event):
-    water = ev_svc.create_event(user, name="水やり", emoji="🪴", color="leaf")
-    for days in (0, 7, 14):  # 2026-10-10 は土曜
-        record(user, event, days)
-    record(user, water, 3)
-
-    body = client_in.get("/review/").content.decode()
-    only_water = client_in.get(f"/review/?event={water.id}").content.decode()
-
-    assert "よくやる曜日" in body and "よくやるのは 土曜" in body
-    assert 'class="wbar peak" aria-label="土曜：3回"' in body and 'aria-label="水曜：1回"' in body
-    assert "記録が増えると、よくやる曜日がわかります" in only_water
-
-
 def test_ふりかえりの画面は_style_属性を使わない(client_in, user, event):
     """CSP で style 属性は止まる（style-src に unsafe-inline がない）。高さや色は、クラスか SVG の属性で渡す。"""
     record(user, event)
     assert "style=" not in client_in.get("/review/").content.decode()
 
 
-def test_ふりかえりには_よくやる時間帯も出る(client_in, user, event):
-    from datetime import time
-
-    for hh in (7, 8, 21):
-        log_svc.record(user, event.id, uuid.uuid4(), When(date=TODAY - timedelta(1), time=time(hh)))
-
+def test_曜日や時間帯は_ふりかえりではなくイベント詳細に出す(client_in, user, event):
+    record(user, event)
     body = client_in.get("/review/").content.decode()
-
-    assert "よくやる時間帯" in body and "よくやるのは 朝" in body
-    assert 'class="wbar peak" aria-label="朝：2回"' in body and 'aria-label="夜：1回"' in body
-    assert "時刻つきの記録だけで数えます" in body
+    assert "よくやる曜日" not in body and "よくやる時間帯" not in body

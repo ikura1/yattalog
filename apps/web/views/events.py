@@ -11,7 +11,7 @@ from django.views.decorators.http import require_GET, require_POST
 from apps.events.models import COLORS, StreakUnit
 from apps.events.services import events as ev_svc
 from apps.events.services import stats
-from apps.web.presenters import calendar_weeks, season_chart, shift_month, tile
+from apps.web.presenters import calendar_weeks, month_day_cells, season_chart, shift_month, tendency_bars, tile
 from apps.web.views.common import (
     NO_CATEGORY_TAB,
     _categories,
@@ -235,6 +235,13 @@ def event_detail(request: HttpRequest, event_id) -> HttpResponse:
         "today": today,
         "logs": logs[:200],
         "latest_log": event.logs.first(),  # 「シェア」の対象（最新の記録）
+        # そのイベントのくせ（決定 060）
+        "weekdays": (weekdays := stats.weekday_tendency(event)),
+        "weekday_bars": tendency_bars(weekdays),
+        "times": (times := stats.time_tendency(event)),
+        "time_bars": tendency_bars(times),
+        "mdays": (mdays := stats.month_days(event)),
+        "mday_cells": month_day_cells(mdays),
     }
     template = "web/_detail.html" if request.htmx and not request.htmx.boosted else "web/detail.html"
     return render(request, template, ctx)

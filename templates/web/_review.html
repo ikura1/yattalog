@@ -26,5 +26,3 @@
     {% else %}<p class="note">この日の記録はありません</p>{% endif %}
   </div>
 </section>
-{% include "web/_tendency.html" with key="wd" title="よくやる曜日" t=weekdays bars=weekday_bars suffix="曜" %}
-{% include "web/_tendency.html" with key="tod" title="よくやる時間帯" t=times bars=time_bars suffix="" note="時刻つきの記録だけで数えます（朝 4〜11時、昼 11〜16時、夕方 16〜19時、夜 19〜4時）" %}

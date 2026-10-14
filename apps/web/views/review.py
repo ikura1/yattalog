@@ -8,7 +8,7 @@ from django.views.decorators.http import require_GET
 
 from apps.events.services import events as ev_svc
 from apps.events.services import review as review_svc
-from apps.web.presenters import tendency_bars, year_weeks
+from apps.web.presenters import year_weeks
 from apps.web.views.common import _today, owned_or_404, parse_date_or_none
 
 
@@ -28,10 +28,6 @@ def review(request: HttpRequest) -> HttpResponse:
     ctx = {
         "review": year,
         "grid": year_weeks(year, today),
-        "weekdays": (weekdays := review_svc.weekday_summary(year)),
-        "weekday_bars": tendency_bars(weekdays),
-        "times": (times := review_svc.time_of_day(request.user, today, event_id)),
-        "time_bars": tendency_bars(times),
         "events": ev_svc.list_events(request.user),
         "day": day,
         "day_logs": review_svc.logs_on(request.user, day, event_id),

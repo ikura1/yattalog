@@ -6,7 +6,8 @@ from datetime import date, datetime, timedelta
 
 from apps.events.models import Event
 from apps.events.services.dates import elapsed, now_utc
-from apps.events.services.review import Tendency, YearReview
+from apps.events.services.review import YearReview
+from apps.events.services.stats import MonthDays, Tendency
 from apps.events.services.streaks import StreakState, streak_state
 
 ROUNDED_FROM_DAYS = 60  # これ以上は「Nか月前」「N年前」に丸める（SPEC 3.3）
@@ -227,4 +228,18 @@ def tendency_bars(t: Tendency) -> list[TendencyBar]:
     return [
         TendencyBar(name=n, count=c, height=round(c * 100 / top), is_peak=p)
         for n, c, p in zip(t.names, t.counts, t.peaks, strict=True)
+    ]
+
+
+@dataclass(frozen=True)
+class MonthDayCell:
+    day: int  # 1〜31
+    count: int
+    level: int  # 0〜4
+
+
+def month_day_cells(md: MonthDays) -> list[MonthDayCell]:
+    """よくやる日にちのマス（1日〜31日、決定 060）。"""
+    return [
+        MonthDayCell(day=i + 1, count=c, level=lv) for i, (c, lv) in enumerate(zip(md.counts, md.levels, strict=True))
     ]
