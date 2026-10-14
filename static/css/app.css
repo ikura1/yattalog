@@ -164,6 +164,8 @@ textarea { min-height: 84px; resize: vertical; }
 .cat-emoji::placeholder { opacity: .35; }
 .chips .cat-emo { margin-right: 4px; }
 .catlist .cnt { font-size: 12px; color: var(--muted); white-space: nowrap; padding: 0 4px; }
+/* スマホの幅では、名前の欄を1行ぶん使い、件数とボタンを下の行に回す（同じ行だと、名前が途中で切れる） */
+@media (max-width: 479px) { .catlist li { flex-wrap: wrap; } .catlist form { flex: 1 0 100%; } .catlist .cnt { margin-right: auto; } }
 .menu { list-style: none; margin: 0; padding: 0; }
 .menu button { width: 100%; text-align: left; border: none; background: transparent; padding: 13px 4px; border-top: 1px solid var(--line); }
 .menu li:first-child button { border-top: none; }
