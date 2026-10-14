@@ -625,6 +625,35 @@
     });
   }
 
+  /* ---------- 詳細：よくやる（時期・曜日・時間帯・日にち）の切り替え（決定 060） ----------
+     最後に選んだものを、この端末に覚えておく。サーバーは「時期」を開いた状態で返す */
+  const TEND_KEY = "yl:tend-tab";
+  function applyTend(root, key) {
+    const tabs = $$("[data-tend]", root);
+    if (!tabs.some((t) => t.dataset.tend === key)) key = tabs[0].dataset.tend;
+    tabs.forEach((t) => {
+      const on = t.dataset.tend === key;
+      t.setAttribute("aria-selected", String(on));
+      t.tabIndex = on ? 0 : -1;
+    });
+    $$("[data-tend-panel]", root).forEach((p) => { p.hidden = p.dataset.tendPanel !== key; });
+  }
+  function bindTend(root) {
+    const list = $(".tend-tabs", root);
+    if (!list || list.dataset.bound) return;
+    list.dataset.bound = "1";
+    const pick = (b) => { store.set(TEND_KEY, b.dataset.tend); applyTend(root, b.dataset.tend); b.focus(); };
+    list.addEventListener("click", (e) => { const b = e.target.closest("[data-tend]"); if (b) pick(b); });
+    list.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+      const tabs = $$("[data-tend]", list), i = tabs.indexOf(document.activeElement);
+      if (i < 0) return;
+      e.preventDefault();
+      pick(tabs[(i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length]);
+    });
+    applyTend(root, store.get(TEND_KEY) || "season");
+  }
+
   /* ---------- タイムゾーン（決定 023）とオフライン表示 ---------- */
   function initTimezone() {
     const a = app();
@@ -650,7 +679,7 @@
     const t = e.detail.target;
     if (t.id === "sheet-body") { openSheet(); bindRecordForm(t); bindEmojiField(t); bindShare(t); }
     if (t.id === "grid-wrap") { gridLoadedAt = Date.now(); bindHome(); applyTab(currentTab()); reloadIfNewBuild(); }
-    if (t.id === "detail") bindSeason(t);
+    if (t.id === "detail") { bindSeason(t); bindTend(t); }
   });
   // カテゴリのタブを開いているときは、追加フォームでそのカテゴリを選んでおく
   document.addEventListener("htmx:configRequest", (e) => {
@@ -682,6 +711,7 @@
     bindHome();
     applyTab(currentTab());
     bindSeason(document);
+    bindTend(document);
     initTimezone();
     initInstall();
     // オフラインのときに案内を出し、静的ファイルをしまっておく（決定 049）。失敗しても、アプリはそのまま動く

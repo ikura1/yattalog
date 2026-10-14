@@ -29,7 +29,8 @@ def test_メニューからふりかえりを開き_マスを押すとその日�
     expect(page.locator("#reviewSum")).to_contain_text("2 回、2 日やった")
     expect(page.locator("#reviewDay")).to_contain_text("シーツ交換")
 
-    page.get_by_label(f"{day.month}月{day.day}日", exact=False).first.click()
+    # 1年分（53週）を並べるので、去年の同じ日付もある。曜日と回数まで含めて、その日のマスを選ぶ
+    page.get_by_label(f"{day.month}月{day.day}日（{'月火水木金土日'[day.weekday()]}）：1回", exact=True).click()
     expect(page.locator("#reviewDay")).to_contain_text("水やり")
     expect(page.locator("#reviewDay")).not_to_contain_text("シーツ交換")
 
