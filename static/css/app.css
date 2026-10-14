@@ -268,6 +268,8 @@ textarea { min-height: 84px; resize: vertical; }
 .logs .c { white-space: pre-wrap; word-break: break-word; font-size: 14px; }
 .logs .c.empty { color: var(--muted); }
 .logs .ops { display: flex; gap: 4px; }
+/* 狭い画面（日付に年が付く・時刻ありの記録）では、ボタンを下の行に回す（320px で「削除」がはみ出していた） */
+@media (max-width: 359px) { .logs li { flex-wrap: wrap; } .logs .ops { width: 100%; justify-content: flex-end; } }
 .season-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .season-head h3 { margin: 0; }
 .seg2 { display: flex; border: 1px solid var(--line); border-radius: 999px; padding: 2px; gap: 2px; }
@@ -356,10 +358,16 @@ textarea { min-height: 84px; resize: vertical; }
 .review-day li small { color: var(--muted); font-size: 12.5px; min-width: 0; overflow-wrap: anywhere; }
 .review-day .t { margin-left: auto; color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
 /* そのイベントのくせ：よくやる曜日・時間帯・日にち（決定 060） */
-.tendency { display: flex; flex-direction: column; gap: 10px; }
-.tendency h3 { margin: 0; }
-.tendency .wd-head { font-family: var(--f-display); font-weight: 800; font-size: 15px; margin: 0; }
-.tendency .note { margin: 0; font-size: 11.5px; }
+.tend-card .season-head { flex-wrap: wrap; row-gap: 8px; margin-bottom: 10px; }
+.seg2 button { border: none; background: transparent; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; color: var(--muted); }
+.seg2 button[aria-selected="true"] { background: var(--fg); color: var(--bg); }
+.tend-panel { display: flex; flex-direction: column; gap: 10px; }
+.tend-panel[hidden] { display: none; }
+.season-ctl { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 40px; }
+.season-ctl .cal-head { margin: 0; gap: 6px; justify-content: flex-start; }
+.season-range { margin-left: auto; }
+.tend-panel .wd-head { font-family: var(--f-display); font-weight: 800; font-size: 15px; margin: 0; }
+.tend-panel .note { margin: 0; font-size: 11.5px; }
 .wbars { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
 .wbars.n4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 .wbars.n4 .wcol { max-width: 40px; }

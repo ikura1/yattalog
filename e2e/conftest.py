@@ -16,6 +16,16 @@ from apps.events.services import events
 os.environ.setdefault("DJANGO_ALLOW_ASYNC_UNSAFE", "true")
 
 
+@pytest.fixture(scope="session")
+def browser_context_args(browser_context_args):
+    """ブラウザのタイムゾーンを、利用者の既定（Asia/Tokyo）にそろえる。
+
+    ホームを開くと、アプリは端末のタイムゾーンに合わせて利用者の設定を変える（決定 023）。ブラウザが UTC のままだと、
+    日本時間の 0〜9時に流したとき、テストが作った「今日」とアプリの「今日」がずれて落ちる。
+    """
+    return {**browser_context_args, "timezone_id": "Asia/Tokyo"}
+
+
 @pytest.fixture
 def logged_in_page(page, live_server, transactional_db, user):
     """Google ログインを通らず、セッションを直接作ってブラウザに渡す。"""

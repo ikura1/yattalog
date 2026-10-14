@@ -215,7 +215,19 @@ def test_詳細に_よくやる曜日と時間帯と日にちを出す(client_in
 
     body = client_in.get(f"/events/{event.id}/").content.decode()
 
-    assert "よくやる曜日" in body and "よくやるのは 土曜" in body and 'aria-label="土曜：2回"' in body
-    assert "よくやる時間帯" in body and "よくやるのは 朝" in body and 'aria-label="朝：2回"' in body
-    assert "よくやる日にち" in body and 'aria-label="3日：1回"' in body and 'aria-label="26日：1回"' in body
+    assert ">曜日</button>" in body and "よくやるのは 土曜" in body and 'aria-label="土曜：2回"' in body
+    assert ">時間帯</button>" in body and "よくやるのは 朝" in body and 'aria-label="朝：2回"' in body
+    assert ">日にち</button>" in body and 'aria-label="3日：1回"' in body and 'aria-label="26日：1回"' in body
     assert "style=" not in body
+
+
+def test_よくやるは_1枚のカードにまとめ_時期だけを開いておく(client_in, user, event):
+    log_svc.record(user, event.id, uuid.uuid4())
+
+    body = client_in.get(f"/events/{event.id}/").content.decode()
+
+    assert body.count('class="card tend-card"') == 1 and 'class="card tendency"' not in body
+    assert 'role="tablist"' in body
+    assert 'data-tend-panel="season">' in body
+    for key in ("wd", "tod", "md"):
+        assert f'data-tend-panel="{key}" hidden>' in body
