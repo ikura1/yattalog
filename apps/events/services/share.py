@@ -13,36 +13,43 @@ from apps.events.services.dates import zone
 from apps.events.services.streaks import STREAK_MIN, UNIT_WORD, compute_streak
 
 HASHTAG = "#Yattalog"
+MILESTONES = (10, 30, 50, 100)  # これと、100回を超えたら100回ごとに、お祝いの印を付ける
 
 
 @dataclass(frozen=True)
 class ShareInfo:
     log: Log
     event: Event
-    headline: str  # 「🔥 5週連続」「40日ぶり」「はじめての記録」など
+    headline: str  # 「🔥 5週連続」「24回目」「はじめての記録」など
+    subline: str  # 見出しの下の添え書き。連続記録のときだけ「通算 24回目」
     when: str  # 画像の下に出す日時
     memo: str  # 載せるかどうかは、画面で本人が選ぶ（初期状態では載せない）
     text: str  # 投稿文
 
 
-def _headline(log: Log) -> str:
-    """見出し。その記録の時点で決める（あとの記録には左右されない）。連続記録 → その日の何回目か → 何日ぶりか。"""
+def is_milestone(n: int) -> bool:
+    return n in MILESTONES or (n > MILESTONES[-1] and n % 100 == 0)
+
+
+def _headline(log: Log) -> tuple[str, str]:
+    """見出しと添え書き。その記録の時点で決める（あとの記録には左右されない）。
+
+    どんなときでも前向きに読めるものだけを出す（決定 053 の追記）。
+    「40日ぶり」は、サボっていたように読めるので使わない。
+    連続記録 → はじめての記録 → 通算の何回目か。
+    """
     event = log.event
     until = Log.objects.filter(event=event, local_date__lte=log.local_date)
+    earlier = Q(local_date__lt=log.local_date) | Q(local_date=log.local_date, created_at__lt=log.created_at)
+    earlier |= Q(local_date=log.local_date, created_at=log.created_at, id__lt=log.id)
+    nth = until.filter(earlier).count() + 1
     dates = until.order_by("-local_date").values_list("local_date", flat=True).distinct()
     count, _ = compute_streak(dates.iterator(), event.streak_unit)
     if count >= STREAK_MIN:
-        return f"🔥 {count}{UNIT_WORD[event.streak_unit]}連続"
-    same_day = until.filter(local_date=log.local_date)
-    earlier = Q(created_at__lt=log.created_at) | Q(created_at=log.created_at, id__lt=log.id)
-    nth = same_day.filter(earlier).count() + 1
-    if nth >= 2:
-        return f"この日{nth}回目"
-    before = until.filter(local_date__lt=log.local_date).order_by("-local_date")
-    previous = before.values_list("local_date", flat=True).first()
-    if previous is None:
-        return "はじめての記録"
-    return f"{(log.local_date - previous).days}日ぶり"
+        return f"🔥 {count}{UNIT_WORD[event.streak_unit]}連続", f"通算 {nth}回目"
+    if nth == 1:
+        return "はじめての記録", ""
+    return f"{'🎉 ' if is_milestone(nth) else ''}{nth}回目", ""
 
 
 def _when(log: Log) -> str:
@@ -58,6 +65,9 @@ def share_info(user, log_id, site_url: str) -> ShareInfo:
     """シェアの材料。ほかの人の記録は Log.DoesNotExist。"""
     log = log_for(user, log_id)
     event = log.event
-    headline = _headline(log)
-    text = f"{event.emoji} {event.name} やった！ {headline} {HASHTAG} {site_url}"
-    return ShareInfo(log=log, event=event, headline=headline, when=_when(log), memo=log.memo, text=text)
+    headline, subline = _headline(log)
+    detail = f"{headline}（{subline}）" if subline else headline
+    text = f"{event.emoji} {event.name} やった！ {detail} {HASHTAG} {site_url}"
+    return ShareInfo(
+        log=log, event=event, headline=headline, subline=subline, when=_when(log), memo=log.memo, text=text
+    )
