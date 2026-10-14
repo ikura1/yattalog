@@ -6,8 +6,9 @@ from datetime import date
 from django.db.models import Count, Max, Min
 from django.db.models.functions import ExtractMonth, ExtractYear
 
-from apps.events.models import Event, Log
-from apps.events.services.dates import friendly_interval
+from apps.events.models import Event, Log, StreakUnit
+from apps.events.services.dates import friendly_interval, period_index
+from apps.events.services.streaks import STREAK_MIN, UNIT_WORD
 
 SEASON_RATIO = 0.7  # 最大回数の7割以上の月を「よくやる時期」とする
 
@@ -17,6 +18,15 @@ class EventStats:
     total: int
     this_year: int
     pace: str | None  # 平均間隔（記録がある日が2日以上のときだけ）
+    best_streak: int = 0  # これまでで一番長く続いた連続回数（決定 059）。連続の単位が「なし」なら 0
+    unit: str = StreakUnit.NONE
+
+    @property
+    def best_streak_text(self) -> str:
+        """「3週連続」。2回に届かない、または単位が「なし」なら空（出さない）。"""
+        if self.best_streak < STREAK_MIN:
+            return ""
+        return f"{self.best_streak}{UNIT_WORD[self.unit]}連続"
 
 
 def event_stats(event: Event, today: date) -> EventStats:
@@ -29,7 +39,26 @@ def event_stats(event: Event, today: date) -> EventStats:
         total=event.log_count,
         this_year=logs.filter(local_date__year=today.year).count(),
         pace=pace,
+        best_streak=best_streak(event),
+        unit=event.streak_unit,
     )
+
+
+def best_streak(event: Event) -> int:
+    """これまでで一番長く続いた連続回数。途切れても減らない（記録を消したときだけ変わる）。"""
+    if event.streak_unit == StreakUnit.NONE:
+        return 0
+    dates = Log.objects.filter(event=event).order_by("local_date").values_list("local_date", flat=True).distinct()
+    best = run = 0
+    prev = None
+    for d in dates.iterator():
+        p = period_index(d, event.streak_unit)
+        if p == prev:
+            continue
+        run = run + 1 if prev is not None and p == prev + 1 else 1
+        best = max(best, run)
+        prev = p
+    return best
 
 
 @dataclass(frozen=True)

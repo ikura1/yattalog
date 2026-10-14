@@ -215,3 +215,52 @@ def test_カテゴリの一覧は_自分のものを_タブの並び順で(user,
     ev_svc.create_category(user, "趣味")
 
     assert [c.name for c in ev_svc.list_categories(user)] == ["家事", "趣味"]
+
+
+# --- 最高連続（決定 059） ---
+
+
+def logs_on(user, event, *days):
+    for d in days:
+        log_svc.record(user, event.id, uuid.uuid7(), When(date=d))
+    event.refresh_from_db()
+    return event
+
+
+def test_最高連続は_これまでで一番長く続いた回数_途切れていても残る(user):
+    # 毎週：9月の3週連続のあと途切れ、10月に2週連続（いまの連続より、前の記録のほうが長い）
+    e = ev_svc.create_event(user, name="ジョギング", emoji="🏃", color="leaf", streak_unit="week")
+    logs_on(
+        user,
+        e,
+        date(2026, 8, 31),
+        date(2026, 9, 7),
+        date(2026, 9, 9),
+        date(2026, 9, 14),
+        date(2026, 10, 3),
+        date(2026, 10, 5),
+    )
+    s = stats.event_stats(e, TODAY)
+    assert (s.best_streak, s.best_streak_text) == (3, "3週連続")
+
+
+def test_最高連続は_連続の単位がないイベントでは出さない(user):
+    e = ev_svc.create_event(user, name="歯医者", emoji="🦷", color="pink", streak_unit="none")
+    logs_on(user, e, date(2026, 10, 9), date(2026, 10, 10))
+    s = stats.event_stats(e, TODAY)
+    assert (s.best_streak, s.best_streak_text) == (0, "")
+
+
+def test_最高連続は_2回に届かなければ出さない(user):
+    e = ev_svc.create_event(user, name="ヨガ", emoji="🧘", color="teal", streak_unit="day")
+    logs_on(user, e, date(2026, 10, 1), date(2026, 10, 5))
+    assert stats.event_stats(e, TODAY).best_streak_text == ""
+
+
+def test_最高連続は_毎日と毎月でも数える(user):
+    daily = ev_svc.create_event(user, name="水やり", emoji="🪴", color="leaf", streak_unit="day")
+    monthly = ev_svc.create_event(user, name="散髪", emoji="✂️", color="pink", streak_unit="month")
+    logs_on(user, daily, date(2026, 10, 1), date(2026, 10, 2), date(2026, 10, 3), date(2026, 10, 9))
+    logs_on(user, monthly, date(2025, 12, 20), date(2026, 1, 5), date(2026, 3, 1))
+    assert stats.event_stats(daily, TODAY).best_streak_text == "3日連続"
+    assert stats.event_stats(monthly, TODAY).best_streak_text == "2か月連続"
