@@ -16,6 +16,7 @@ urlpatterns = [
     path("privacy/", views.privacy, name="privacy"),
     path("grid/", views.grid, name="grid"),
     path("menu/", views.menu, name="menu"),
+    path("review/", views.review, name="review"),
     path("timezone/", views.set_timezone, name="timezone"),
     path("categories/", views.categories, name="categories"),
     path("starters/", views.starters, name="starters"),

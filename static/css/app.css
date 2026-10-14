@@ -6,6 +6,10 @@
   --t-tomato: #FFD9D2; --t-tangerine: #FFE3C2; --t-sun: #FFF1B8; --t-leaf: #D7F0C8;
   --t-teal: #C9EEE6; --t-sky: #D3E6FF; --t-grape: #E4DAFF; --t-pink: #FFDCEB;
   --tile-fg: #1B2333; --dot: #1F6F5C;
+  /* ふりかえりの草（決定 058）。g0 は記録なし、g1〜g4 は「すべて」の濃さ。s-* は1つのイベントに絞ったときの色（タイルより濃い） */
+  --g0: #E3E8F0; --g1: #C4E6D9; --g2: #86CDB3; --g3: #3E9E7E; --g4: #1F6F5C;
+  --s-tomato: #E4664F; --s-tangerine: #E88A3A; --s-sun: #D9A821; --s-leaf: #5FB043;
+  --s-teal: #35A994; --s-sky: #4F8FDB; --s-grape: #8E6FD8; --s-pink: #DC74A6;
   --f-display: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
   --f-body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
   --r: 18px;
@@ -18,7 +22,10 @@
     --scrim: rgba(0, 0, 0, .6); --shadow: 0 1px 2px rgba(0, 0, 0, .4);
     --t-tomato: #4A2A27; --t-tangerine: #4A3522; --t-sun: #463E1E; --t-leaf: #2A3F25;
     --t-teal: #1F3F3A; --t-sky: #22344D; --t-grape: #35294F; --t-pink: #4A2638;
-    --tile-fg: #EEF1F6; --dot: #5CC9A7; color-scheme: dark;
+    --tile-fg: #EEF1F6; --dot: #5CC9A7;
+    --g0: #242C38; --g1: #1E4239; --g2: #2B6E5A; --g3: #3FA283; --g4: #6BD8B5;
+    --s-tomato: #F07A64; --s-tangerine: #F09A50; --s-sun: #E6BD3C; --s-leaf: #74C25A;
+    --s-teal: #4CC1AB; --s-sky: #6AA5EC; --s-grape: #A68BEA; --s-pink: #E88CB8; color-scheme: dark;
   }
 }
 * { box-sizing: border-box; }
@@ -316,3 +323,32 @@ textarea { min-height: 84px; resize: vertical; }
 .messages { list-style: none; padding: 10px 14px; margin: 0; background: var(--surface); border-radius: 12px; color: var(--danger); font-weight: 700; }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* ---- ふりかえり（1年の草、決定 058） ---- */
+.page-title { font-family: var(--f-display); font-weight: 800; font-size: 22px; margin: 0; flex: 1; }
+.tabs a { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 14px; font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 6px; white-space: nowrap; text-decoration: none; }
+.tabs a[aria-current="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.review { background: var(--surface); border-radius: var(--r); padding: 16px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow); }
+.review-sum { font-family: var(--f-display); font-weight: 800; font-size: 17px; margin: 0; }
+.review-sum b { color: var(--accent); font-size: 22px; }
+.months { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 10px; }
+@media (min-width: 560px) { .months { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.mon h2 { font-family: var(--f-display); font-weight: 800; font-size: 12.5px; margin: 0 0 4px; display: flex; justify-content: space-between; gap: 4px; }
+.mon h2 span { color: var(--muted); font-weight: 500; font-family: var(--f-body); font-size: 11px; font-variant-numeric: tabular-nums; }
+.mgrid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+.mgrid > * { aspect-ratio: 1; }
+.hm { display: block; border-radius: 3px; background: var(--g0); }
+.hm.l1 { background: var(--ev, var(--g1)); } .hm.l2 { background: var(--g2); } .hm.l3 { background: var(--g3); } .hm.l4 { background: var(--g4); }
+.hm.future { opacity: .35; }
+.hm.sel { outline: 2px solid var(--fg); outline-offset: 1px; }
+.review.c-tomato { --ev: var(--s-tomato); } .review.c-tangerine { --ev: var(--s-tangerine); } .review.c-sun { --ev: var(--s-sun); } .review.c-leaf { --ev: var(--s-leaf); }
+.review.c-teal { --ev: var(--s-teal); } .review.c-sky { --ev: var(--s-sky); } .review.c-grape { --ev: var(--s-grape); } .review.c-pink { --ev: var(--s-pink); }
+.review .legend { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin: 0; font-size: 11.5px; color: var(--muted); }
+.review .legend .hm { width: 12px; height: 12px; }
+.review-day { border-top: 1px solid var(--line); padding-top: 12px; }
+.review-day h2 { font-family: var(--f-display); font-weight: 800; font-size: 15px; margin: 0 0 6px; }
+.review-day ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.review-day li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+.review-day li a { display: inline-flex; gap: 6px; font-weight: 700; text-decoration: none; }
+.review-day li small { color: var(--muted); font-size: 12.5px; min-width: 0; overflow-wrap: anywhere; }
+.review-day .t { margin-left: auto; color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }

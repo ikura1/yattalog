@@ -16,6 +16,7 @@ from apps.web.views.events import (
 )
 from apps.web.views.home import grid, home, menu, set_timezone, starters
 from apps.web.views.records import log_delete, log_edit_sheet, record, record_sheet, share_sheet, undo
+from apps.web.views.review import review
 from apps.web.views.site import (
     install_guide,
     login_page,
@@ -51,6 +52,7 @@ __all__ = [
     "privacy",
     "record",
     "record_sheet",
+    "review",
     "service_worker",
     "set_timezone",
     "share_sheet",

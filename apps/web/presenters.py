@@ -6,6 +6,7 @@ from datetime import date, datetime
 
 from apps.events.models import Event
 from apps.events.services.dates import elapsed, now_utc
+from apps.events.services.review import YearReview
 from apps.events.services.streaks import StreakState, streak_state
 
 ROUNDED_FROM_DAYS = 60  # これ以上は「Nか月前」「N年前」に丸める（SPEC 3.3）
@@ -156,3 +157,48 @@ def calendar_weeks(year: int, month: int, marked: set[date], today: date) -> lis
 def shift_month(year: int, month: int, delta: int) -> tuple[int, int]:
     m = year * 12 + (month - 1) + delta
     return (m // 12, m % 12 + 1)
+
+
+# --- ふりかえり：1年の草（月ごとの小さなカレンダー、決定 058） ------------------------
+
+MAX_LEVEL = 4  # 濃さの段階（0 は記録なし）
+
+
+@dataclass(frozen=True)
+class HeatCell:
+    date: date
+    level: int  # 0〜4
+    logs: int
+    is_future: bool
+
+
+@dataclass(frozen=True)
+class HeatMonth:
+    label: str  # 「2026年1月」「2月」
+    total: int  # その月の記録の回数
+    weeks: list[list[HeatCell | None]]  # 日曜始まり。月の外のマスは None
+
+
+def year_months(review: YearReview, today: date) -> list[HeatMonth]:
+    """12か月分を古い順に。濃さは、すべてならやったイベントの種類の数、1つに絞っていれば記録があるかどうか。"""
+    months = []
+    y, m = review.start.year, review.start.month
+    for i in range(12):
+        cal = calendar.Calendar(firstweekday=6).monthdatescalendar(y, m)
+        weeks = [[_heat_cell(d, review, today) if d.month == m else None for d in week] for week in cal]
+        total = sum(c.logs for week in weeks for c in week if c)
+        label = f"{y}年{m}月" if i == 0 or m == 1 else f"{m}月"
+        months.append(HeatMonth(label=label, total=total, weeks=weeks))
+        y, m = shift_month(y, m, 1)
+    return months
+
+
+def _heat_cell(d: date, review: YearReview, today: date) -> HeatCell:
+    count = review.days.get(d)
+    if count is None:
+        level = 0
+    elif review.event:
+        level = 1
+    else:
+        level = min(count.kinds, MAX_LEVEL)
+    return HeatCell(date=d, level=level, logs=count.logs if count else 0, is_future=d > today)
