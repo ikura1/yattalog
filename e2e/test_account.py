@@ -33,5 +33,5 @@ def test_メニューから退会すると_ログイン画面に戻り_データ
     page.get_by_role("button", name="退会してデータを削除する").click()
 
     expect(page.locator(".messages")).to_contain_text("退会しました")
-    expect(page.get_by_role("button", name="Google でログイン")).to_be_visible()
+    expect(page.get_by_role("button", name="Google でログイン").first).to_be_visible()
     assert not User.objects.exists() and not Event.objects.exists()
