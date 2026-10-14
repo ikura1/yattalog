@@ -11,10 +11,8 @@ from django.db.models import Count, F
 
 from apps.events.models import Event, Log
 from apps.events.services.access import event_for
-from apps.events.services.stats import SEASON_RATIO
 
 WEEKS = 53  # 今週を含めて53週（GitHub の草と同じ）
-WEEKDAY_NAMES = "日月火水木金土"  # 日曜始まり（カレンダーと同じ）
 
 
 @dataclass(frozen=True)
@@ -37,30 +35,6 @@ class YearReview:
     @property
     def active_days(self) -> int:
         return len(self.days)
-
-
-@dataclass(frozen=True)
-class WeekdaySummary:
-    counts: list[int]  # 日曜から土曜までの、記録の回数
-    headline: str
-    peaks: list[bool]  # 見出しに挙げた曜日
-
-
-def weekday_summary(review: YearReview) -> WeekdaySummary:
-    """よくやる曜日。1年分の記録を曜日ごとに数える。決め方は「よくやる時期」と同じ（最多の7割以上）。"""
-    counts = [0] * 7
-    for day, count in review.days.items():
-        counts[(day.weekday() + 1) % 7] += count.logs
-    total, top = sum(counts), max(counts)
-    peaks = [False] * 7
-    if total < 3:
-        headline = "記録が増えると、よくやる曜日がわかります"
-    elif all(c >= top * SEASON_RATIO for c in counts):
-        headline = "どの曜日も同じくらい"
-    else:
-        peaks = [c >= top * SEASON_RATIO for c in counts]
-        headline = f"よくやるのは {'・'.join(n for n, p in zip(WEEKDAY_NAMES, peaks, strict=True) if p)}曜"
-    return WeekdaySummary(counts=counts, headline=headline, peaks=peaks)
 
 
 def first_day(today: date) -> date:

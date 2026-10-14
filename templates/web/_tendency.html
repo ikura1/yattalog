@@ -1,0 +1,9 @@
+{# よくやる曜日・時間帯（決定 060）。棒の高さは SVG の属性で渡す（CSP で style 属性が使えない） #}
+<section class="card tendency" aria-labelledby="{{ key }}Title">
+  <h3 id="{{ key }}Title">{{ title }}</h3>
+  <p class="wd-head">{{ t.headline }}</p>
+  <ol class="wbars n{{ bars|length }}">{% for b in bars %}
+    <li class="wbar{% if b.is_peak %} peak{% endif %}" aria-label="{{ b.name }}{{ suffix }}：{{ b.count }}回"><span class="wn" aria-hidden="true">{{ b.count }}</span><svg class="wcol" viewBox="0 0 10 100" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="{{ b.y }}" width="10" height="{{ b.height }}"/></svg><span class="wd" aria-hidden="true">{{ b.name }}</span></li>{% endfor %}
+  </ol>
+  {% if note %}<p class="note">{{ note }}</p>{% endif %}
+</section>
