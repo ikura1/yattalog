@@ -35,7 +35,8 @@ a { color: inherit; }
 .app { max-width: 720px; margin: 0 auto; padding-inline: 16px; padding-block: 8px 120px; }
 .bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; display: flex; align-items: center; gap: 8px; padding-block: 10px; background: var(--bg); }
 .spacer { flex: 1; }
-.logo { font-family: var(--f-display); font-weight: 800; font-size: 24px; margin: 0; flex: 1; }
+.logo { font-family: var(--f-display); font-weight: 800; font-size: 24px; margin: 0; flex: 1; display: flex; align-items: center; }
+.logo-mark { width: 28px; height: 28px; margin-right: 8px; flex: none; }
 .logo b { color: var(--accent); }
 .logo-lg { font-size: 40px; flex: none; }
 .pill { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 14px; font-weight: 700; font-size: 14px; }

@@ -126,3 +126,20 @@ def test_プレビューの画像と_URL_は_http_から始まる完全な形で
     assert '<meta property="og:image" content="http://testserver/static/icons/og.png">' in body
     assert '<meta property="og:url" content="http://testserver/">' in body
     assert '<meta property="og:image:width" content="1200">' in body
+
+
+# --- ログインした後の画面の、タイトルの横のアイコン ---
+
+
+def test_ホームのタイトルの横に_アイコンが出る(client_in):
+    body = client_in.get("/").content.decode()
+    assert '<img class="logo-mark" src="/static/icons/icon.svg" alt="" width="28" height="28">' in body
+    assert "Yatta<b>log</b>" in body
+
+
+def test_アイコンの絵は_4つのファイルで同じものを使う():
+    """スタンプ（クリーム色の四角とチェック）と、右上の3本の線。どれか1つだけ古い絵のまま、を防ぐ。"""
+    for name in ("icon.svg", "icon-square.svg", "icon-maskable.svg", "favicon.svg"):
+        svg = (ICONS / name).read_text()
+        assert svg.count("#FFF6D6") == 2 and 'transform="rotate(-8 50 57.5)"' in svg, name
+        assert svg.count("<path") == (6 if name in ("icon.svg", "favicon.svg") else 5), name
