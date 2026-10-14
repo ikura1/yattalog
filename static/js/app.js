@@ -462,7 +462,8 @@
     x.fillStyle = "#FFFFFF"; roundedRect(x, cx, cy, cw, ch, 56);
     x.textAlign = "center"; x.textBaseline = "alphabetic";
     const memo = withMemo && d.memo ? d.memo.replace(/\s+/g, " ") : "";
-    let y = memo ? 380 : 450;
+    const note = d.sub || ""; // 連続記録のときの「通算 24回目」。古い HTML には無いので、空として扱う
+    let y = (memo ? 380 : 450) - (note ? 35 : 0);
     x.fillStyle = ink; x.font = `220px ${SHARE_DISPLAY}`; x.fillText(d.emoji, W / 2, y);
     x.font = `800 76px ${SHARE_DISPLAY}`;
     y += 130;
@@ -472,6 +473,7 @@
     const pill = x.measureText(d.headline).width + 90;
     x.fillStyle = tint; roundedRect(x, W / 2 - pill / 2, y + 10, pill, 104, 52);
     x.fillStyle = ink; x.fillText(d.headline, W / 2, y + 85); y += 150;
+    if (note) { x.fillStyle = sub; x.font = `800 46px ${SHARE_DISPLAY}`; x.fillText(note, W / 2, y + 30); y += 70; }
     if (memo) {
       x.fillStyle = sub; x.font = `500 44px ${SHARE_BODY}`;
       wrapText(x, memo, cw - 200).slice(0, 2).forEach((line) => { x.fillText(line, W / 2, y + 40); y += 62; });
