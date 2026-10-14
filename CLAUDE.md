@@ -50,6 +50,8 @@ uv run python manage.py makemigrations --check --dry-run
 - PR を作って CI が通ってから main へ。main に入ると Cloud Run へ自動デプロイ（2〜3分）
   - main は保護されている（PR 必須、CI の `test`・`e2e`・`docker` が必須、直接の push は不可）
   - **マージは Yuki さんが行う**（Claude からの `gh pr merge` は権限で止められる）。マージ後は、Deploy の成功と新しいリビジョンを確認して報告する
+  - **PR は積まない。向き先は必ず main。** ほかの PR のブランチに向けると、マージしても main に入らない（画面には「Merged」と出るので気づきにくい。#99・#100 で起きた）。同じ資料を触る変更が続くときは、1つの PR にまとめるか、前の PR がマージされてから main から切る
+  - マージされたら、**本番の画面やスクリプトに中身が入ったこと**まで確かめる（「Merged」の表示だけで判断しない）
 - 見た目や操作に関わる変更は、ブラウザで実際に表示して確かめる（E2E のフィクスチャでスクリーンショットを撮るのが手早い）。必要なら触れる PoC を出す
 - Dependabot が週1回、更新の PR を作る。Actions はコミット ID で固定しているので、更新はその PR で取り込む
 
@@ -68,10 +70,10 @@ uv run python manage.py makemigrations --check --dry-run
 - レート制限の回数はキャッシュに残る。テストでは `conftest.py` の `empty_cache` が毎回消している
 - 秘密の値を端末で貼り付けるとき（`read -rs`）は画面に出ないので、二重に貼りやすい。登録したら長さと形だけを確かめる（値は表示しない）
 
-## 現状（2026-10-13）
+## 現状（2026-10-14）
 - **本番で動いている**：https://yattalog-332057063162.asia-southeast1.run.app （Cloud Run シンガポール + Neon、Google Cloud のプロジェクトは `yattalog-511302`）
   - ログインできるのは、OAuth のテストユーザー（いまは Yuki さんだけ）
-  - β に入れる機能は実装済み。残りは `docs/handoff.md` の「本番に切り替える前のチェック」（ほとんどが Yuki さんの手作業）
+  - β に入れる機能は実装済み（シェアも β に入れた）。残りは `docs/handoff.md` の「本番に切り替える前のチェック」（ほとんどが Yuki さんの手作業）
 - **ほかのセッションも、このリポジトリで PR を出している。** 作業の前に `gh pr list` と `git pull`。決定記録の番号は、取る前に `docs/decisions/` と開いている PR を確かめる
 - 経緯・やり残し・次の候補は `docs/handoff.md`。リリース計画は `SPEC.md` 7章（α → β → v1 → v1.x）
 - PoC（`poc/index.html`）は仕様確認用。本体とは別物
