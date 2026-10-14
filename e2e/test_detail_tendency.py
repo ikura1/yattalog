@@ -47,3 +47,19 @@ def test_幅の狭い画面でも_詳細は横にはみ出さない(logged_in_pa
     page.goto(page.base_url + f"/events/{event.id}/")
     expect(page.get_by_role("button", name="この記録を削除")).to_be_visible()
     assert page.evaluate("document.documentElement.scrollWidth - innerWidth") == 0
+
+
+def test_記録の履歴は_もっと見るで続きが出る(logged_in_page, user):
+    event = ev_svc.create_event(user, name="水やり", emoji="🪴", color="leaf")
+    today = today_in(user.timezone)
+    for i in range(1, 26):
+        log_svc.record(user, event.id, uuid.uuid4(), When(date=today - timedelta(i)))
+    page = logged_in_page
+    page.goto(page.base_url + f"/events/{event.id}/")
+    delete = page.get_by_role("button", name="この記録を削除")
+    expect(delete).to_have_count(20)
+
+    page.get_by_role("link", name="もっと見る（あと 5件）").click()
+
+    expect(delete).to_have_count(25)
+    expect(page.get_by_role("link", name="もっと見る", exact=False)).to_have_count(0)

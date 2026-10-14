@@ -113,6 +113,7 @@
     </li>
     {% endfor %}
   </ul>
+  {% if more_url %}<div class="row gap-t"><a class="btn" href="{{ more_url }}" hx-get="{{ more_url }}" hx-target="#detail" hx-push-url="true">もっと見る（あと {{ more_left }}件）</a></div>{% endif %}
   {% else %}<p class="note">{% if sel_date %}この日の記録はありません{% else %}記録はまだありません{% endif %}</p>{% endif %}
   {% if sel_date %}<div class="row gap-t"><button class="btn primary" type="button" hx-get="{% url 'web:record_sheet' event.id %}?date={{ sel_date|iso }}" hx-target="#sheet-body">{{ sel_date|rel_day:today }}に記録する</button></div>
   {% else %}<p class="note gap-t">カレンダーの日付をタップすると、その日の分を記録できます</p>{% endif %}

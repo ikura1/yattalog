@@ -53,6 +53,7 @@ EMOJIS = [
 
 
 UNITS = [(u.value, u.label) for u in StreakUnit]
+HISTORY_PAGE = 20  # 記録の履歴は、はじめこの件数だけ出し、「もっと見る」で増やす（詳細が縦に長くならないように）
 
 
 def _event_form_ctx(request, event=None, form=None, **extra) -> dict:
@@ -218,6 +219,10 @@ def event_detail(request: HttpRequest, event_id) -> HttpResponse:
     logs = event.logs.all()
     if sel_date:
         logs = logs.filter(local_date=sel_date)
+    shown = _int_param(request, "n", HISTORY_PAGE, HISTORY_PAGE, 2000)
+    left = logs.count() - shown
+    more = request.GET.copy()
+    more["n"] = shown + HISTORY_PAGE
     ctx = {
         "event": event,
         "t": tile(event, today),
@@ -233,7 +238,9 @@ def event_detail(request: HttpRequest, event_id) -> HttpResponse:
         "next_m": shift_month(y, m, 1),
         "sel_date": sel_date,
         "today": today,
-        "logs": logs[:200],
+        "logs": logs[:shown],
+        "more_url": f"?{more.urlencode()}" if left > 0 else "",
+        "more_left": left,
         "latest_log": event.logs.first(),  # 「シェア」の対象（最新の記録）
         # そのイベントのくせ（決定 060）
         "weekdays": (weekdays := stats.weekday_tendency(event)),

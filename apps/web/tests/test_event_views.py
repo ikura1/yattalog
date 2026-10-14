@@ -1,7 +1,7 @@
 """イベントとカテゴリの画面（追加・編集、アイコン、絵文字、タブ、詳細）。"""
 
 import uuid
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 
@@ -231,3 +231,21 @@ def test_よくやるは_1枚のカードにまとめ_時期だけを開いて�
     assert 'data-tend-panel="season">' in body
     for key in ("wd", "tod", "md"):
         assert f'data-tend-panel="{key}" hidden>' in body
+
+
+def test_記録の履歴は_はじめ20件で_もっと見るで続きを出す(client_in, user, event):
+    for i in range(25):
+        log_svc.record(user, event.id, uuid.uuid4(), When(date=date(2026, 9, 1) + timedelta(i)))
+
+    first = client_in.get(f"/events/{event.id}/?y=2026&m=9").content.decode()
+    more = client_in.get(f"/events/{event.id}/?y=2026&m=9&n=40").content.decode()
+
+    assert first.count('aria-label="この記録を削除"') == 20
+    assert "もっと見る（あと 5件）" in first and 'hx-get="?y=2026&amp;m=9&amp;n=40"' in first
+    assert more.count('aria-label="この記録を削除"') == 25 and "もっと見る" not in more
+
+
+def test_履歴の件数の指定がおかしくても_表示できる(client_in, user, event):
+    log_svc.record(user, event.id, uuid.uuid4())
+    for n in ("abc", "-5", "999999"):
+        assert client_in.get(f"/events/{event.id}/?n={n}").status_code == 200
