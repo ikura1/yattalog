@@ -18,6 +18,7 @@ class EventStats:
     total: int
     this_year: int
     pace: str | None  # 平均間隔（記録がある日が2日以上のときだけ）
+    first: date | None = None  # はじめて記録した日（決定 060）
     best_streak: int = 0  # これまでで一番長く続いた連続回数（決定 059）。連続の単位が「なし」なら 0
     unit: str = StreakUnit.NONE
 
@@ -39,9 +40,24 @@ def event_stats(event: Event, today: date) -> EventStats:
         total=event.log_count,
         this_year=logs.filter(local_date__year=today.year).count(),
         pace=pace,
+        first=agg["first"],
         best_streak=best_streak(event),
         unit=event.streak_unit,
     )
+
+
+def since_text(first: date, today: date) -> str:
+    """はじめての記録が、どれくらい前か。「9日前」「10か月前」「1年2か月前」（決定 060）。"""
+    days = (today - first).days
+    if days == 0:
+        return "今日"
+    months = (today.year - first.year) * 12 + today.month - first.month - (today.day < first.day)
+    if months < 1:
+        return f"{days}日前"
+    if months < 12:
+        return f"{months}か月前"
+    years, rest = divmod(months, 12)
+    return f"{years}年{rest}か月前" if rest else f"{years}年前"
 
 
 def best_streak(event: Event) -> int:

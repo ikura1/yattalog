@@ -195,3 +195,12 @@ def test_詳細の統計に_最高連続を出す_単位がなしのイベント
     body = client_in.get(f"/events/{event.id}/").content.decode()
     assert "最高連続" in body and "2週連続" in body
     assert "最高連続" not in client_in.get(f"/events/{dentist.id}/").content.decode()
+
+
+def test_詳細に_はじめて記録した日と_どれくらい前かを出す(client_in, user, event):
+    log_svc.record(user, event.id, uuid.uuid4(), When(date=date(2025, 8, 3)))
+    log_svc.record(user, event.id, uuid.uuid4())
+
+    body = client_in.get(f"/events/{event.id}/").content.decode()
+
+    assert "はじめての記録 2025年8月3日（1年2か月前）" in body

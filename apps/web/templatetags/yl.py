@@ -4,6 +4,7 @@ from django import template
 
 from apps.events.models import Log
 from apps.events.services.dates import zone
+from apps.events.services.stats import since_text
 
 register = template.Library()
 
@@ -49,6 +50,12 @@ def log_time(log: Log) -> str:
         return ""
     t = log.occurred_at.astimezone(zone(log.timezone))
     return f"{t.hour}:{t.minute:02d}"
+
+
+@register.filter
+def since(first: date, today: date) -> str:
+    """「1年2か月前」（決定 060）。"""
+    return since_text(first, today)
 
 
 @register.filter

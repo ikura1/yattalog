@@ -6,7 +6,7 @@ from datetime import date, datetime, timedelta
 
 from apps.events.models import Event
 from apps.events.services.dates import elapsed, now_utc
-from apps.events.services.review import WEEKDAY_NAMES, WeekdaySummary, YearReview
+from apps.events.services.review import Tendency, YearReview
 from apps.events.services.streaks import StreakState, streak_state
 
 ROUNDED_FROM_DAYS = 60  # これ以上は「Nか月前」「N年前」に丸める（SPEC 3.3）
@@ -208,10 +208,12 @@ def _heat_cell(d: date, review: YearReview, today: date) -> HeatCell:
 
 
 @dataclass(frozen=True)
-class WeekdayBar:
-    name: str  # 「土」
+class TendencyBar:
+    """よくやる曜日・時間帯の棒。"""
+
+    name: str  # 「土」「朝」
     count: int
-    height: int  # 一番多い曜日を 100 とした高さ
+    height: int  # 一番多いものを 100 とした高さ
     is_peak: bool
 
     @property
@@ -220,9 +222,9 @@ class WeekdayBar:
         return 100 - self.height
 
 
-def weekday_bars(summary: WeekdaySummary) -> list[WeekdayBar]:
-    top = max(summary.counts) or 1
+def tendency_bars(t: Tendency) -> list[TendencyBar]:
+    top = max(t.counts) or 1
     return [
-        WeekdayBar(name=n, count=c, height=round(c * 100 / top), is_peak=p)
-        for n, c, p in zip(WEEKDAY_NAMES, summary.counts, summary.peaks, strict=True)
+        TendencyBar(name=n, count=c, height=round(c * 100 / top), is_peak=p)
+        for n, c, p in zip(t.names, t.counts, t.peaks, strict=True)
     ]

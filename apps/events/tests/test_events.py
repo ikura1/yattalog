@@ -264,3 +264,29 @@ def test_最高連続は_毎日と毎月でも数える(user):
     logs_on(user, monthly, date(2025, 12, 20), date(2026, 1, 5), date(2026, 3, 1))
     assert stats.event_stats(daily, TODAY).best_streak_text == "3日連続"
     assert stats.event_stats(monthly, TODAY).best_streak_text == "2か月連続"
+
+
+# --- はじめての記録から（決定 060） ---
+
+
+def test_詳細の統計に_はじめて記録した日を持つ(user):
+    e = ev_svc.create_event(user, name="ヨガ", emoji="🧘", color="teal")
+    logs_on(user, e, date(2025, 8, 3), date(2026, 10, 1))
+    assert stats.event_stats(e, TODAY).first == date(2025, 8, 3)
+
+
+@pytest.mark.parametrize(
+    ("first", "expected"),
+    [
+        (date(2026, 10, 10), "今日"),
+        (date(2026, 10, 1), "9日前"),
+        (date(2026, 9, 11), "29日前"),
+        (date(2026, 9, 10), "1か月前"),
+        (date(2025, 11, 11), "10か月前"),
+        (date(2025, 10, 10), "1年前"),
+        (date(2025, 8, 3), "1年2か月前"),
+        (date(2023, 10, 11), "2年11か月前"),
+    ],
+)
+def test_はじめての記録が_どれくらい前かを言う(first, expected):
+    assert stats.since_text(first, TODAY) == expected

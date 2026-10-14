@@ -26,10 +26,5 @@
     {% else %}<p class="note">この日の記録はありません</p>{% endif %}
   </div>
 </section>
-<section class="review weekdays{% if review.event %} c-{{ review.event.color }}{% endif %}" aria-labelledby="wdTitle">
-  <h2 id="wdTitle">よくやる曜日</h2>
-  <p class="wd-head">{{ weekdays.headline }}</p>
-  <ol class="wbars">{% for b in weekday_bars %}
-    <li class="wbar{% if b.is_peak %} peak{% endif %}" aria-label="{{ b.name }}曜：{{ b.count }}回"><span class="wn" aria-hidden="true">{{ b.count }}</span><svg class="wcol" viewBox="0 0 10 100" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="{{ b.y }}" width="10" height="{{ b.height }}"/></svg><span class="wd" aria-hidden="true">{{ b.name }}</span></li>{% endfor %}
-  </ol>
-</section>
+{% include "web/_tendency.html" with key="wd" title="よくやる曜日" t=weekdays bars=weekday_bars suffix="曜" %}
+{% include "web/_tendency.html" with key="tod" title="よくやる時間帯" t=times bars=time_bars suffix="" note="時刻つきの記録だけで数えます（朝 4〜11時、昼 11〜16時、夕方 16〜19時、夜 19〜4時）" %}

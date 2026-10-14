@@ -95,3 +95,16 @@ def test_ふりかえりの画面は_style_属性を使わない(client_in, user
     """CSP で style 属性は止まる（style-src に unsafe-inline がない）。高さや色は、クラスか SVG の属性で渡す。"""
     record(user, event)
     assert "style=" not in client_in.get("/review/").content.decode()
+
+
+def test_ふりかえりには_よくやる時間帯も出る(client_in, user, event):
+    from datetime import time
+
+    for hh in (7, 8, 21):
+        log_svc.record(user, event.id, uuid.uuid4(), When(date=TODAY - timedelta(1), time=time(hh)))
+
+    body = client_in.get("/review/").content.decode()
+
+    assert "よくやる時間帯" in body and "よくやるのは 朝" in body
+    assert 'class="wbar peak" aria-label="朝：2回"' in body and 'aria-label="夜：1回"' in body
+    assert "時刻つきの記録だけで数えます" in body

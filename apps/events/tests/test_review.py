@@ -10,7 +10,7 @@ from apps.events.models import Event
 from apps.events.services import events as ev_svc
 from apps.events.services import logs as log_svc
 from apps.events.services.logs import When
-from apps.events.services.review import DayCount, YearReview, logs_on, weekday_summary, year_review
+from apps.events.services.review import DayCount, YearReview, logs_on, time_of_day, weekday_summary, year_review
 
 
 def record(user, event, day=TODAY, memo=""):
@@ -136,3 +136,42 @@ def test_記録が少ないうちは_わかるようになると伝える():
 def test_どの曜日も同じくらいなら_そう言う():
     days = {date(2026, 10, 4) + timedelta(i): DayCount(3, 1) for i in range(7)}
     assert weekdays_of(days).headline == "どの曜日も同じくらい"
+
+
+# --- よくやる時間帯（決定 060） ---
+
+
+def at(user, event, day, hh, mm=0):
+    log_svc.record(user, event.id, uuid.uuid7(), When(date=day, time=time(hh, mm)))
+
+
+def test_時間帯は_朝昼夕方夜の4つに分けて数える_時刻なしの記録は数えない(user, sheets, water):
+    d = TODAY - timedelta(1)
+    for hh in (4, 10):  # 朝：4:00〜10:59
+        at(user, water, d, hh, 59 if hh == 10 else 0)
+    at(user, water, d, 11)  # 昼：11:00〜15:59
+    at(user, sheets, d, 18, 59)  # 夕方：16:00〜18:59
+    at(user, sheets, d, 3, 59)  # 夜：19:00〜3:59
+    record(user, sheets, d)  # 時刻なし
+
+    summary = time_of_day(user, TODAY)
+
+    assert summary.counts == [2, 1, 1, 1]
+
+
+def test_時間帯は_記録したときのタイムゾーンで数える(user, water):
+    user.timezone = "America/New_York"
+    user.save()
+    at(user, water, TODAY - timedelta(1), 7)  # ニューヨークの朝7時（日本では夜）
+
+    assert time_of_day(user, TODAY).counts == [1, 0, 0, 0]
+
+
+def test_時間帯の見出しと_イベントでの絞り込み(user, sheets, water):
+    d = TODAY - timedelta(2)
+    for hh in (7, 8, 9):
+        at(user, water, d, hh)
+    at(user, sheets, d, 21)
+
+    assert time_of_day(user, TODAY).headline == "よくやるのは 朝"
+    assert time_of_day(user, TODAY, sheets.id).headline == "時刻つきの記録が増えると、よくやる時間帯がわかります"
