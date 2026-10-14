@@ -1,11 +1,14 @@
 """イベントとカテゴリの画面（追加・編集、アイコン、絵文字、タブ、詳細）。"""
 
 import uuid
+from datetime import date
 
 import pytest
 
 from apps.events.models import Category, Event
 from apps.events.services import events as ev_svc
+from apps.events.services import logs as log_svc
+from apps.events.services.logs import When
 
 
 def test_前回やった日つきでイベントを作り詳細を開ける(client_in):
@@ -182,3 +185,13 @@ def test_詳細画面では_2か月前と一緒に_正確な日数と日付も�
     body = client_in.get(f"/events/{e.id}/").content.decode()
 
     assert "2<small>か月前</small>" in body and "前回 8月8日（63日前）" in body
+
+
+def test_詳細の統計に_最高連続を出す_単位がなしのイベントには出さない(client_in, user, event):
+    for d in (date(2026, 9, 28), date(2026, 10, 5)):
+        log_svc.record(user, event.id, uuid.uuid4(), When(date=d))
+    dentist = ev_svc.create_event(user, name="歯医者", emoji="🦷", color="pink", streak_unit="none")
+
+    body = client_in.get(f"/events/{event.id}/").content.decode()
+    assert "最高連続" in body and "2週連続" in body
+    assert "最高連続" not in client_in.get(f"/events/{dentist.id}/").content.decode()
