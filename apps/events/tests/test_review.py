@@ -10,7 +10,7 @@ from apps.events.models import Event
 from apps.events.services import events as ev_svc
 from apps.events.services import logs as log_svc
 from apps.events.services.logs import When
-from apps.events.services.review import logs_on, year_review
+from apps.events.services.review import DayCount, YearReview, logs_on, weekday_summary, year_review
 
 
 def record(user, event, day=TODAY, memo=""):
@@ -28,9 +28,10 @@ def water(user):
     return ev_svc.create_event(user, name="水やり", emoji="🪴", color="leaf", streak_unit="none")
 
 
-def test_期間は_11か月前の月の1日から今日まで(user):
+def test_期間は_今週を含めて53週_日曜から今日まで(user):
+    """GitHub の草と同じ並び。2026-10-10 は土曜なので、今週は 10-04（日）から。"""
     review = year_review(user, TODAY)
-    assert (review.start, review.end) == (date(2025, 11, 1), TODAY)
+    assert (review.start, review.end) == (date(2025, 10, 5), TODAY)
 
 
 def test_日ごとに_記録の回数と_やったイベントの種類の数を数える(user, sheets, water):
@@ -47,12 +48,12 @@ def test_日ごとに_記録の回数と_やったイベントの種類の数を
 
 
 def test_期間より前の記録は_数えない(user, water):
-    record(user, water, date(2025, 10, 31))
-    record(user, water, date(2025, 11, 1))
+    record(user, water, date(2025, 10, 4))
+    record(user, water, date(2025, 10, 5))
 
     review = year_review(user, TODAY)
 
-    assert list(review.days) == [date(2025, 11, 1)]
+    assert list(review.days) == [date(2025, 10, 5)]
 
 
 def test_イベントで絞ると_そのイベントの記録だけを数える(user, sheets, water):
@@ -111,3 +112,27 @@ def test_その日の記録も_イベントで絞れて_ほかの人の分は入
 
     assert [log.event for log in logs_on(user, TODAY)] == [sheets, water]
     assert [log.event for log in logs_on(user, TODAY, sheets.id)] == [sheets]
+
+
+def weekdays_of(days):
+    return weekday_summary(YearReview(start=date(2025, 10, 5), end=TODAY, event=None, days=days))
+
+
+def test_曜日ごとの回数を_日曜から順に数える():
+    # 2026-10-04 は日曜、10-10 は土曜
+    summary = weekdays_of({date(2026, 10, 4): DayCount(2, 1), date(2026, 10, 10): DayCount(1, 1)})
+    assert summary.counts == [2, 0, 0, 0, 0, 0, 1]
+
+
+def test_多い曜日を_よくやる曜日として見出しにする():
+    days = {date(2026, 10, 3): DayCount(5, 1), date(2026, 10, 4): DayCount(4, 1), date(2026, 10, 7): DayCount(1, 1)}
+    assert weekdays_of(days).headline == "よくやるのは 日・土曜"
+
+
+def test_記録が少ないうちは_わかるようになると伝える():
+    assert weekdays_of({date(2026, 10, 4): DayCount(2, 1)}).headline == "記録が増えると、よくやる曜日がわかります"
+
+
+def test_どの曜日も同じくらいなら_そう言う():
+    days = {date(2026, 10, 4) + timedelta(i): DayCount(3, 1) for i in range(7)}
+    assert weekdays_of(days).headline == "どの曜日も同じくらい"

@@ -8,7 +8,7 @@ from django.views.decorators.http import require_GET
 
 from apps.events.services import events as ev_svc
 from apps.events.services import review as review_svc
-from apps.web.presenters import year_months
+from apps.web.presenters import weekday_bars, year_weeks
 from apps.web.views.common import _today, owned_or_404, parse_date_or_none
 
 
@@ -16,7 +16,7 @@ from apps.web.views.common import _today, owned_or_404, parse_date_or_none
 @owned_or_404
 @require_GET
 def review(request: HttpRequest) -> HttpResponse:
-    """12か月分の草と、選んだ日にやったこと。?event= で1つのイベントに絞る。日付が読めない・先の日なら今日。"""
+    """1年分の草と、選んだ日にやったこと。?event= で1つのイベントに絞る。日付が読めない・先の日なら今日。"""
     today = _today(request)
     event_id = request.GET.get("event") or None
     try:
@@ -27,7 +27,9 @@ def review(request: HttpRequest) -> HttpResponse:
     year = review_svc.year_review(request.user, today, event_id)
     ctx = {
         "review": year,
-        "months": year_months(year, today),
+        "grid": year_weeks(year, today),
+        "weekdays": (weekdays := review_svc.weekday_summary(year)),
+        "weekday_bars": weekday_bars(weekdays),
         "events": ev_svc.list_events(request.user),
         "day": day,
         "day_logs": review_svc.logs_on(request.user, day, event_id),
