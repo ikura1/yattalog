@@ -27,6 +27,7 @@
 - アクセス解析は Umami Cloud。ログイン前の画面だけで、`UMAMI_WEBSITE_ID` があるときに読み込む（`templates/web/_analytics.html`、決定 047）
 - Service Worker は `templates/web/sw.js`（`/sw.js`）。しまうのは静的ファイルとオフラインの案内だけ。ログインした人の画面はしまわない（決定 049）
 - 利用状況の集計は `apps/accounts/usage.py`（人数と件数だけ。管理画面の「利用状況」に出す、決定 051）。費用の上限は月 1,000円（決定 052）
+- ふりかえり（1年の草）は `services/review.py` と `presenters.year_months()`。濃さは、その日にやったイベントの種類の数（決定 058）
 - シェアは、見出しと投稿文を `services/share.py` が決め、画像は `app.js` の `drawShareCard()` が端末の Canvas で作る（サーバーには送らない、決定 053）
 - レート制限は `apps/core/ratelimit.py` のミドルウェア。上限は `settings.RATE_LIMITS`、回数はプロセス内に持つ（決定 037）
 - 監視と運用は `docs/operations.md`（決定 046）。Claude は Google Cloud に入れないので、Actions の「Ops report」を手動で実行してサマリーと Issue（ラベル `ops`）を読む。報告は `apps/core/ops_report.py` で伏せる（リポジトリは公開）

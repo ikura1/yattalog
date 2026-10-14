@@ -1,0 +1,27 @@
+{% load yl %}{# ふりかえり（1年の草、決定 058）。マスとイベントの切り替えは、#review の中身だけを入れ替える #}
+<header class="bar">
+  <a class="iconbtn" href="{% url 'web:home' %}" aria-label="ホームに戻る">←</a>
+  <h1 class="page-title">ふりかえり</h1>
+</header>
+<nav class="tabs" aria-label="イベントで絞る">
+  <a href="?day={{ day|iso }}" aria-current="{% if review.event %}false{% else %}true{% endif %}" hx-get="?day={{ day|iso }}" hx-target="#review" hx-push-url="true">すべて</a>
+  {% for e in events %}<a href="?event={{ e.id }}&amp;day={{ day|iso }}" aria-current="{% if review.event.id == e.id %}true{% else %}false{% endif %}" hx-get="?event={{ e.id }}&amp;day={{ day|iso }}" hx-target="#review" hx-push-url="true"><span aria-hidden="true">{{ e.emoji }}</span>{{ e.name }}</a>{% endfor %}
+</nav>
+<section class="review{% if review.event %} c-{{ review.event.color }}{% endif %}">
+  <p class="review-sum">この12か月で <b>{{ review.total }}</b> 回、<b>{{ review.active_days }}</b> 日やった</p>
+  <div class="months">
+    {% for mo in months %}<div class="mon">
+      <h2>{{ mo.label }}<span>{{ mo.total }}回</span></h2>
+      <div class="mgrid">{% for week in mo.weeks %}{% for c in week %}{% if not c %}<span></span>{% elif c.is_future %}<span class="hm future"></span>{% else %}<a class="hm l{{ c.level }}{% if c.date == day %} sel{% endif %}" href="?{% if review.event %}event={{ review.event.id }}&amp;{% endif %}day={{ c.date|iso }}" hx-get="?{% if review.event %}event={{ review.event.id }}&amp;{% endif %}day={{ c.date|iso }}" hx-target="#review" aria-label="{{ c.date|md_wd }}：{% if c.logs %}{{ c.logs }}回{% else %}記録なし{% endif %}"></a>{% endif %}{% endfor %}{% endfor %}</div>
+    </div>{% endfor %}
+  </div>
+  {% if review.event %}<p class="legend"><i class="hm l1"></i>やった日</p>
+  {% else %}<p class="legend">やったイベントの数　1つ<i class="hm l1"></i><i class="hm l2"></i><i class="hm l3"></i><i class="hm l4"></i>4つ以上</p>{% endif %}
+  <div class="review-day" id="reviewDay" aria-live="polite">
+    <h2>{{ day|md_wd }}{% if day_logs %}　{{ day_logs|length }}回{% endif %}</h2>
+    {% if day_logs %}<ul>{% for l in day_logs %}
+      <li><a href="{% url 'web:event_detail' l.event.id %}"><span class="emo" aria-hidden="true">{{ l.event.emoji }}</span>{{ l.event.name }}</a>{% if l.memo %}<small>{{ l.memo }}</small>{% endif %}<span class="t">{{ l|log_time }}</span></li>
+    {% endfor %}</ul>
+    {% else %}<p class="note">この日の記録はありません</p>{% endif %}
+  </div>
+</section>

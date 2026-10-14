@@ -33,6 +33,24 @@ def rel_day(d: date, today: date) -> str:
     return f"{d.month}月{d.day}日"
 
 
+WEEKDAYS = "月火水木金土日"
+
+
+@register.filter
+def md_wd(d: date) -> str:
+    """「10月10日（土）」"""
+    return f"{d.month}月{d.day}日（{WEEKDAYS[d.weekday()]}）"
+
+
+@register.filter
+def log_time(log: Log) -> str:
+    """時刻ありの記録だけ、記録したときのタイムゾーンでの時刻（「8:05」）。時刻なしなら空。"""
+    if not log.occurred_at:
+        return ""
+    t = log.occurred_at.astimezone(zone(log.timezone))
+    return f"{t.hour}:{t.minute:02d}"
+
+
 @register.filter
 def iso(d: date) -> str:
     return d.isoformat() if d else ""
