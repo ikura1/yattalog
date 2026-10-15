@@ -361,3 +361,18 @@ def test_よくやる日にちの濃さは_一番多い日を4として段階に
     logs_on(user, e, date(2026, 7, 1), date(2026, 8, 1), date(2026, 9, 1), date(2026, 10, 1), date(2026, 10, 2))
     levels = stats.month_days(e).levels
     assert (levels[0], levels[1], levels[2]) == (4, 1, 0)
+
+
+# --- いちばんよくやった月（決定 062） ---
+
+
+def test_いちばんよくやった月を出す_同じなら新しいほう(user):
+    e = ev_svc.create_event(user, name="布団を干す", emoji="☀️", color="sun")
+    logs_on(user, e, date(2025, 4, 1), date(2025, 4, 9), date(2026, 4, 2), date(2026, 4, 20), date(2026, 5, 1))
+    assert stats.event_stats(e, TODAY).best_month_text == "いちばんよくやったのは 2026年4月（2回）"
+
+
+def test_いちばんよくやった月は_2回に届かなければ出さない(user):
+    e = ev_svc.create_event(user, name="散髪", emoji="✂️", color="pink")
+    logs_on(user, e, date(2026, 6, 1), date(2026, 8, 1))
+    assert stats.event_stats(e, TODAY).best_month_text == ""

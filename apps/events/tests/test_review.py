@@ -10,7 +10,7 @@ from apps.events.models import Event
 from apps.events.services import events as ev_svc
 from apps.events.services import logs as log_svc
 from apps.events.services.logs import When
-from apps.events.services.review import a_year_ago, logs_on, year_review
+from apps.events.services.review import a_year_ago, logs_on, top_events, year_review
 
 
 def record(user, event, day=TODAY, memo=""):
@@ -146,3 +146,27 @@ def test_1年前の今ごろも_イベントで絞れて_ほかの人の記録�
 def test_2月29日の1年前は_2月28日として数える(user, water):
     record(user, water, date(2023, 3, 2))
     assert [a.dates for a in a_year_ago(user, date(2024, 2, 29))] == [[date(2023, 3, 2)]]
+
+
+# --- この1年でよくやったこと（決定 062） ---
+
+
+def test_この1年でよくやったことは_回数の多いイベントから3つ(user, sheets, water):
+    gym = ev_svc.create_event(user, name="筋トレ", emoji="💪", color="tomato")
+    dentist = ev_svc.create_event(user, name="歯医者", emoji="🦷", color="pink")
+    for d in range(3):
+        record(user, water, TODAY - timedelta(d))
+    for d in range(2):
+        record(user, gym, TODAY - timedelta(d))
+    record(user, sheets, TODAY - timedelta(5))
+    record(user, dentist, date(2025, 10, 4))  # 1年（53週）より前
+
+    top = top_events(user, TODAY)
+
+    assert [(t.event.name, t.count) for t in top] == [("水やり", 3), ("筋トレ", 2), ("シーツ交換", 1)]
+
+
+def test_この1年でよくやったことに_ほかの人の記録は入らない(user, water):
+    other = new_user(email="b@example.com")
+    record(other, ev_svc.create_event(other, name="ひみつ", emoji="🤫", color="pink"))
+    assert top_events(user, TODAY) == []

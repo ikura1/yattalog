@@ -22,8 +22,17 @@ class EventStats:
     this_year: int
     pace: str | None  # 平均間隔（記録がある日が2日以上のときだけ）
     first: date | None = None  # はじめて記録した日（決定 060）
+    best_month: tuple[int, int, int] | None = None  # いちばんよくやった月（年, 月, 回数）。決定 062
     best_streak: int = 0  # これまでで一番長く続いた連続回数（決定 059）。連続の単位が「なし」なら 0
     unit: str = StreakUnit.NONE
+
+    @property
+    def best_month_text(self) -> str:
+        """「いちばんよくやったのは 2026年4月（9回）」。2回に届かなければ空（出さない）。"""
+        if not self.best_month or self.best_month[2] < 2:
+            return ""
+        y, m, n = self.best_month
+        return f"いちばんよくやったのは {y}年{m}月（{n}回）"
 
     @property
     def best_streak_text(self) -> str:
@@ -44,9 +53,23 @@ def event_stats(event: Event, today: date) -> EventStats:
         this_year=logs.filter(local_date__year=today.year).count(),
         pace=pace,
         first=agg["first"],
+        best_month=best_month(event),
         best_streak=best_streak(event),
         unit=event.streak_unit,
     )
+
+
+def best_month(event: Event) -> tuple[int, int, int] | None:
+    """いちばん記録の多い月。同じ回数なら、新しい月。"""
+    row = (
+        Log.objects.filter(event=event)
+        .annotate(y=ExtractYear("local_date"), m=ExtractMonth("local_date"))
+        .values("y", "m")
+        .annotate(n=Count("id"))
+        .order_by("-n", "-y", "-m")
+        .first()
+    )
+    return (row["y"], row["m"], row["n"]) if row else None
 
 
 def since_text(first: date, today: date) -> str:

@@ -37,8 +37,11 @@ def test_はじめは今日の記録を出し_日付を押すとその日の記�
     today = client_in.get("/review/").content.decode()
     picked = client_in.get("/review/?day=2026-10-07").content.decode()
 
-    assert "10月10日（土）" in today and "シーツ交換" in today.split('id="reviewDay"')[1]
-    assert "水やり" in picked.split('id="reviewDay"')[1] and "シーツ交換" not in picked.split('id="reviewDay"')[1]
+    assert "10月10日（土）" in today and "シーツ交換" in today.split('id="reviewDay"')[1].split("</section>")[0]
+    assert (
+        "水やり" in picked.split('id="reviewDay"')[1].split("</section>")[0]
+        and "シーツ交換" not in picked.split('id="reviewDay"')[1].split("</section>")[0]
+    )
 
 
 def test_イベントで絞ると_そのイベントの記録だけを出す(client_in, user, event):
@@ -50,7 +53,7 @@ def test_イベントで絞ると_そのイベントの記録だけを出す(cli
 
     assert ">1</b> 回" in body
     assert f'href="?event={water.id}&amp;day=2026-10-10" aria-current="true"' in body
-    assert "シーツ交換" not in body.split('id="reviewDay"')[1]
+    assert "シーツ交換" not in body.split('id="reviewDay"')[1].split("</section>")[0]
     assert 'class="review c-leaf"' in body  # やった日は、そのイベントの色で塗る
 
 
@@ -65,7 +68,7 @@ def test_読めない日付や_先の日付は_今日として扱う(client_in, 
     record(user, event)
     for day in ("2026-13-40", "2026-12-01", "x"):
         body = client_in.get(f"/review/?day={day}").content.decode()
-        assert "シーツ交換" in body.split('id="reviewDay"')[1]
+        assert "シーツ交換" in body.split('id="reviewDay"')[1].split("</section>")[0]
 
 
 def test_画面の中の切り替えでは_中身だけを返す(client_in):
@@ -96,3 +99,14 @@ def test_ふりかえりに_1年前の今ごろを出し_なければ出さな�
     body = client_in.get("/review/").content.decode()
 
     assert "1年前の今ごろ" in body and "シーツ交換" in body.split("1年前の今ごろ")[1] and "10月10日" in body
+
+
+def test_ふりかえりに_この1年でよくやったことを出し_絞っているときは出さない(client_in, user, event):
+    record(user, event)
+    record(user, event, 7)
+
+    body = client_in.get("/review/").content.decode()
+    only = client_in.get(f"/review/?event={event.id}").content.decode()
+
+    assert "この1年でよくやったこと" in body and "2回" in body.split("この1年でよくやったこと")[1]
+    assert "この1年でよくやったこと" not in only
