@@ -10,7 +10,7 @@ from apps.events.models import Event
 from apps.events.services import events as ev_svc
 from apps.events.services import logs as log_svc
 from apps.events.services.logs import When
-from apps.events.services.review import logs_on, year_review
+from apps.events.services.review import a_year_ago, logs_on, year_review
 
 
 def record(user, event, day=TODAY, memo=""):
@@ -112,3 +112,37 @@ def test_その日の記録も_イベントで絞れて_ほかの人の分は入
 
     assert [log.event for log in logs_on(user, TODAY)] == [sheets, water]
     assert [log.event for log in logs_on(user, TODAY, sheets.id)] == [sheets]
+
+
+# --- 1年前の今ごろ（決定 061） ---
+
+
+def test_1年前の今ごろは_1年前の前後3日にやったことを_イベントごとにまとめる(user, sheets, water):
+    # TODAY は 2026-10-10。1年前は 2025-10-10、前後3日は 10-07〜10-13
+    for d in (date(2025, 10, 7), date(2025, 10, 13)):
+        record(user, water, d)
+    record(user, sheets, date(2025, 10, 10))
+    record(user, sheets, date(2025, 10, 6))  # 範囲の外
+    record(user, sheets, date(2025, 10, 14))  # 範囲の外
+
+    ago = a_year_ago(user, TODAY)
+
+    assert [(a.event.name, a.dates) for a in ago] == [
+        ("水やり", [date(2025, 10, 7), date(2025, 10, 13)]),
+        ("シーツ交換", [date(2025, 10, 10)]),
+    ]
+
+
+def test_1年前の今ごろも_イベントで絞れて_ほかの人の記録は入らない(user, sheets, water):
+    record(user, sheets, date(2025, 10, 10))
+    record(user, water, date(2025, 10, 10))
+    other = new_user(email="b@example.com")
+    record(other, ev_svc.create_event(other, name="ひみつ", emoji="🤫", color="pink"), date(2025, 10, 10))
+
+    assert [a.event for a in a_year_ago(user, TODAY)] == [sheets, water]
+    assert [a.event for a in a_year_ago(user, TODAY, water.id)] == [water]
+
+
+def test_2月29日の1年前は_2月28日として数える(user, water):
+    record(user, water, date(2023, 3, 2))
+    assert [a.dates for a in a_year_ago(user, date(2024, 2, 29))] == [[date(2023, 3, 2)]]

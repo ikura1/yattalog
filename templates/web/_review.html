@@ -26,3 +26,11 @@
     {% else %}<p class="note">この日の記録はありません</p>{% endif %}
   </div>
 </section>
+{% if year_ago %}{# 1年前の今ごろ（前後3日、決定 061）。なければ出さない #}
+<section class="review ago" aria-labelledby="agoTitle">
+  <h2 id="agoTitle">1年前の今ごろ</h2>
+  <ul>{% for a in year_ago %}
+    <li><a href="{% url 'web:event_detail' a.event.id %}"><span class="emo" aria-hidden="true">{{ a.event.emoji }}</span>{{ a.event.name }}</a><span class="t">{% for d in a.dates %}{{ d.month }}月{{ d.day }}日{% if not forloop.last %}・{% endif %}{% endfor %}</span></li>
+  {% endfor %}</ul>
+</section>
+{% endif %}

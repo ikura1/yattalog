@@ -384,3 +384,8 @@ textarea { min-height: 84px; resize: vertical; }
 .md.l3 { background: var(--g3); color: var(--accent-fg); } .md.l4 { background: var(--g4); color: var(--accent-fg); }
 .note.since { margin: -6px 0 14px; font-size: 12.5px; }
 .review + .review { margin-top: 12px; }
+.ago h2 { font-family: var(--f-display); font-weight: 800; font-size: 15px; margin: 0; }
+.ago ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ago li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+.ago li a { display: inline-flex; gap: 6px; font-weight: 700; text-decoration: none; }
+.ago .t { margin-left: auto; color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }

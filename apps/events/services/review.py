@@ -68,3 +68,43 @@ def logs_on(user, day: date, event_id=None) -> list[Log]:
     event = event_for(user, event_id) if event_id else None
     qs = _logs(user, event).filter(local_date=day).select_related("event")
     return list(qs.order_by(F("occurred_at").asc(nulls_last=True), "created_at"))
+
+
+# --- 1年前の今ごろ（決定 061） -----------------------------------------------------------
+
+AROUND = 3  # 1年前の前後何日までを「今ごろ」とするか
+
+
+@dataclass(frozen=True)
+class YearAgo:
+    event: Event
+    dates: list[date]  # その期間にやった日（古い順。同じ日に何回やっても1つ）
+
+
+def one_year_before(day: date) -> date:
+    """1年前の同じ日。2月29日は、前の年の2月28日にする。"""
+    try:
+        return day.replace(year=day.year - 1)
+    except ValueError:
+        return day.replace(year=day.year - 1, day=28)
+
+
+def a_year_ago(user, today: date, event_id=None) -> list[YearAgo]:
+    """1年前の前後3日にやったこと。多くやったイベントから順に。"""
+    event = event_for(user, event_id) if event_id else None
+    center = one_year_before(today)
+    rows = (
+        _logs(user, event)
+        .filter(local_date__range=(center - timedelta(AROUND), center + timedelta(AROUND)))
+        .select_related("event")
+        .order_by("local_date", "created_at")
+    )
+    dates: dict[Event, list[date]] = {}
+    counts: dict[Event, int] = {}
+    for log in rows:  # 最初にやった順に並ぶ
+        days = dates.setdefault(log.event, [])
+        if log.local_date not in days:
+            days.append(log.local_date)
+        counts[log.event] = counts.get(log.event, 0) + 1
+    ordered = sorted(dates, key=lambda e: -counts[e])  # 回数の多い順。同じなら、最初にやった順のまま
+    return [YearAgo(event=e, dates=dates[e]) for e in ordered]

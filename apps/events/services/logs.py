@@ -172,3 +172,9 @@ def edit(user, log_id, when: When, memo: str, now: datetime | None = None) -> Lo
     log.save(update_fields=["local_date", "occurred_at", "timezone", "memo", "updated_at"])
     refresh_event_cache(event)
     return log
+
+
+def history(event: Event, day: date | None = None):
+    """イベントの記録（新しい順）。day があれば、その日の分だけ。持ち主の確認は、event を取るときに済ませておく。"""
+    logs = event.logs.all()
+    return logs.filter(local_date=day) if day else logs
