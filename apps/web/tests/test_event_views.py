@@ -249,3 +249,9 @@ def test_履歴の件数の指定がおかしくても_表示できる(client_in
     log_svc.record(user, event.id, uuid.uuid4())
     for n in ("abc", "-5", "999999"):
         assert client_in.get(f"/events/{event.id}/?n={n}").status_code == 200
+
+
+def test_詳細に_いちばんよくやった月を出す(client_in, user, event):
+    for d in (date(2026, 4, 2), date(2026, 4, 20)):
+        log_svc.record(user, event.id, uuid.uuid4(), When(date=d))
+    assert "いちばんよくやったのは 2026年4月（2回）" in client_in.get(f"/events/{event.id}/").content.decode()

@@ -108,3 +108,28 @@ def a_year_ago(user, today: date, event_id=None) -> list[YearAgo]:
         counts[log.event] = counts.get(log.event, 0) + 1
     ordered = sorted(dates, key=lambda e: -counts[e])  # 回数の多い順。同じなら、最初にやった順のまま
     return [YearAgo(event=e, dates=dates[e]) for e in ordered]
+
+
+# --- この1年でよくやったこと（決定 062） ---------------------------------------------------
+
+TOP = 3
+
+
+@dataclass(frozen=True)
+class TopEvent:
+    event: Event
+    count: int
+
+
+def top_events(user, today: date) -> list[TopEvent]:
+    """草と同じ1年分（53週）で、回数の多いイベントを3つ。"""
+    rows = (
+        _logs(user, None)
+        .filter(local_date__range=(first_day(today), today))
+        .values("event")
+        .annotate(n=Count("id"))
+        .order_by("-n", "event__sort_key")[:TOP]
+    )
+    rows = list(rows)
+    events = Event.objects.in_bulk([r["event"] for r in rows])
+    return [TopEvent(event=events[r["event"]], count=r["n"]) for r in rows]

@@ -34,3 +34,11 @@
   {% endfor %}</ul>
 </section>
 {% endif %}
+{% if top %}{# この1年でよくやったこと（決定 062）。「すべて」のときだけ #}
+<section class="review ago" aria-labelledby="topTitle">
+  <h2 id="topTitle">この1年でよくやったこと</h2>
+  <ol class="top">{% for t in top %}
+    <li><a href="{% url 'web:event_detail' t.event.id %}"><span class="emo" aria-hidden="true">{{ t.event.emoji }}</span>{{ t.event.name }}</a><span class="t">{{ t.count }}回</span></li>
+  {% endfor %}</ol>
+</section>
+{% endif %}
