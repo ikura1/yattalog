@@ -10,6 +10,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from apps.events.models import COLORS, StreakUnit
 from apps.events.services import events as ev_svc
+from apps.events.services import logs as log_svc
 from apps.events.services import stats
 from apps.web.presenters import calendar_weeks, month_day_cells, season_chart, shift_month, tendency_bars, tile
 from apps.web.views.common import (
@@ -216,9 +217,7 @@ def event_detail(request: HttpRequest, event_id) -> HttpResponse:
     except ValidationError:
         sel_date = None
     season = stats.season(event, None if season_all else season_year)
-    logs = event.logs.all()
-    if sel_date:
-        logs = logs.filter(local_date=sel_date)
+    logs = log_svc.history(event, sel_date)
     shown = _int_param(request, "n", HISTORY_PAGE, HISTORY_PAGE, 2000)
     left = logs.count() - shown
     more = request.GET.copy()
@@ -241,7 +240,7 @@ def event_detail(request: HttpRequest, event_id) -> HttpResponse:
         "logs": logs[:shown],
         "more_url": f"?{more.urlencode()}" if left > 0 else "",
         "more_left": left,
-        "latest_log": event.logs.first(),  # 「シェア」の対象（最新の記録）
+        "latest_log": log_svc.history(event).first(),  # 「シェア」の対象（最新の記録）
         # そのイベントのくせ（決定 060）
         "weekdays": (weekdays := stats.weekday_tendency(event)),
         "weekday_bars": tendency_bars(weekdays),

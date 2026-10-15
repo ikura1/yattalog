@@ -31,6 +31,7 @@ def review(request: HttpRequest) -> HttpResponse:
         "events": ev_svc.list_events(request.user),
         "day": day,
         "day_logs": review_svc.logs_on(request.user, day, event_id),
+        "year_ago": review_svc.a_year_ago(request.user, today, event_id),
     }
     template = "web/_review.html" if request.htmx and not request.htmx.boosted else "web/review.html"
     return render(request, template, ctx)

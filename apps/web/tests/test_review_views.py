@@ -87,3 +87,12 @@ def test_曜日や時間帯は_ふりかえりではなくイベント詳細に�
     record(user, event)
     body = client_in.get("/review/").content.decode()
     assert "よくやる曜日" not in body and "よくやる時間帯" not in body
+
+
+def test_ふりかえりに_1年前の今ごろを出し_なければ出さない(client_in, user, event):
+    assert "1年前の今ごろ" not in client_in.get("/review/").content.decode()
+
+    log_svc.record(user, event.id, uuid.uuid4(), When(date=TODAY - timedelta(days=365)))
+    body = client_in.get("/review/").content.decode()
+
+    assert "1年前の今ごろ" in body and "シーツ交換" in body.split("1年前の今ごろ")[1] and "10月10日" in body
