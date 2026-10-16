@@ -42,3 +42,10 @@ def test_ホーム_ふりかえり_イベント詳細に_axe_の指摘がない(
         page.goto(page.base_url + url)
         page.wait_for_load_state("networkidle")
         assert violations(page) == [], url
+
+    # 実績の一覧（シート）
+    page.goto(page.base_url + "/")
+    page.get_by_role("button", name="メニュー").click()
+    page.get_by_role("button", name="実績", exact=False).first.click()
+    page.locator("#sheet-body .ach").wait_for()
+    assert violations(page) == [], "実績"

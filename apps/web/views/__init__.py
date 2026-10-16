@@ -4,6 +4,7 @@
 """
 
 from apps.web.views.account import account_delete, export
+from apps.web.views.achievements import achievement_share, achievements
 from apps.web.views.events import (
     EMOJIS,
     categories,
@@ -31,6 +32,8 @@ from apps.web.views.site import (
 __all__ = [
     "EMOJIS",
     "account_delete",
+    "achievement_share",
+    "achievements",
     "categories",
     "event_detail",
     "event_edit",

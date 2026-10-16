@@ -137,3 +137,11 @@ def test_何も記録していなくても_見出しだけの_CSV_ができる(u
 
 def test_ファイル名には_書き出した日が_ユーザーのタイムゾーンで入る(user):
     assert export_filename(user, NOW) == "yattalog-20261010.zip"
+
+
+def test_data_json_には_解除した実績も入る(user):
+    from apps.events.services import achievements as ach_svc
+
+    ach_svc.unlock_share(user, NOW)
+    data = json.loads(unzip(build_export(user, NOW))["data.json"])
+    assert data["achievements"] == [{"code": "share", "name": "シェアデビュー", "unlocked_at": NOW.isoformat()}]

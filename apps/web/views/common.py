@@ -12,6 +12,7 @@ from django.shortcuts import render
 from apps.core import clock
 from apps.events.models import Category, Event, Log
 from apps.events.services import access
+from apps.events.services import achievements as ach_svc
 from apps.events.services import events as ev_svc
 from apps.events.services.dates import today_in
 from apps.events.services.logs import When
@@ -73,6 +74,12 @@ def _refresh(resp: HttpResponse, toast: str | None = None, **extra) -> HttpRespo
     trig["yl:close-sheet"] = True
     resp["HX-Trigger"] = json.dumps(trig)  # ASCII のみ（ヘッダーに日本語をそのまま入れない）
     return resp
+
+
+def _with_achievements(request: HttpRequest, message: str, log: Log | None = None) -> str:
+    """操作の知らせに、新しく解除した実績を添える（決定 063）。「やった！ 記録しました　🏅 実績解除：じゅっかい」"""
+    found = ach_svc.check(request.user, log)
+    return f"{message}　{ach_svc.announcement(found)}" if found else message
 
 
 def _form_error(request, template, ctx, err: ValidationError) -> HttpResponse:

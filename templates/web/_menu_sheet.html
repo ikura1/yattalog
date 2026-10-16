@@ -1,5 +1,6 @@
 <h2>メニュー</h2>
 <ul class="menu">
+  <li><button type="button" hx-get="{% url 'web:achievements' %}" hx-target="#sheet-body">実績<small>解除した実績と、これから目指せるもの</small></button></li>
   <li><a href="{% url 'web:review' %}">ふりかえり<small>この1年に、いつ何をやったかを見られます</small></a></li>
   <li><button type="button" hx-get="{% url 'web:categories' %}" hx-target="#sheet-body">カテゴリを管理</button></li>
   <li><button type="button" hx-get="{% url 'web:starters' %}" hx-target="#sheet-body">テンプレートから追加</button></li>

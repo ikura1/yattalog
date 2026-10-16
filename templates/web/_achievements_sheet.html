@@ -1,0 +1,12 @@
+{% load yl %}<h2>実績</h2>
+{# 実績バッジ（SPEC 3.10、決定 020・063）。まだのものはシルエットと条件で、何を目指せるかがわかるようにする #}
+<p class="note">{{ done }} / {{ items|length }}　解除した実績は、記録を消しても残ります。</p>
+<ul class="ach">
+  {% for a, at in items %}
+  <li class="{% if at %}on{% else %}off{% endif %}">
+    <span class="ach-emo" aria-hidden="true">{{ a.emoji }}</span>
+    <div><b>{{ a.name }}</b><small>{% if at %}{{ at|local_md:user_tz }}に解除{% else %}{{ a.condition }}{% endif %}</small></div>
+    <span class="sr-only">{% if at %}解除済み{% else %}まだ{% endif %}</span>
+  </li>
+  {% endfor %}
+</ul>

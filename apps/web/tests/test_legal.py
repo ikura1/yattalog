@@ -52,7 +52,7 @@ def test_ポリシーには_実際に使っている事業者と保存先を書�
 
 def test_ポリシーには_まだない機能のことを書かない(client, db):
     body = client.get("/privacy/").content.decode()
-    assert "写真" not in body and "MCP" not in body and "実績" not in body
+    assert "写真" not in body and "MCP" not in body  # 実績は 2026-10-17 に入った（決定 063）
 
 
 def test_ログイン画面から_規約とポリシーを開ける(client, db):
@@ -69,8 +69,8 @@ def test_メニューから_規約とポリシーと報告の窓口を開ける(
 def test_登録のときに記録する版は_規約は制定日_ポリシーは改定日と同じ():
     from apps.accounts.models import PRIVACY_VERSION, TERMS_VERSION
 
-    assert (TERMS_VERSION, PRIVACY_VERSION) == ("2026-10-12", "2026-10-13")
+    assert (TERMS_VERSION, PRIVACY_VERSION) == ("2026-10-12", "2026-10-17")
 
 
 def test_ポリシーには改定日が出る(client, db):
-    assert "改定日：2026年10月13日" in client.get("/privacy/").content.decode()
+    assert "改定日：2026年10月17日" in client.get("/privacy/").content.decode()
