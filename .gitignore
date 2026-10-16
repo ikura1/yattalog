@@ -8,3 +8,8 @@ staticfiles/
 .ruff_cache/
 .hypothesis/
 test-results/
+
+# テストの網羅率を測ったときのデータ
+.coverage
+.coverage.*
+htmlcov/

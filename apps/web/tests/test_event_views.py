@@ -255,3 +255,31 @@ def test_詳細に_いちばんよくやった月を出す(client_in, user, even
     for d in (date(2026, 4, 2), date(2026, 4, 20)):
         log_svc.record(user, event.id, uuid.uuid4(), When(date=d))
     assert "いちばんよくやったのは 2026年4月（2回）" in client_in.get(f"/events/{event.id}/").content.decode()
+
+
+def test_年の端のカレンダーでも_表示できる(client_in, user, event):
+    """9999年12月の日曜始まりのカレンダーは、10000年の日付を作ろうとして落ちていた。"""
+    log_svc.record(user, event.id, uuid.uuid4())
+    assert client_in.get(f"/events/{event.id}/?y=9999&m=12").status_code == 200
+    assert client_in.get(f"/events/{event.id}/?y=1900&m=1").status_code == 200
+
+
+def test_もっと見るは_上限まで来たら出さない(client_in, user, event, settings):
+    from apps.web.views import events as event_views
+
+    event_views.HISTORY_MAX, saved = 30, event_views.HISTORY_MAX
+    try:
+        for i in range(35):
+            log_svc.record(user, event.id, uuid.uuid4(), When(date=date(2026, 9, 1) + timedelta(i % 30)))
+        at_max = client_in.get(f"/events/{event.id}/?n=30").content.decode()
+        assert at_max.count('aria-label="この記録を削除"') == 30 and "もっと見る" not in at_max
+        below = client_in.get(f"/events/{event.id}/?n=20").content.decode()
+        assert 'n=30"' in below  # 上限を超える数（40）にはしない
+    finally:
+        event_views.HISTORY_MAX = saved
+
+
+def test_集計の画面は_htmx_かどうかで中身が変わるので_キャッシュを分ける(client_in, user, event):
+    response = client_in.get(f"/events/{event.id}/")
+    assert "HX-Request" in response["Vary"]
+    assert "HX-Request" in client_in.get("/review/")["Vary"]

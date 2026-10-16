@@ -12,7 +12,7 @@ from apps.events.models import Log
 from apps.events.services import events as ev_svc
 
 # テストを速くするため、上限を小さくして確かめる（本番の値は settings.RATE_LIMITS）
-SMALL = {"record": (3, 60), "write": (5, 60), "login": (2, 60), "export": (2, 3600), "all": (8, 60)}
+SMALL = {"record": (3, 60), "write": (5, 60), "login": (2, 60), "export": (2, 3600), "stats": (4, 60), "all": (8, 60)}
 
 
 @pytest.fixture
@@ -98,3 +98,12 @@ def test_書き出しは_1時間あたりの回数に上限がある(client_in):
 def test_ふつうの使い方では_本番の上限に当たらない(client_in, event):
     assert all(record(client_in, event).status_code == 200 for _ in range(30))
     assert client_in.get("/").status_code == 200
+
+
+@override_settings(RATE_LIMITS=SMALL)
+def test_集計の重い画面は_全体より厳しい上限で数える(client_in, event):
+    """ふりかえりとイベント詳細は、そのたびに記録を集計する（セキュリティの見直し 2026-10-15）。"""
+    urls = ["/review/", f"/events/{event.id}/", "/review/", f"/events/{event.id}/"]
+    assert [client_in.get(u).status_code for u in urls] == [200, 200, 200, 200]
+    assert client_in.get("/review/").status_code == 429
+    assert client_in.get("/").status_code == 200  # ほかの画面は、全体の上限までは使える

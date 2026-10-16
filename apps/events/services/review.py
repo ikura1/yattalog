@@ -63,11 +63,24 @@ def year_review(user, today: date, event_id=None) -> YearReview:
     return YearReview(start=start, end=today, event=event, days=days)
 
 
-def logs_on(user, day: date, event_id=None) -> list[Log]:
-    """その日の記録。時刻の早い順で、時刻なしの記録は後ろ。"""
+DAY_LIMIT = 200  # その日の記録を、この件数まで出す
+
+
+class DayLogs(list):
+    """その日の記録（上限まで）。more は、上限を超えて出していない件数。"""
+
+    more = 0
+
+
+def logs_on(user, day: date, event_id=None) -> DayLogs:
+    """その日の記録。時刻の早い順で、時刻なしの記録は後ろ。多すぎるときは上限まで。"""
     event = event_for(user, event_id) if event_id else None
     qs = _logs(user, event).filter(local_date=day).select_related("event")
-    return list(qs.order_by(F("occurred_at").asc(nulls_last=True), "created_at"))
+    logs = DayLogs(qs.order_by(F("occurred_at").asc(nulls_last=True), "created_at")[: DAY_LIMIT + 1])
+    if len(logs) > DAY_LIMIT:
+        logs.more = qs.count() - DAY_LIMIT
+        del logs[DAY_LIMIT:]
+    return logs
 
 
 # --- 1年前の今ごろ（決定 061） -----------------------------------------------------------

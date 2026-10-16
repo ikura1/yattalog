@@ -5,6 +5,7 @@
 最大2台なので、上限は最大で2倍になる。
 """
 
+import re
 from dataclasses import dataclass
 
 from django.conf import settings
@@ -17,6 +18,8 @@ TOO_MANY = "操作が多すぎます。少し待ってから、もう一度お�
 LOGIN_PREFIX = "/accounts/"
 RECORD_SUFFIX = "/record/"
 EXPORT_PATH = "/export/"
+# 開くたびに記録を集計する画面（ふりかえり、イベント詳細）。全体より厳しい上限で数える
+STATS_PATH = re.compile(r"^/(review/|events/[0-9a-f-]{36}/)$")
 
 
 @dataclass(frozen=True)
@@ -43,6 +46,8 @@ def rules_for(request: HttpRequest) -> list[str]:
         if request.path == EXPORT_PATH:
             rules.append("export")
         rules.append("write")
+    if request.method == "GET" and STATS_PATH.match(request.path):
+        rules.append("stats")
     if request.path.startswith(LOGIN_PREFIX):
         rules.append("login")
     rules.append("all")
