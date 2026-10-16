@@ -8,7 +8,7 @@
 <section class="hero c-{{ event.color }}">
   <span class="emo" aria-hidden="true">{{ event.emoji }}</span>
   <div class="hero-text">
-    <h2>{{ event.name }}</h2>
+    <h1>{{ event.name }}</h1>
     <div class="sub">
       {% if t.streak %}🔥 {{ t.streak.text }}{% if not t.streak.current %}{{ t.streak.pending_text }}{% endif %} ・ {% endif %}
       {% if event.category %}{{ event.category.name }} ・ {% endif %}
@@ -30,7 +30,7 @@
 {% if stats.total %}
 {# よくやる（時期・曜日・時間帯・日にち）。1枚のカードで切り替える（決定 060）。最後に選んだものは端末に覚える（app.js） #}
 <section class="card tend-card">
-  <div class="season-head"><h3>よくやる</h3>
+  <div class="season-head"><h2>よくやる</h2>
     <div class="seg2 tend-tabs" role="tablist" aria-label="よくやる">
       <button type="button" role="tab" id="tt-season" aria-controls="tp-season" aria-selected="true" data-tend="season">時期</button>
       <button type="button" role="tab" id="tt-wd" aria-controls="tp-wd" aria-selected="false" data-tend="wd">曜日</button>
@@ -62,7 +62,7 @@
         {% for b in chart.bars %}
           {% if b.count %}<rect class="sbar{% if b.is_peak %} peak{% endif %}" x="{{ b.x }}" y="{{ b.y }}" width="{{ b.width }}" height="{{ b.height }}" rx="3" data-m="{{ b.month }}" data-v="{{ b.count }}"/>{% if b.is_peak %}<text x="{{ b.center }}" y="{{ b.y|add:-5 }}" class="sval" text-anchor="middle">{{ b.count }}</text>{% endif %}{% endif %}
           <text x="{{ b.center }}" y="{{ chart.label_y }}" class="sax{% if b.is_future %} fut{% endif %}" text-anchor="middle">{{ b.month }}</text>
-          <rect class="shit" x="{{ b.slot_x }}" y="0" width="{{ b.slot_width }}" height="150" data-m="{{ b.month }}" data-v="{{ b.count }}" tabindex="0" aria-label="{{ b.month }}月 {{ b.count }}回"/>
+          <rect class="shit" role="img" x="{{ b.slot_x }}" y="0" width="{{ b.slot_width }}" height="150" data-m="{{ b.month }}" data-v="{{ b.count }}" tabindex="0" aria-label="{{ b.month }}月 {{ b.count }}回"/>
         {% endfor %}
       </svg>
     </div>
@@ -91,14 +91,14 @@
     {% for w in "日月火水木金土" %}<span class="dow">{{ w }}</span>{% endfor %}
     {% for week in cal_weeks %}{% for c in week %}
       {% if not c.in_month %}<span class="pad"></span>
-      {% elif c.is_future %}<span class="day future">{{ c.date.day }}</span>
+      {% elif c.is_future %}<span class="day future" aria-disabled="true">{{ c.date.day }}</span>
       {% else %}<a class="day{% if c.has_log %} has{% endif %}{% if c.date == today %} today{% endif %}{% if c.date == sel_date %} sel{% endif %}" href="?y={{ cal_y }}&m={{ cal_m }}&day={{ c.date|iso }}" hx-get="?y={{ cal_y }}&m={{ cal_m }}&day={{ c.date|iso }}" hx-target="#detail" aria-label="{{ c.date.month }}月{{ c.date.day }}日{% if c.has_log %}、記録あり{% endif %}">{{ c.date.day }}</a>{% endif %}
     {% endfor %}{% endfor %}
   </div>
 </section>
 
 <section class="card">
-  <h3>{% if sel_date %}{{ sel_date.month }}月{{ sel_date.day }}日の記録 <a class="btn small" href="?y={{ cal_y }}&m={{ cal_m }}" hx-get="?y={{ cal_y }}&m={{ cal_m }}" hx-target="#detail">すべて表示</a>{% else %}記録の履歴{% endif %}</h3>
+  <h2>{% if sel_date %}{{ sel_date.month }}月{{ sel_date.day }}日の記録 <a class="btn small" href="?y={{ cal_y }}&m={{ cal_m }}" hx-get="?y={{ cal_y }}&m={{ cal_m }}" hx-target="#detail">すべて表示</a>{% else %}記録の履歴{% endif %}</h2>
   {% if logs %}
   <ul class="logs">
     {% for l in logs %}

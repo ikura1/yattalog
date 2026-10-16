@@ -1,6 +1,6 @@
 /* Yattalog — PoC v0.8 のデザインを本実装に移したもの。色はすべてトークンで持つ */
 :root {
-  --bg: #EEF1F6; --surface: #FFFFFF; --fg: #1B2333; --muted: #667085; --line: #D8DEE8;
+  --bg: #EEF1F6; --surface: #FFFFFF; --fg: #1B2333; --muted: #5B667A; --line: #D8DEE8;
   --accent: #1F6F5C; --accent-fg: #FFFFFF; --danger: #C2362B; --toast: #1B2333; --toast-fg: #F4F6FA;
   --scrim: rgba(17, 24, 39, .42); --shadow: 0 1px 2px rgba(17, 24, 39, .08), 0 6px 18px rgba(17, 24, 39, .06);
   --t-tomato: #FFD9D2; --t-tangerine: #FFE3C2; --t-sun: #FFF1B8; --t-leaf: #D7F0C8;
@@ -57,13 +57,15 @@ a { color: inherit; }
 .gap { margin-top: 18px; } .gap-t { margin-top: 10px; } .gap-b { margin-bottom: 14px; }
 
 /* tabs */
-.tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px 12px; padding: 2px 16px 4px; }
+.tabs-bar { display: flex; align-items: center; gap: 6px; margin: 0 -16px 12px; padding-right: 16px; }  /* 「＋」は、タブの並び（tablist）の外に置く */
+.tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0; padding: 2px 6px 4px 16px; flex: 1; min-width: 0; }
+.review-page .tabs { margin: 0 -16px 12px; padding: 2px 16px 4px; }
 .tabs::-webkit-scrollbar { display: none; }
 .tabs button { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 14px; font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 .tabs .n { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .tabs button[aria-selected="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 .tabs button[aria-selected="true"] .n { color: var(--bg); opacity: .7; }
-.tabs .tab-add { width: 36px; justify-content: center; padding: 7px 0; color: var(--muted); }
+.tab-add { flex: none; width: 36px; height: 36px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; display: grid; place-items: center; font-weight: 700; color: var(--muted); }
 .slide-l { animation: sl .22s ease-out; } .slide-r { animation: sr .22s ease-out; }
 @keyframes sl { from { transform: translateX(24px); opacity: .4; } }
 @keyframes sr { from { transform: translateX(-24px); opacity: .4; } }
@@ -79,7 +81,7 @@ a { color: inherit; }
 .tile .name { font-size: 12.5px; font-weight: 700; text-align: center; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.6em; word-break: break-all; }
 .tile .ago { font-family: var(--f-display); font-weight: 800; font-size: 22px; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .tile .ago small { font-size: 12px; margin-left: 1px; }
-.tile .ago.never { font-size: 14px; opacity: .6; }
+.tile .ago.never { font-size: 14px; color: var(--muted); }  /* 薄くする（opacity）と、色つきのタイルの上で読みにくい */
 .tile.today .ago { color: var(--accent); }
 .tile.pressing { transform: scale(.93); }
 .tile.pop { animation: pop .42s cubic-bezier(.3, 1.6, .5, 1); }
@@ -237,7 +239,7 @@ textarea { min-height: 84px; resize: vertical; }
 .hero { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: var(--r); background: var(--tc); color: var(--tile-fg); margin-bottom: 14px; }
 .hero .emo { font-size: 44px; }
 .hero-text { min-width: 0; }
-.hero h2 { margin: 0; font-family: var(--f-display); font-size: 22px; line-height: 1.3; word-break: break-all; }
+.hero h1 { margin: 0; font-family: var(--f-display); font-size: 22px; line-height: 1.3; word-break: break-all; }
 .hero .sub { font-size: 13px; opacity: .8; }
 .hero .big { margin-left: auto; text-align: right; font-family: var(--f-display); font-weight: 800; font-size: 30px; line-height: 1; white-space: nowrap; }
 .hero .big small { font-size: 14px; }
@@ -250,7 +252,7 @@ textarea { min-height: 84px; resize: vertical; }
 .stat .v small { font-size: 12px; }
 .stat .v-sm { font-size: 14px; }
 .card { background: var(--surface); border-radius: var(--r); padding: 14px; margin-bottom: 14px; }
-.card h3 { margin: 0 0 8px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+.card h2, .card h3 { margin: 0 0 8px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
 .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .cal-head strong { font-family: var(--f-display); font-size: 16px; }
 .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; text-align: center; font-variant-numeric: tabular-nums; }
@@ -271,7 +273,7 @@ textarea { min-height: 84px; resize: vertical; }
 /* 狭い画面（日付に年が付く・時刻ありの記録）では、ボタンを下の行に回す（320px で「削除」がはみ出していた） */
 @media (max-width: 359px) { .logs li { flex-wrap: wrap; } .logs .ops { width: 100%; justify-content: flex-end; } }
 .season-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.season-head h3 { margin: 0; }
+.season-head h2, .season-head h3 { margin: 0; }
 .seg2 { display: flex; border: 1px solid var(--line); border-radius: 999px; padding: 2px; gap: 2px; }
 .seg2 a { text-decoration: none; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; color: var(--muted); }
 .seg2 a[aria-current="true"] { background: var(--fg); color: var(--bg); }

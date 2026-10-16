@@ -1,7 +1,7 @@
 {% extends "web/base.html" %}
 {% load static %}
 {% block body %}
-<div class="app" id="app" data-grid-url="{% url 'web:grid' %}" data-tz-url="{% url 'web:timezone' %}"
+<main class="app" id="app" data-grid-url="{% url 'web:grid' %}" data-tz-url="{% url 'web:timezone' %}"
      data-user-tz="{{ user_tz }}" data-kept-tz="{{ user.timezone_kept_for }}" data-needs-tz="{{ needs_tz|yesno:'1,' }}" data-install-url="{% url 'web:install' %}">
   <header class="bar">
     <h1 class="logo"><img class="logo-mark" src="{% static 'icons/icon.svg' %}" alt="" width="28" height="28">Yatta<b>log</b></h1>
@@ -22,5 +22,5 @@
   </div>
   <p class="edit-hint" id="editHint" hidden>ドラッグで並べ替え ・ タップで詳細 ・ ×でアーカイブ／削除</p>
   <div id="grid-wrap">{% include "web/_grid.html" %}</div>
-</div>
+</main>
 {% endblock %}
