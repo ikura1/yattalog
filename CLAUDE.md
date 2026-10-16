@@ -75,7 +75,7 @@ uv run python manage.py makemigrations --check --dry-run
 ## 現状（2026-10-14）
 - **本番で動いている**：https://yattalog-332057063162.asia-southeast1.run.app （Cloud Run シンガポール + Neon、Google Cloud のプロジェクトは `yattalog-511302`）
   - ログインできるのは、OAuth のテストユーザー（いまは Yuki さんだけ）
-  - β に入れる機能は実装済み（シェアも β に入れた）。残りは `docs/handoff.md` の「本番に切り替える前のチェック」（ほとんどが Yuki さんの手作業）
+  - β に入れる機能は実装済み（シェアも β に入れた）。残りは Yuki さんの手作業で、**Issue #117（固定）にチェックリストとしてまとめている**。終わったと聞いたら、Claude がチェックを付ける
 - **ほかのセッションも、このリポジトリで PR を出している。** 作業の前に `gh pr list` と `git pull`。決定記録の番号は、取る前に `docs/decisions/` と開いている PR を確かめる
 - 経緯・やり残し・次の候補は `docs/handoff.md`。リリース計画は `SPEC.md` 7章（α → β → v1 → v1.x）
 - PoC（`poc/index.html`）は仕様確認用。本体とは別物
