@@ -170,3 +170,13 @@ def test_この1年でよくやったことに_ほかの人の記録は入らな
     other = new_user(email="b@example.com")
     record(other, ev_svc.create_event(other, name="ひみつ", emoji="🤫", color="pink"))
     assert top_events(user, TODAY) == []
+
+
+def test_その日の記録は_多すぎるときは上限までにして_残りの数を返す(user, water, monkeypatch):
+    from apps.events.services import review
+
+    monkeypatch.setattr(review, "DAY_LIMIT", 3)
+    for _ in range(5):
+        record(user, water)
+    logs = logs_on(user, TODAY)
+    assert (len(logs), logs.more) == (3, 2)

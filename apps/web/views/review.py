@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
+from django.views.decorators.vary import vary_on_headers
 
 from apps.events.services import events as ev_svc
 from apps.events.services import review as review_svc
@@ -15,6 +16,7 @@ from apps.web.views.common import _today, owned_or_404, parse_date_or_none
 @login_required
 @owned_or_404
 @require_GET
+@vary_on_headers("HX-Request")  # htmx かどうかで、ページ全体か中身だけかが変わる
 def review(request: HttpRequest) -> HttpResponse:
     """1年分の草と、選んだ日にやったこと。?event= で1つのイベントに絞る。日付が読めない・先の日なら今日。"""
     today = _today(request)

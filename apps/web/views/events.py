@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.vary import vary_on_headers
 
 from apps.events.models import COLORS, StreakUnit
 from apps.events.services import events as ev_svc
@@ -55,6 +56,7 @@ EMOJIS = [
 
 UNITS = [(u.value, u.label) for u in StreakUnit]
 HISTORY_PAGE = 20  # 記録の履歴は、はじめこの件数だけ出し、「もっと見る」で増やす（詳細が縦に長くならないように）
+HISTORY_MAX = 2000  # 「もっと見る」で出せる上限
 
 
 def _event_form_ctx(request, event=None, form=None, **extra) -> dict:
@@ -205,10 +207,11 @@ def categories(request: HttpRequest) -> HttpResponse:
 @login_required
 @owned_or_404
 @require_GET
+@vary_on_headers("HX-Request")  # htmx かどうかで、ページ全体か中身だけかが変わる
 def event_detail(request: HttpRequest, event_id) -> HttpResponse:
     event = _event(request, event_id)
     today = _today(request)
-    y = _int_param(request, "y", today.year, 1900, 9999)
+    y = _int_param(request, "y", today.year, 1900, 9998)  # 9999年12月は、日曜始まりの週が 10000年にかかって作れない
     m = _int_param(request, "m", today.month, 1, 12)
     season_all = request.GET.get("season") == "all"
     season_year = _int_param(request, "sy", today.year, 1900, 9999)
@@ -218,10 +221,10 @@ def event_detail(request: HttpRequest, event_id) -> HttpResponse:
         sel_date = None
     season = stats.season(event, None if season_all else season_year)
     logs = log_svc.history(event, sel_date)
-    shown = _int_param(request, "n", HISTORY_PAGE, HISTORY_PAGE, 2000)
+    shown = _int_param(request, "n", HISTORY_PAGE, HISTORY_PAGE, HISTORY_MAX)
     left = logs.count() - shown
     more = request.GET.copy()
-    more["n"] = shown + HISTORY_PAGE
+    more["n"] = min(shown + HISTORY_PAGE, HISTORY_MAX)
     ctx = {
         "event": event,
         "t": tile(event, today),
@@ -238,7 +241,7 @@ def event_detail(request: HttpRequest, event_id) -> HttpResponse:
         "sel_date": sel_date,
         "today": today,
         "logs": logs[:shown],
-        "more_url": f"?{more.urlencode()}" if left > 0 else "",
+        "more_url": f"?{more.urlencode()}" if left > 0 and shown < HISTORY_MAX else "",
         "more_left": left,
         "latest_log": log_svc.history(event).first(),  # 「シェア」の対象（最新の記録）
         # そのイベントのくせ（決定 060）

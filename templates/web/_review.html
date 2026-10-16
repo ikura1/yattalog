@@ -19,10 +19,10 @@
   {% if review.event %}<p class="legend"><i class="hm l1"></i>やった日</p>
   {% else %}<p class="legend">やったイベントの数　1つ<i class="hm l1"></i><i class="hm l2"></i><i class="hm l3"></i><i class="hm l4"></i>4つ以上</p>{% endif %}
   <div class="review-day" id="reviewDay" aria-live="polite">
-    <h2>{{ day|md_wd }}{% if day_logs %}　{{ day_logs|length }}回{% endif %}</h2>
+    <h2>{{ day|md_wd }}{% if day_logs %}　{{ day_logs|length|add:day_logs.more }}回{% endif %}</h2>
     {% if day_logs %}<ul>{% for l in day_logs %}
       <li><a href="{% url 'web:event_detail' l.event.id %}"><span class="emo" aria-hidden="true">{{ l.event.emoji }}</span>{{ l.event.name }}</a>{% if l.memo %}<small>{{ l.memo }}</small>{% endif %}<span class="t">{{ l|log_time }}</span></li>
-    {% endfor %}</ul>
+    {% endfor %}</ul>{% if day_logs.more %}<p class="note">ほか {{ day_logs.more }}件</p>{% endif %}
     {% else %}<p class="note">この日の記録はありません</p>{% endif %}
   </div>
 </section>

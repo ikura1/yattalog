@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import date
 
 from django.db.models import Count, Max, Min
-from django.db.models.functions import ExtractMonth, ExtractYear
+from django.db.models.functions import ExtractDay, ExtractHour, ExtractMonth, ExtractWeekDay, ExtractYear
 
 from apps.events.models import Event, Log, StreakUnit
 from apps.events.services.dates import friendly_interval, period_index, zone
@@ -129,7 +129,7 @@ def _month_ranges(months: list[int]) -> str:
 def season(event: Event, year: int | None) -> Season:
     """月別の記録回数。year が None なら全期間の合計。"""
     logs = Log.objects.filter(event=event)
-    years = sorted({y for y in logs.annotate(y=ExtractYear("local_date")).values_list("y", flat=True)})
+    years = list(logs.annotate(y=ExtractYear("local_date")).values_list("y", flat=True).distinct().order_by("y"))
     if year is not None:
         logs = logs.filter(local_date__year=year)
     counts = [0] * 12
@@ -179,10 +179,20 @@ def _tendency(names, counts, *, few: str, even: str, suffix: str = "") -> Tenden
     return Tendency(names=list(names), counts=counts, headline=headline, peaks=peaks)
 
 
+def _count_by(event: Event, part, size: int, offset: int) -> list[int]:
+    """日付の一部（曜日・日）ごとの回数を、データベースで数える。
+
+    記録を全部読んで Python で数えると、記録の多いイベントで重くなる（セキュリティの見直し 2026-10-15）。
+    """
+    counts = [0] * size
+    rows = Log.objects.filter(event=event).annotate(k=part("local_date")).values("k").annotate(n=Count("id"))
+    for row in rows.order_by():
+        counts[row["k"] - offset] = row["n"]
+    return counts
+
+
 def weekday_tendency(event: Event) -> Tendency:
-    counts = [0] * 7
-    for d in Log.objects.filter(event=event).values_list("local_date", flat=True).iterator():
-        counts[(d.weekday() + 1) % 7] += 1
+    counts = _count_by(event, ExtractWeekDay, 7, 1)  # ExtractWeekDay は 1＝日曜〜7＝土曜
     return _tendency(
         WEEKDAY_NAMES, counts, few="記録が増えると、よくやる曜日がわかります", even="どの曜日も同じくらい", suffix="曜"
     )
@@ -201,9 +211,12 @@ def _slot(hour: int) -> int:
 def time_tendency(event: Event) -> Tendency:
     """時刻つきの記録だけを、記録したときのタイムゾーンの時刻で数える（日付だけの記録は時刻がわからない）。"""
     counts = [0] * len(TIME_SLOTS)
-    rows = Log.objects.filter(event=event, occurred_at__isnull=False).values_list("occurred_at", "timezone")
-    for at, tz in rows.iterator():
-        counts[_slot(at.astimezone(zone(tz)).hour)] += 1
+    timed = Log.objects.filter(event=event, occurred_at__isnull=False)
+    # 時刻は、記録したときのタイムゾーンで見る。タイムゾーンごとに、時（0〜23）ごとの回数をデータベースで数える
+    for tz in timed.values_list("timezone", flat=True).distinct().order_by():
+        rows = timed.filter(timezone=tz).annotate(h=ExtractHour("occurred_at", tzinfo=zone(tz))).values("h")
+        for row in rows.annotate(n=Count("id")).order_by():
+            counts[_slot(row["h"])] += row["n"]
     return _tendency(
         TIME_SLOTS,
         counts,
@@ -225,9 +238,7 @@ class MonthDays:
 
 
 def month_days(event: Event) -> MonthDays:
-    counts = [0] * 31
-    for d in Log.objects.filter(event=event).values_list("local_date", flat=True).iterator():
-        counts[d.day - 1] += 1
+    counts = _count_by(event, ExtractDay, 31, 1)
     thirds = [sum(counts[0:10]), sum(counts[10:20]), sum(counts[20:31])]
     tendency = _tendency(
         THIRDS, thirds, few="記録が増えると、よくやる日にちがわかります", even="月のうち、いつも同じくらい"
