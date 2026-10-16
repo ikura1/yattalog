@@ -19,6 +19,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "axe-playwright-python>=0.1.8",
     "factory-boy>=3.3.3",
     "freezegun>=1.5.5",
     "hypothesis>=6.168.5",
