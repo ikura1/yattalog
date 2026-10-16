@@ -1,7 +1,7 @@
 """Yattalog の設定。
 
 値は環境変数から読む。開発では `.env` を使わず、既定値（SQLite・DEBUG）で動く。
-本番（Render）では DATABASE_URL・SECRET_KEY などを環境変数で渡す。
+本番（Cloud Run）では DATABASE_URL・SECRET_KEY などを環境変数で渡す（deploy/README.md）。
 """
 
 import os
@@ -29,8 +29,6 @@ if not SECRET_KEY:
     raise RuntimeError("DJANGO_SECRET_KEY を設定してください（開発では DJANGO_DEBUG=1）")
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
-if render_host := os.environ.get("RENDER_EXTERNAL_HOSTNAME"):
-    ALLOWED_HOSTS.append(render_host)
 CSRF_TRUSTED_ORIGINS = [f"https://{h}" for h in ALLOWED_HOSTS if h not in {"localhost", "127.0.0.1"}]
 
 INSTALLED_APPS = [
