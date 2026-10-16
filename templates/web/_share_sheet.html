@@ -2,7 +2,7 @@
 {# 画像は、この材料から端末で作る（static/js/app.js の drawShareCard）。サーバーには送らない #}
 <div class="share-prev" id="shareCard"
      data-emoji="{{ info.event.emoji }}" data-name="{{ info.event.name }}" data-color="{{ info.event.color }}"
-     data-headline="{{ info.headline }}" data-sub="{{ info.subline }}" data-when="{{ info.when }}" data-memo="{{ info.memo }}" data-text="{{ info.text }}">
+     data-headline="{{ info.headline }}" data-sub="{{ info.subline }}" data-when="{{ info.when }}" data-memo="{{ info.memo }}" data-text="{{ info.text }}" data-shared-url="{% url 'web:achievement_share' %}">
   <img id="shareImg" alt="シェア画像のプレビュー：{{ info.event.name }}、やった！、{{ info.headline }}{% if info.subline %}、{{ info.subline }}{% endif %}" width="1080" height="1350">
 </div>
 <label class="check share-opt"><input type="checkbox" id="shareMemo"{% if not info.memo %} disabled{% endif %}>

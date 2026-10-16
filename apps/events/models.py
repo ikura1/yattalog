@@ -2,7 +2,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models import Q
 
-from apps.core.models import BaseModel
+from apps.core.models import BaseModel, new_id
 from apps.spaces.models import Space
 
 COLORS = ["tomato", "tangerine", "sun", "leaf", "teal", "sky", "grape", "pink"]
@@ -129,3 +129,23 @@ class Log(BaseModel):
     @property
     def has_time(self) -> bool:
         return self.occurred_at is not None
+
+
+class Achievement(models.Model):
+    """解除した実績（決定 020・063）。実績の定義はコード（services/achievements.py）に持ち、ここには解除の記録だけ。
+
+    実績は人に付く（スペースではなく）。記録を消しても、解除の記録は消さない。
+    """
+
+    id = models.UUIDField(primary_key=True, default=new_id, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="achievements")
+    code = models.CharField(max_length=32)
+    unlocked_at = models.DateTimeField()
+
+    class Meta:
+        verbose_name = "実績"
+        verbose_name_plural = "実績"
+        constraints = [models.UniqueConstraint(fields=["user", "code"], name="achievement_once_per_user")]
+
+    def __str__(self) -> str:
+        return f"{self.code} @ {self.unlocked_at:%Y-%m-%d}"

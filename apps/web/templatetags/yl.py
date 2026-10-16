@@ -59,5 +59,12 @@ def since(first: date, today: date) -> str:
 
 
 @register.filter
+def local_md(at, tz_name: str) -> str:
+    """日時を、そのタイムゾーンでの「10月10日」に。"""
+    d = at.astimezone(zone(tz_name)).date()
+    return f"{d.month}月{d.day}日"
+
+
+@register.filter
 def iso(d: date) -> str:
     return d.isoformat() if d else ""

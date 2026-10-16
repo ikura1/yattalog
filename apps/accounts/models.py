@@ -5,7 +5,7 @@ from django.utils import timezone as dj_timezone
 from apps.core.models import new_id
 
 TERMS_VERSION = "2026-10-12"
-PRIVACY_VERSION = "2026-10-13"
+PRIVACY_VERSION = "2026-10-17"
 
 
 class UserManager(BaseUserManager):
@@ -37,6 +37,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     timezone = models.CharField("タイムゾーン", max_length=64, default="Asia/Tokyo")
     timezone_kept_for = models.CharField(max_length=64, blank=True)
     onboarded_at = models.DateTimeField(null=True, blank=True)
+    # 実績の判定を始めたか（決定 063）。False の人（機能が入る前からの人）は、最初の判定でまとめて静かに解除する
+    achievements_synced = models.BooleanField(default=True)
     terms_version = models.CharField(max_length=20, blank=True)
     privacy_version = models.CharField(max_length=20, blank=True)
     terms_accepted_at = models.DateTimeField(null=True, blank=True)

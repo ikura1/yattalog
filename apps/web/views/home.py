@@ -17,6 +17,7 @@ from apps.web.views.common import (
     _form_error,
     _refresh,
     _today,
+    _with_achievements,
 )
 
 
@@ -73,7 +74,7 @@ def starters(request: HttpRequest) -> HttpResponse:
         except ValidationError as e:
             ctx = {"starters": starter_svc.starter_choices(request.user)}
             return _form_error(request, "web/_starters_sheet.html", ctx, e)
-        return _refresh(HttpResponse(status=204), f"{len(added)}件を追加しました")
+        return _refresh(HttpResponse(status=204), _with_achievements(request, f"{len(added)}件を追加しました"))
     return render(request, "web/_starters_sheet.html", {"starters": starter_svc.starter_choices(request.user)})
 
 

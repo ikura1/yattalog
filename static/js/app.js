@@ -84,6 +84,7 @@
   const sheet = () => $("#sheet");
   function openSheet() {
     sheet().hidden = false;
+    sheet().scrollTop = 0; // 中身が入れ替わったら、一番上から見せる（前のシートのスクロール位置を引き継がない）
     $("#scrim").hidden = false;
     // 入力欄には当てない（スマホでキーボードが開いて中身を隠すため）。読み上げのためにシート自体へ移す
     sheet().focus({ preventScroll: true });
@@ -176,7 +177,8 @@
       if (data.streak_grew && fbtn) { const s = $(".streak", fbtn); if (s) s.classList.add("burst"); }
       const name = $(".name", fbtn || btn)?.textContent || "";
       // 記録した直後が、いちばん次の操作をしたい瞬間。取り消し・メモ・シェア・詳細へ、ここから行ける（決定 055）
-      toast(data.streak_grew ? `🔥 ${data.streak_text}！` : `やった！ ${name} を記録しました`, [
+      const said = data.streak_grew ? `🔥 ${data.streak_text}！` : `やった！ ${name} を記録しました`;
+      toast(data.achievement ? `${said}　${data.achievement}` : said, [
         { label: "取り消す", fn: () => undo(data.log_id, fresh) },
         { label: "メモ", fn: () => loadSheet(`/logs/${data.log_id}/edit/`) },
         { label: "シェア", fn: () => loadSheet(data.share_url) },
@@ -500,6 +502,12 @@
       img.src = url;
       save.href = url;
     };
+    // シェアした、とサーバーに知らせる（実績「シェアデビュー」、決定 063）。シェアそのものは端末で完結する
+    const shared = () => {
+      if (!d.sharedUrl) return;
+      post(d.sharedUrl, {}).then((r) => (r.ok ? r.json() : {})).then((j) => { if (j.achievement) toast(j.achievement); }).catch(() => {});
+    };
+    save.addEventListener("click", shared);
     memo.addEventListener("change", redraw);
     $("#shareDo", root).addEventListener("click", async () => {
       if (!blob) return;
@@ -507,6 +515,7 @@
       try {
         if (!navigator.canShare || !navigator.canShare({ files: [file] })) throw new Error("unsupported");
         await navigator.share({ files: [file], text: d.text });
+        shared();
       } catch (err) {
         if (err && err.name === "AbortError") return; // 共有シートを閉じただけ
         note.textContent = "この環境では、共有シートに画像を渡せませんでした。「画像を保存する」で保存して、投稿に添えてください";

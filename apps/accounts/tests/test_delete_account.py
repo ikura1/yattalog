@@ -10,7 +10,8 @@ from apps.accounts.models import User
 from apps.accounts.services import delete_account
 from apps.accounts.tests.test_google_login import GOOGLE_USER, login_with_google
 from apps.core.testing import new_user
-from apps.events.models import Category, Event, Log
+from apps.events.models import Achievement, Category, Event, Log
+from apps.events.services import achievements as ach_svc
 from apps.events.services import events as ev_svc
 from apps.events.services import logs as log_svc
 from apps.spaces.models import Space, SpaceMember
@@ -19,7 +20,8 @@ from apps.spaces.models import Space, SpaceMember
 def with_data(user):
     category = ev_svc.create_category(user, "家事", emoji="🧹")
     event = ev_svc.create_event(user, name="シーツ交換", emoji="🛏️", color="sky", category_id=category.id)
-    log_svc.record(user, event.id, uuid.uuid7(), memo="メモ")
+    log = log_svc.record(user, event.id, uuid.uuid7(), memo="メモ").log
+    ach_svc.check(user, log)  # 実績「はじめの一歩」も持たせる
     return user
 
 
@@ -30,8 +32,8 @@ def test_退会すると_ユーザーとそのデータがすべて消える(rf)
 
     delete_account(user)
 
-    counts = [m.objects.count() for m in (User, SocialAccount, Space, SpaceMember, Category, Event, Log)]
-    assert counts == [0, 0, 0, 0, 0, 0, 0]
+    counts = [m.objects.count() for m in (User, SocialAccount, Space, SpaceMember, Category, Event, Log, Achievement)]
+    assert counts == [0, 0, 0, 0, 0, 0, 0, 0]
 
 
 def test_ほかの人のデータは消えない(user):

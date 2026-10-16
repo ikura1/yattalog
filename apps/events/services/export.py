@@ -10,6 +10,7 @@ import zipfile
 from datetime import datetime
 
 from apps.events.models import Category, Event, Log
+from apps.events.services import achievements as ach_svc
 from apps.events.services.dates import zone
 from apps.spaces.services import personal_space
 
@@ -69,6 +70,11 @@ def _iso(value: datetime | None) -> str | None:
     return value.isoformat() if value else None
 
 
+def _achievements(user) -> list[dict]:
+    """解除した実績（決定 063）。"""
+    return [{"code": a.code, "name": a.name, "unlocked_at": _iso(at)} for a, at in ach_svc.listing(user) if at]
+
+
 def _data(user, now: datetime, categories, events, logs) -> dict:
     return {
         "format": FORMAT,
@@ -113,6 +119,7 @@ def _data(user, now: datetime, categories, events, logs) -> dict:
             }
             for log in logs
         ],
+        "achievements": _achievements(user),
     }
 
 

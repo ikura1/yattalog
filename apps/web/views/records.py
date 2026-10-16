@@ -23,6 +23,8 @@ from apps.web.views.common import (
     _log,
     _refresh,
     _today,
+    _with_achievements,
+    new_achievements,
     owned_or_404,
     parse_date_or_none,
     parse_uuid,
@@ -59,6 +61,8 @@ def record(request: HttpRequest, event_id) -> JsonResponse:
             "share_url": reverse("web:share", args=[result.log.id]),
             "streak_grew": result.streak_grew,
             "streak_text": t.streak.text if t.streak else "",
+            # 新しく解除した実績（決定 063）。同じ記録の送り直しでは判定しない
+            "achievement": new_achievements(request, result.log) if result.created else "",
         }
     )
 
@@ -92,7 +96,7 @@ def record_sheet(request: HttpRequest, event_id) -> HttpResponse:
     event = _event(request, event_id)
     if request.method == "POST":
         try:
-            log_svc.record(
+            result = log_svc.record(
                 request.user,
                 event.id,
                 parse_uuid(request.POST.get("log_id")),
@@ -108,7 +112,7 @@ def record_sheet(request: HttpRequest, event_id) -> HttpResponse:
             )
         except ValidationError as e:
             return _form_error(request, "web/_record_sheet.html", _record_ctx(request, event, form=request.POST), e)
-        return _refresh(HttpResponse(status=204), "やった！ 記録しました")
+        return _refresh(HttpResponse(status=204), _with_achievements(request, "やった！ 記録しました", result.log))
     try:
         preset = parse_date_or_none(request.GET.get("date"))
     except ValidationError:
@@ -122,12 +126,12 @@ def log_edit_sheet(request: HttpRequest, log_id) -> HttpResponse:
     log = _log(request, log_id)
     if request.method == "POST":
         try:
-            log_svc.edit(request.user, log.id, parse_when(request.POST), request.POST.get("memo", ""))
+            edited = log_svc.edit(request.user, log.id, parse_when(request.POST), request.POST.get("memo", ""))
         except ValidationError as e:
             return _form_error(
                 request, "web/_record_sheet.html", _record_ctx(request, log.event, log, form=request.POST), e
             )
-        return _refresh(HttpResponse(status=204), "記録を更新しました")
+        return _refresh(HttpResponse(status=204), _with_achievements(request, "記録を更新しました", edited))
     return render(request, "web/_record_sheet.html", _record_ctx(request, log.event, log))
 
 

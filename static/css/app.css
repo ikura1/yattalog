@@ -391,3 +391,13 @@ textarea { min-height: 84px; resize: vertical; }
 .ago li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
 .ago li a { display: inline-flex; gap: 6px; font-weight: 700; text-decoration: none; }
 .ago .t { margin-left: auto; color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+
+/* ---- 実績（決定 063） ---- */
+.ach { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.ach li { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 14px; background: var(--bg); min-width: 0; }
+.ach .ach-emo { font-size: 28px; line-height: 1; flex: none; width: 36px; text-align: center; }
+.ach li div { display: flex; flex-direction: column; min-width: 0; }
+.ach b { font-family: var(--f-display); font-size: 14px; }
+.ach small { font-size: 12px; color: var(--muted); line-height: 1.4; }
+.ach li.off .ach-emo { filter: grayscale(1) brightness(0); opacity: .22; }  /* まだのものは、シルエット */
+.ach li.off b { color: var(--muted); }

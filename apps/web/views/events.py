@@ -22,6 +22,7 @@ from apps.web.views.common import (
     _int_param,
     _refresh,
     _today,
+    _with_achievements,
     owned_or_404,
     parse_date_or_none,
 )
@@ -113,7 +114,7 @@ def event_new(request: HttpRequest) -> HttpResponse:
             )
         except ValidationError as e:
             return _form_error(request, "web/_event_sheet.html", _event_form_ctx(request, form=p), e)
-        return _refresh(HttpResponse(status=204), "追加しました")
+        return _refresh(HttpResponse(status=204), _with_achievements(request, "追加しました"))
     return render(request, "web/_event_sheet.html", _event_form_ctx(request))
 
 
