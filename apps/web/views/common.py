@@ -2,6 +2,7 @@
 
 import functools
 import json
+import logging
 import uuid
 from datetime import date, time
 
@@ -16,6 +17,8 @@ from apps.events.services import achievements as ach_svc
 from apps.events.services import events as ev_svc
 from apps.events.services.dates import today_in
 from apps.events.services.logs import When
+
+logger = logging.getLogger(__name__)
 
 
 def _today(request: HttpRequest) -> date:
@@ -76,10 +79,22 @@ def _refresh(resp: HttpResponse, toast: str | None = None, **extra) -> HttpRespo
     return resp
 
 
+def new_achievements(request: HttpRequest, log: Log | None = None) -> str:
+    """新しく解除した実績の知らせ（決定 063）。判定に失敗しても、操作（記録など）の成否には波及させない。
+
+    記録はもう保存してある。ここで 500 を返すと、端末は「記録できませんでした」と出して見た目と食い違う。
+    """
+    try:
+        return ach_svc.announcement(ach_svc.check(request.user, log))
+    except Exception:
+        logger.exception("実績の判定に失敗しました")
+        return ""
+
+
 def _with_achievements(request: HttpRequest, message: str, log: Log | None = None) -> str:
-    """操作の知らせに、新しく解除した実績を添える（決定 063）。「やった！ 記録しました　🏅 実績解除：じゅっかい」"""
-    found = ach_svc.check(request.user, log)
-    return f"{message}　{ach_svc.announcement(found)}" if found else message
+    """操作の知らせに、新しく解除した実績を添える。「やった！ 記録しました　🏅 実績解除：じゅっかい」"""
+    found = new_achievements(request, log)
+    return f"{message}　{found}" if found else message
 
 
 def _form_error(request, template, ctx, err: ValidationError) -> HttpResponse:

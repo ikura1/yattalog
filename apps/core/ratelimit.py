@@ -18,8 +18,8 @@ TOO_MANY = "操作が多すぎます。少し待ってから、もう一度お�
 LOGIN_PREFIX = "/accounts/"
 RECORD_SUFFIX = "/record/"
 EXPORT_PATH = "/export/"
-# 開くたびに記録を集計する画面（ふりかえり、イベント詳細）。全体より厳しい上限で数える
-STATS_PATH = re.compile(r"^/(review/|events/[0-9a-f-]{36}/)$")
+# 開くたびに記録を集計する画面（ふりかえり、イベント詳細、実績）。全体より厳しい上限で数える
+STATS_PATH = re.compile(r"^/(review/|achievements/|events/[0-9a-f-]{36}/)$")
 
 
 @dataclass(frozen=True)

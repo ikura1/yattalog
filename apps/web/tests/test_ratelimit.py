@@ -107,3 +107,9 @@ def test_集計の重い画面は_全体より厳しい上限で数える(client
     assert [client_in.get(u).status_code for u in urls] == [200, 200, 200, 200]
     assert client_in.get("/review/").status_code == 429
     assert client_in.get("/").status_code == 200  # ほかの画面は、全体の上限までは使える
+
+
+@override_settings(RATE_LIMITS=SMALL)
+def test_実績の一覧も_集計の重い画面として数える(client_in):
+    assert [client_in.get("/achievements/").status_code for _ in range(4)] == [200] * 4
+    assert client_in.get("/achievements/").status_code == 429

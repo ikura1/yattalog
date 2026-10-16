@@ -14,7 +14,6 @@ from django.views.decorators.http import require_GET, require_POST
 
 from apps.core import clock
 from apps.events.models import Event, Log
-from apps.events.services import achievements as ach_svc
 from apps.events.services import logs as log_svc
 from apps.events.services import share as share_svc
 from apps.web.presenters import tile
@@ -25,6 +24,7 @@ from apps.web.views.common import (
     _refresh,
     _today,
     _with_achievements,
+    new_achievements,
     owned_or_404,
     parse_date_or_none,
     parse_uuid,
@@ -62,7 +62,7 @@ def record(request: HttpRequest, event_id) -> JsonResponse:
             "streak_grew": result.streak_grew,
             "streak_text": t.streak.text if t.streak else "",
             # 新しく解除した実績（決定 063）。同じ記録の送り直しでは判定しない
-            "achievement": ach_svc.announcement(ach_svc.check(request.user, result.log)) if result.created else "",
+            "achievement": new_achievements(request, result.log) if result.created else "",
         }
     )
 

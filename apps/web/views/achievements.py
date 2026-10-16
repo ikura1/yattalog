@@ -11,8 +11,13 @@ from apps.events.services import achievements as ach_svc
 @login_required
 @require_GET
 def achievements(request: HttpRequest) -> HttpResponse:
-    """実績の一覧（シート）。機能が入る前からの人は、ここを開いたときにも、満たしているものを静かに解除する。"""
-    ach_svc.check(request.user)
+    """実績の一覧（シート）。
+
+    判定はふだん記録などのあとにだけ行う。機能より前からの人がまだ記録していなければ、ここで一度だけ
+    満たしているものを静かに解除する（GET で書き込むのは、この最初の1回だけ）。
+    """
+    if not request.user.achievements_synced:
+        ach_svc.check(request.user)
     items = ach_svc.listing(request.user)
     ctx = {"items": items, "done": sum(1 for _, at in items if at), "user_tz": request.user.timezone}
     return render(request, "web/_achievements_sheet.html", ctx)

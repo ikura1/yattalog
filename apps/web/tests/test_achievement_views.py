@@ -75,3 +75,27 @@ def test_実績の一覧は_解除したものに日付_まだのものに条件
     assert "全部のイベントの合計で10回記録する" in body  # まだのものは、条件を出す
     assert "1 / 15" in body  # 解除した数
     assert "フォトログ" not in body
+
+
+def broken(*args, **kwargs):
+    raise RuntimeError("判定の途中で落ちた")
+
+
+def test_実績の判定が失敗しても_記録はできたと返す(client_in, user, event, monkeypatch):
+    """判定は付随的な機能。失敗を記録の成否に波及させない（見直し M1）。"""
+    from apps.events.models import Log
+    from apps.events.services import achievements as ach_svc
+
+    monkeypatch.setattr(ach_svc, "check", broken)
+    r = client_in.post(f"/events/{event.id}/record/", {"log_id": str(uuid.uuid4())})
+    assert r.status_code == 200 and r.json()["achievement"] == ""
+    sheet = client_in.post(f"/events/{event.id}/record-sheet/", {"log_id": str(uuid.uuid4())})
+    assert toast_of(sheet) == "やった！ 記録しました"
+    assert Log.objects.filter(event=event).count() == 2
+
+
+def test_実績の一覧を開いても_判定するのは機能より前からの人の最初だけ(client_in, user, monkeypatch):
+    from apps.events.services import achievements as ach_svc
+
+    monkeypatch.setattr(ach_svc, "check", broken)
+    assert client_in.get("/achievements/").status_code == 200  # 判定済みの人は、判定しない
