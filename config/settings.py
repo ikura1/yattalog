@@ -29,6 +29,8 @@ if not SECRET_KEY:
     raise RuntimeError("DJANGO_SECRET_KEY を設定してください（開発では DJANGO_DEBUG=1）")
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
+# 寄せ先のドメイン（決定 064）。空なら寄せない。ALLOWED_HOSTS にも入れておくこと
+CANONICAL_HOST = os.environ.get("YATTALOG_CANONICAL_HOST", "").strip()
 CSRF_TRUSTED_ORIGINS = [f"https://{h}" for h in ALLOWED_HOSTS if h not in {"localhost", "127.0.0.1"}]
 
 INSTALLED_APPS = [
@@ -53,6 +55,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "apps.core.canonical.CanonicalHostMiddleware",  # 古いホスト（run.app）から独自のドメインへ（決定 064）
     "django.middleware.csp.ContentSecurityPolicyMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",

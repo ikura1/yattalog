@@ -86,3 +86,4 @@
 | 061 | [ふりかえりに「1年前の今ごろ」を出す](061-a-year-ago.md) | 決定 |
 | 062 | [「この1年でよくやったこと」と「いちばんよくやった月」を出す](062-top-events-and-best-month.md) | 決定 |
 | 063 | [実績バッジを入れる（実装の決めごと）](063-achievements-implementation.md) | 決定 |
+| 064 | [独自のドメイン yattalog.ikura1.dev で出す](064-custom-domain.md) | 決定 |
