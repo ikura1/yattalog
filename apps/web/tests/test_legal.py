@@ -74,3 +74,8 @@ def test_登録のときに記録する版は_規約は制定日_ポリシーは
 
 def test_ポリシーには改定日が出る(client, db):
     assert "改定日：2026年10月17日" in client.get("/privacy/").content.decode()
+
+
+def test_ポリシーの委託先に_問い合わせの受付_Googleフォーム_がある(client, db):
+    body = client.get("/privacy/").content.decode()
+    assert "Google LLC（Google フォーム）" in body and "問い合わせの受付" in body
