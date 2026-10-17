@@ -75,7 +75,7 @@ uv run python manage.py makemigrations --check --dry-run
 - 秘密の値を端末で貼り付けるとき（`read -rs`）は画面に出ないので、二重に貼りやすい。登録したら長さと形だけを確かめる（値は表示しない）
 
 ## 現状（2026-10-14）
-- **本番で動いている**：https://yattalog-332057063162.asia-southeast1.run.app （Cloud Run シンガポール + Neon、Google Cloud のプロジェクトは `yattalog-511302`）
+- **本番で動いている**：https://yattalog-332057063162.asia-southeast1.run.app 。独自のドメイン https://yattalog.ikura1.dev に切り替え中（決定 064、手順は決定記録に）（Cloud Run シンガポール + Neon、Google Cloud のプロジェクトは `yattalog-511302`）
   - ログインできるのは、OAuth のテストユーザー（いまは Yuki さんだけ）
   - β に入れる機能は実装済み（シェアも β に入れた）。残りは Yuki さんの手作業で、**Issue #117（固定）にチェックリストとしてまとめている**。終わったと聞いたら、Claude がチェックを付ける
 - **ほかのセッションも、このリポジトリで PR を出している。** 作業の前に `gh pr list` と `git pull`。決定記録の番号は、取る前に `docs/decisions/` と開いている PR を確かめる
