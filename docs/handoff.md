@@ -94,7 +94,7 @@
   gcloud secrets versions destroy 1 --secret database-url --project yattalog-511302
   gcloud secrets versions destroy 1 --secret google-client-secret --project yattalog-511302
   ```
-- **問い合わせ用の Google フォーム**：依頼書を作ってある（https://claude.ai/artifact/6wueKJTfcWcwASBiMRh1NV 、非公開）。できたら、ポリシーの委託先に「問い合わせの受付（Google フォーム）」を足す
+- **問い合わせ用の Google フォーム**：済み（2026-10-17）。Variable `CONTACT_URL` に登録し、ポリシーの委託先に足した
 - **商標**：J-PlatPat で「ヤッタログ」「やったログ」「YATTALOG」を検索する（第9類・第42類）。下調べは #13 のコメント
 - **ロゴの元データ**：デザイナーから SVG が届いたら、`static/icons/*.svg` を差し替えて `tools/build_icons.py` を流す（#32）。いまの SVG は、案の画像を見て `tools/draw_icons.py` で描き起こしたもの
 - **ドメイン**：取るなら β を開く前がよい（後から変えると、ホーム画面のアイコンとログインがやり直しになる）。候補は `yattalog.app`。別のセッションでは `ikura.dev` も検討している（決定 047 の背景）
@@ -106,7 +106,7 @@
 
 ### 4-1b. Google の同意画面を「本番」に切り替える前のチェック
 切り替えると、誰でも登録できるようになる（先着20人、決定 038）。その前に、次をそろえる。
-- [ ] 非公開の問い合わせフォーム（Google フォーム）を作り、GitHub の Variable `CONTACT_URL` に登録する（未設定だと、規約とポリシーに「準備中」と出る）
+- [x] 非公開の問い合わせフォーム（Google フォーム）を作り、GitHub の Variable `CONTACT_URL` に登録する（2026-10-17）
 - [ ] 規約とポリシー（`/terms/`、`/privacy/`）を Yuki さんが通して読む。`docs/legal/README.md` の「まだ確かめていないこと」を確かめる
 - [ ] 運営者の管理用アカウント（Google、GitHub、Neon）で2段階認証が有効になっていることを確かめる（ポリシーに書いている）
 - [ ] テスト用の Google アカウントで、登録 → 記録 → 書き出し → 退会 を通しで確かめる（Google ログイン以外の流れは、`e2e/test_journey.py` が毎回自動で確かめている。実機で見たいのは、本物の Google ログインと、スマホでのダウンロード）
