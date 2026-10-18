@@ -67,7 +67,7 @@
     - シェア画像の見た目の案（ヤマップ風の数字3つ、大きな数字、スタンプカード、ひとこと入り）は、見比べたうえで見送った。**Yuki さんの方針は「おしゃれさも、おもしろさもいらない。基本ポジティブにゆるく」**。見本：https://claude.ai/artifact/9mZKNTwAcsSghYrvysmdBM 、https://claude.ai/artifact/LYbticMBqXsa8TE4ZjpaCv （非公開）
 
 ## 3. 現状
-- **本番で動いている**：https://yattalog-332057063162.asia-southeast1.run.app
+- **本番で動いている**：https://yattalog.ikura1.dev （2026-10-19 に独自のドメインへ切り替えた、決定 064。古い run.app は転送）
   - Google Cloud のプロジェクト：`yattalog-511302`（プロジェクト番号 `332057063162`）、リージョンは `asia-southeast1`
   - ログインできるのは OAuth のテストユーザーだけ（いまは Yuki さん1人）。Google の同意画面は「テスト中」のまま
   - **β に入れる機能は、すべて実装済み**。残りは、下の「本番に切り替える前のチェック」（ほとんどが Yuki さんの手作業）
