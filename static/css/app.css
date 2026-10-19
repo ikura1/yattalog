@@ -411,3 +411,7 @@ textarea { min-height: 84px; resize: vertical; }
 .emo-why { margin: 2px 0 0; }
 .emo-more summary { cursor: pointer; font-weight: 700; font-size: 13px; color: var(--accent); padding: 4px 0; width: fit-content; }
 .emo-more[open] summary { margin-bottom: 6px; }
+/* カテゴリの並べ替えの取っ手（ドラッグ、↑↓キー） */
+.cat-handle { cursor: grab; touch-action: none; color: var(--muted); font-size: 22px; }
+.catlist li.dragging { background: var(--surface); box-shadow: var(--shadow); border-radius: 12px; opacity: .9; }
+.catlist li.dragging .cat-handle { cursor: grabbing; }

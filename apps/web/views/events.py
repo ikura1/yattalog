@@ -198,7 +198,11 @@ def categories(request: HttpRequest) -> HttpResponse:
                     ev_svc.rename_category(request.user, p.get("id"), p.get("name", ""), p.get("emoji"))
                 case "delete":
                     ev_svc.delete_category(request.user, p.get("id"))
-                case "up" | "down":
+                case "move":  # ドラッグや ↑↓ キーで動かしたあと、前後のカテゴリを受け取る
+                    ev_svc.move_category(
+                        request.user, p.get("id"), before_id=p.get("before") or None, after_id=p.get("after") or None
+                    )
+                case "up" | "down":  # 古い画面（矢印のボタン）から送られてきたとき用
                     ev_svc.shift_category(request.user, p.get("id"), -1 if action == "up" else 1)
                 case _:
                     return HttpResponse(status=400)

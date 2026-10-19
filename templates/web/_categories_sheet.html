@@ -1,8 +1,8 @@
 <h2>カテゴリ</h2>
 <p class="note">ホーム上部のタブになります。1つのイベントは1つのカテゴリに入ります。左の欄には、絵文字を1つ付けられます（なくてもかまいません）。</p>
-<ul class="catlist">
+<ul class="catlist" data-move-url="{% url 'web:categories' %}">
   {% for c, n in rows %}
-  <li>
+  <li data-id="{{ c.id }}">
     <form hx-post="{% url 'web:categories' %}" hx-target="#sheet-body" class="cat-rename">
       <input type="hidden" name="action" value="rename"><input type="hidden" name="id" value="{{ c.id }}">
       <input type="text" name="emoji" value="{{ c.emoji }}" maxlength="16" class="cat-emoji" data-one-emoji placeholder="😀" aria-label="{{ c.name }}の絵文字（なくてもよい）"
@@ -10,8 +10,7 @@
       <input type="text" name="name" value="{{ c.name }}" maxlength="20" aria-label="カテゴリ名" hx-trigger="change" hx-post="{% url 'web:categories' %}" hx-target="#sheet-body" hx-include="closest form">
     </form>
     <span class="cnt">{{ n }}件</span>
-    <button class="iconbtn" type="button" aria-label="上へ" {% if forloop.first %}disabled{% endif %} hx-post="{% url 'web:categories' %}" hx-vals='{"action":"up","id":"{{ c.id }}"}' hx-target="#sheet-body">↑</button>
-    <button class="iconbtn" type="button" aria-label="下へ" {% if forloop.last %}disabled{% endif %} hx-post="{% url 'web:categories' %}" hx-vals='{"action":"down","id":"{{ c.id }}"}' hx-target="#sheet-body">↓</button>
+    <button class="iconbtn cat-handle" type="button" aria-label="「{{ c.name }}」を並べ替え（↑↓キーでも動かせます）">≡</button>
     <button class="iconbtn" type="button" aria-label="{{ c.name }}を削除" hx-post="{% url 'web:categories' %}" hx-vals='{"action":"delete","id":"{{ c.id }}"}' hx-target="#sheet-body"
             hx-confirm="「{{ c.name }}」を削除すると、入っている{{ n }}件のイベントは「なし」になります（イベントと記録は消えません）。">🗑</button>
   </li>

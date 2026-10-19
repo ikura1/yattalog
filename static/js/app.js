@@ -323,6 +323,67 @@
     }).catch(() => { toast("並べ替えを保存できませんでした"); refreshHome(); });
   }
 
+  // カテゴリの並べ替え（シートの中）。取っ手（≡）を押したまま上下に動かすか、取っ手で ↑↓ キー。
+  // 動かしたら、前後のカテゴリをサーバーに送り、ホームのタブも並べ直す
+  function bindCategorySort(root) {
+    const list = $(".catlist[data-move-url]", root);
+    if (!list || list.dataset.bound) return;
+    list.dataset.bound = "1";
+    const items = () => $$(":scope > li[data-id]", list);
+    const save = (li) => {
+      const all = items(), i = all.indexOf(li);
+      const data = { action: "move", id: li.dataset.id, before: all[i - 1]?.dataset.id || "", after: all[i + 1]?.dataset.id || "" };
+      post(list.dataset.moveUrl, data).then(drain).then((r) => {
+        if (!r.ok) throw new Error(String(r.status));
+        document.dispatchEvent(new CustomEvent("yl:changed"));
+      }).catch(() => {
+        toast("並べ替えを保存できませんでした");
+        if (window.htmx) window.htmx.ajax("GET", list.dataset.moveUrl, { target: "#sheet-body", swap: "innerHTML" });
+      });
+    };
+    let drag = null;
+    list.addEventListener("pointerdown", (e) => {
+      const handle = e.target.closest(".cat-handle");
+      if (!handle) return;
+      e.preventDefault();
+      drag = { li: handle.closest("li"), moved: false };
+      drag.li.classList.add("dragging");
+      try { handle.setPointerCapture(e.pointerId); } catch (_) { /* 捕まえられなくても、一覧の中なら動く */ }
+    });
+    list.addEventListener("pointermove", (e) => {
+      if (!drag) return;
+      const over = items().find((li) => {
+        if (li === drag.li) return false;
+        const r = li.getBoundingClientRect();
+        return e.clientY > r.top && e.clientY < r.bottom;
+      });
+      if (!over) return;
+      const r = over.getBoundingClientRect();
+      list.insertBefore(drag.li, e.clientY > r.top + r.height / 2 ? over.nextSibling : over);
+      drag.moved = true;
+    });
+    const end = () => {
+      if (!drag) return;
+      drag.li.classList.remove("dragging");
+      if (drag.moved) save(drag.li);
+      drag = null;
+    };
+    list.addEventListener("pointerup", end);
+    list.addEventListener("pointercancel", end);
+    list.addEventListener("keydown", (e) => {
+      const handle = e.target.closest(".cat-handle");
+      if (!handle || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
+      e.preventDefault();
+      const li = handle.closest("li");
+      const up = e.key === "ArrowUp";
+      const sib = up ? li.previousElementSibling : li.nextElementSibling;
+      if (!sib || !sib.dataset.id) return;
+      list.insertBefore(li, up ? sib : sib.nextSibling);
+      handle.focus();
+      save(li);
+    });
+  }
+
   function refreshHome() {
     const a = app();
     if (a && a.dataset.gridUrl && window.htmx) {
@@ -733,7 +794,7 @@
   /* ---------- htmx との連携 ---------- */
   document.addEventListener("htmx:afterSwap", (e) => {
     const t = e.detail.target;
-    if (t.id === "sheet-body") { openSheet(); bindRecordForm(t); bindEmojiField(t); bindShare(t); }
+    if (t.id === "sheet-body") { openSheet(); bindRecordForm(t); bindEmojiField(t); bindShare(t); bindCategorySort(t); }
     if (t.id === "grid-wrap") { gridLoadedAt = Date.now(); bindHome(); applyTab(currentTab()); reloadIfNewBuild(); }
     if (t.id === "detail") { bindSeason(t); bindTend(t); }
   });

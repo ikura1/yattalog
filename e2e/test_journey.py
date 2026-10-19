@@ -37,7 +37,7 @@ def test_テンプレートで始めて_記録し_詳細を見て_書き出し�
     expect(page.locator(".toast:not(.hint)")).to_contain_text("シーツ交換 を記録しました")
 
     # 3. 編集モードからイベントの詳細を開く。記録が1回になっている
-    page.get_by_role("button", name="編集").click()
+    page.get_by_role("button", name="編集", exact=True).click()
     sheets.click(force=True)  # 編集モードのタイルは揺れているので、止まるのを待たずに押す
     expect(page.get_by_role("heading", name="シーツ交換")).to_be_visible()
     expect(page.locator(".stat", has_text="記録回数").locator(".v")).to_have_text("1回")
