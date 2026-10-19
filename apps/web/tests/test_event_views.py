@@ -283,3 +283,25 @@ def test_集計の画面は_htmx_かどうかで中身が変わるので_キャ�
     response = client_in.get(f"/events/{event.id}/")
     assert "HX-Request" in response["Vary"]
     assert "HX-Request" in client_in.get("/review/")["Vary"]
+
+
+def test_追加シートでは_候補の行を出し_24個の一覧と入力欄は畳んでおく(client_in):
+    body = client_in.get("/events/new/").content.decode()
+    row = body.split('class="emo-row"')[1].split("</div>")[0]
+    assert " checked" in row  # 候補の先頭を、最初から選んでおく
+    assert 'data-emoji-hints="' in body and 'data-auto="1"' in body
+    more = body.split('<details class="emo-more"')[1].split("</details>")[0]
+    assert 'class="emojis"' in more and 'id="evEmoji"' in more
+
+
+def test_追加に失敗して戻ってきたら_名前からの候補を出し直す(client_in):
+    r = client_in.post("/events/new/", {"name": "シーツ交換", "emoji": "", "color": "nope"})
+    row = r.content.decode().split('class="emo-row"')[1].split("</div>")[0]
+    assert 'value="🛏️"' in row
+
+
+def test_編集シートでは_いまのアイコンを候補の先頭で選び_名前を変えても勝手に変えない(client_in, event):
+    body = client_in.get(f"/events/{event.id}/edit/").content.decode()
+    row = body.split('class="emo-row"')[1].split("</div>")[0]
+    assert row.index('value="🛏️" checked') < row.index("</label>")
+    assert 'data-auto="1"' not in body

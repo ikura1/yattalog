@@ -31,7 +31,7 @@ def _home_ctx(request: HttpRequest) -> dict:
             counts[e.category_id] += 1
     return {
         "tiles": [tile(e, today) for e in events],
-        "starters": [] if events else starter_svc.starter_choices(request.user),
+        "groups": [] if events else starter_svc.starter_groups(request.user),
         "categories": [(c, counts[c.id]) for c in cats],
         # 「カテゴリなし」のタブ（決定 050）。カテゴリがあり、入っていないイベントもあるときだけ出す
         "uncategorized": sum(1 for e in events if e.category_id is None) if cats else 0,
@@ -72,10 +72,10 @@ def starters(request: HttpRequest) -> HttpResponse:
         try:
             added = starter_svc.add_starters(request.user, request.POST.getlist("starter"))
         except ValidationError as e:
-            ctx = {"starters": starter_svc.starter_choices(request.user)}
+            ctx = {"groups": starter_svc.starter_groups(request.user)}
             return _form_error(request, "web/_starters_sheet.html", ctx, e)
         return _refresh(HttpResponse(status=204), _with_achievements(request, f"{len(added)}件を追加しました"))
-    return render(request, "web/_starters_sheet.html", {"starters": starter_svc.starter_choices(request.user)})
+    return render(request, "web/_starters_sheet.html", {"groups": starter_svc.starter_groups(request.user)})
 
 
 @login_required

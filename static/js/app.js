@@ -351,16 +351,60 @@
   function bindEmojiField(root) {
     const input = $("#evEmoji", root);
     if (!input) return;
-    const radios = $$('input[name="emoji"]', root);
+    // 候補の行は名前を打つたびに作り直すので、その都度さがす
+    const radios = () => $$('input[name="emoji"]', root);
     const sync = (e) => {
       if (e.isComposing) return; // かな漢字変換の途中は触らない
       input.value = lastGrapheme(input.value);
-      if (input.value) radios.forEach((r) => { r.checked = false; });
-      else if (radios.length && !radios.some((r) => r.checked)) radios[0].checked = true;
+      if (input.value) radios().forEach((r) => { r.checked = false; });
+      else if (radios().length && !radios().some((r) => r.checked)) radios()[0].checked = true;
     };
     input.addEventListener("input", sync);
     input.addEventListener("compositionend", sync);
-    radios.forEach((r) => r.addEventListener("change", () => { input.value = ""; }));
+    root.addEventListener("change", (e) => { if (e.target.name === "emoji") input.value = ""; });
+    bindEmojiHints(root);
+  }
+
+  /* ---------- 名前からアイコンの候補を出す（決定 065） ----------
+     辞書はサーバーと同じもの（data-emoji-hints）。新しく作るときだけ、名前を打つたびに候補を出し直し、先頭を選んでおく。
+     自分で選んだら（候補・一覧・入力欄のどれでも）、そのあとは変えない */
+  function suggestEmojis(name, data) {
+    const found = [];
+    data.hints.forEach(([words, emojis]) => {
+      if (words.some((w) => name.includes(w))) emojis.forEach((e) => { if (!found.includes(e)) found.push(e); });
+    });
+    return found.length ? found.slice(0, data.limit) : data.fallback.slice();
+  }
+  function bindEmojiHints(root) {
+    const field = $(".emoji-field", root);
+    const name = $("#evName", root);
+    if (!field || !name || field.dataset.auto !== "1") return;
+    let data;
+    try { data = JSON.parse(field.dataset.emojiHints); } catch (_) { return; }
+    const row = $(".emo-row", field), why = $(".emo-why", field), custom = $("#evEmoji", root);
+    let byHand = false;
+    field.addEventListener("change", (e) => { if (e.isTrusted && e.target.name === "emoji") byHand = true; });
+    if (custom) custom.addEventListener("input", () => { if (custom.value) byHand = true; });
+    const refresh = () => {
+      if (byHand) return;
+      const text = name.value.trim();
+      const list = suggestEmojis(text, data);
+      row.replaceChildren(...list.map((e, i) => {
+        const label = document.createElement("label");
+        label.className = "emo-opt";
+        const r = document.createElement("input");
+        r.type = "radio"; r.name = "emoji"; r.value = e; r.checked = i === 0;
+        const span = document.createElement("span");
+        span.textContent = e;
+        label.append(r, span);
+        return label;
+      }));
+      if (custom) custom.value = "";
+      why.textContent = !text ? "名前を入れると、合いそうな絵文字を選んでおきます"
+        : list === data.fallback || list.join() === data.fallback.join() ? "合う候補が見つからなかったので、よく使うものを出しています"
+        : `「${text}」に合いそうなものを選んでおきました`;
+    };
+    name.addEventListener("input", refresh);
   }
 
   /* ---------- ホーム画面への追加（PWA）の案内（SPEC 3.13、決定 031・043） ----------

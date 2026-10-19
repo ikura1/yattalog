@@ -19,7 +19,7 @@ def test_テンプレートを選んで追加すると_ホームに並ぶ(client
 
     assert r.status_code == 204 and "yl:changed" in r["HX-Trigger"]
     body = client_in.get("/").content.decode()
-    assert "シーツ交換" in body and "散髪" in body and 'name="starter"' not in body
+    assert "シーツ交換" in body and "美容院" in body and 'name="starter"' not in body
 
 
 def test_何も選ばずに追加しようとすると_知らせる(client_in):
@@ -29,8 +29,14 @@ def test_何も選ばずに追加しようとすると_知らせる(client_in):
 
 def test_メニューから_あとでもテンプレートを開ける(client_in, user):
     assert "/starters/" in client_in.get("/menu/").content.decode()
-    ev_svc.create_event(user, name="散髪", emoji="💇", color="pink")
+    ev_svc.create_event(user, name="美容院", emoji="💇", color="pink")
 
     body = client_in.get("/starters/").content.decode()
 
     assert 'value="sheets"' in body and "追加済み" in body
+
+
+def test_テンプレートの一覧は_組ごとに見出しをつけて出す(client_in):
+    body = client_in.get("/").content.decode()
+    for name in ("家のこと", "身だしなみ", "からだ", "人づきあい", "楽しみ"):
+        assert f"<h3>{name}" in body

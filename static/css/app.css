@@ -401,3 +401,13 @@ textarea { min-height: 84px; resize: vertical; }
 .ach small { font-size: 12px; color: var(--muted); line-height: 1.4; }
 .ach li.off .ach-emo { filter: grayscale(1) brightness(0); opacity: .22; }  /* まだのものは、シルエット */
 .ach li.off b { color: var(--muted); }
+/* はじめのテンプレートの組（決定 065） */
+.starter-group { margin-bottom: 14px; }
+.starter-group h3 { font-family: var(--f-display); font-size: 14px; margin: 0 0 6px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; }
+.starter-group h3 small { font-family: var(--f-body); font-weight: 500; font-size: 12px; color: var(--muted); }
+/* アイコンの候補の行と、畳んだ「ほかの絵文字」（決定 065） */
+.emo-row { display: grid; grid-template-columns: repeat(5, 48px); gap: 6px; }
+.emo-row .emo-opt span { font-size: 24px; }
+.emo-why { margin: 2px 0 0; }
+.emo-more summary { cursor: pointer; font-weight: 700; font-size: 13px; color: var(--accent); padding: 4px 0; width: fit-content; }
+.emo-more[open] summary { margin-bottom: 6px; }

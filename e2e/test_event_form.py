@@ -12,7 +12,8 @@ def test_入力欄に絵文字を入れると_おすすめの選択が外れて_
     page = home
     page.locator("#addTile").click()
     page.locator("#evName").fill("ぎょうざ")
-    page.locator('.emo-opt:has(input[value="✂️"])').click()
+    page.get_by_text("ほかの絵文字", exact=True).click()
+    page.locator('.emojis .emo-opt:has(input[value="✂️"])').click()
 
     page.locator("#evEmoji").press_sequentially("🍜🥟")  # 続けて打ったら、最後の1つだけ残る
     expect(page.locator("#evEmoji")).to_have_value("🥟")
@@ -25,12 +26,36 @@ def test_入力欄に絵文字を入れると_おすすめの選択が外れて_
 def test_おすすめを選び直すと_入力欄は空になる(home):
     page = home
     page.locator("#addTile").click()
+    page.get_by_text("ほかの絵文字", exact=True).click()
     page.locator("#evEmoji").press_sequentially("🥟")
 
-    page.locator('.emo-opt:has(input[value="✂️"])').click()
+    page.locator('.emojis .emo-opt:has(input[value="✂️"])').click()
 
     expect(page.locator("#evEmoji")).to_have_value("")
     expect(page.locator('input[name="emoji"]:checked')).to_have_value("✂️")
+
+
+def test_名前を入れると_合いそうな絵文字が選ばれて_そのアイコンで追加される(home):
+    page = home
+    page.locator("#addTile").click()
+    page.locator("#evName").fill("排水口の掃除")
+
+    expect(page.locator('.emo-row input[name="emoji"]:checked')).to_have_value("🕳️")
+    expect(page.locator(".emo-why")).to_contain_text("合いそうなもの")
+    page.get_by_role("button", name="追加する").click()
+
+    expect(page.locator("#grid .tile", has_text="排水口の掃除").locator(".emo")).to_have_text("🕳️")
+
+
+def test_自分で候補を選んだら_名前を変えても選び直さない(home):
+    page = home
+    page.locator("#addTile").click()
+    page.locator("#evName").fill("シーツ交換")
+    page.locator('.emo-row .emo-opt:has(input[value="☀️"])').click()
+
+    page.locator("#evName").fill("シーツと布団")
+
+    expect(page.locator('input[name="emoji"]:checked')).to_have_value("☀️")
 
 
 def test_カテゴリを絵文字つきで追加すると_タブに絵文字が出る(home):
