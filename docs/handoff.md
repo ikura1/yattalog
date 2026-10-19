@@ -89,11 +89,7 @@
 
 ### やり残し（Yuki さんの手作業。時間が取れたときに）
 **一覧は Issue #117（固定してある）にまとめた。** 終わったらチェックを付ける。下は、その補足（コマンドなど）
-- **Secret Manager の古い値の破棄**：`database-url` と `google-client-secret` の version 1（貼り付けに失敗した壊れた値。パスワードは作り直し済みなので実害はない）。Claude からは権限で実行できない
-  ```sh
-  gcloud secrets versions destroy 1 --secret database-url --project yattalog-511302
-  gcloud secrets versions destroy 1 --secret google-client-secret --project yattalog-511302
-  ```
+- **Secret Manager の古い値の破棄**：済み（2026-10-19）。`database-url` と `google-client-secret` の version 1 を破棄した（使っているのは version 2）
 - **問い合わせ用の Google フォーム**：済み（2026-10-17）。Variable `CONTACT_URL` に登録し、ポリシーの委託先に足した
 - **商標**：J-PlatPat で「ヤッタログ」「やったログ」「YATTALOG」を検索する（第9類・第42類）。下調べは #13 のコメント
 - **ロゴの元データ**：デザイナーから SVG が届いたら、`static/icons/*.svg` を差し替えて `tools/build_icons.py` を流す（#32）。いまの SVG は、案の画像を見て `tools/draw_icons.py` で描き起こしたもの
