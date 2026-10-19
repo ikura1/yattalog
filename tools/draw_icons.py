@@ -3,7 +3,7 @@
     uv run python tools/draw_icons.py && uv run python tools/build_icons.py
 
 絵を変えるときは、ここの数字を直して、上の2つを流す（SVG → PNG の順）。
-デザイナーから SVG の元データが届いたら、このスクリプトは使わず、SVG を直接差し替える。
+デザイナーの元データはない。このスクリプトが、アイコンの正式な元データ（2026-10-19、決定 057 の追記）。
 """
 
 from pathlib import Path
