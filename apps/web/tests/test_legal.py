@@ -66,10 +66,31 @@ def test_メニューから_規約とポリシーと報告の窓口を開ける(
     assert f'href="{ISSUES}/new/choose"' in body and "ご意見・不具合の報告" in body
 
 
-def test_登録のときに記録する版は_規約は制定日_ポリシーは改定日と同じ():
+def test_登録のときに記録する版は_規約もポリシーも改定日と同じ():
     from apps.accounts.models import PRIVACY_VERSION, TERMS_VERSION
 
-    assert (TERMS_VERSION, PRIVACY_VERSION) == ("2026-10-12", "2026-10-17")
+    assert (TERMS_VERSION, PRIVACY_VERSION) == ("2026-10-19", "2026-10-17")
+
+
+def test_規約には改定日が出る(client, db):
+    assert "改定日：2026年10月19日" in client.get("/terms/").content.decode()
+
+
+def test_規約は_軽い過失によるデータの消失まで_責任を負わないとはしない(client, db):
+    body = client.get("/terms/").content.decode()
+    assert "データの消失・破損などによりユーザーに生じた損害について" not in body
+
+
+def test_規約は_仕事の記録に使うことを禁じていると読めない(client, db):
+    body = client.get("/terms/").content.decode()
+    assert "営利目的で利用する行為" not in body
+    assert "本サービスそのものを、運営者の許可なく第三者に有償で提供する行為" in body
+
+
+def test_規約の変更は_重要なものは事前に知らせる(client, db):
+    body = client.get("/terms/").content.decode()
+    assert "事前に通知することなく、本サービスの内容を変更" not in body
+    assert "重要な変更をする場合は、本サービス上で事前にお知らせします" in body
 
 
 def test_ポリシーには改定日が出る(client, db):
