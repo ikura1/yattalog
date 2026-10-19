@@ -1,19 +1,24 @@
-{# テンプレートの一覧（ホームが空のとき、またはメニューから）。決定 042 #}
+{# テンプレートの一覧（ホームが空のとき、またはメニューから）。組ごとに分けて出す（決定 042・065） #}
 <form hx-post="{% url 'web:starters' %}" hx-swap="none" class="starters">
-  <ul class="starter-list">
-    {% for c in starters %}
-    <li><label class="starter c-{{ c.starter.color }}{% if c.added %} added{% endif %}">
-      <input type="checkbox" name="starter" value="{{ c.key }}" id="starter-{{ c.key }}"{% if c.added %} disabled{% endif %}>
-      <span class="emo" aria-hidden="true">{{ c.starter.emoji }}</span>
-      <span class="starter-name">{{ c.starter.name }}</span>
-      {% if c.added %}<span class="starter-note">追加済み</span>{% endif %}
-    </label></li>
-    {% endfor %}
-  </ul>
+  {% for g in groups %}
+  <div class="starter-group">
+    <h3>{{ g.name }}{% if g.note %}<small>{{ g.note }}</small>{% endif %}</h3>
+    <ul class="starter-list">
+      {% for c in g.choices %}
+      <li><label class="starter c-{{ c.starter.color }}{% if c.added %} added{% endif %}">
+        <input type="checkbox" name="starter" value="{{ c.key }}" id="starter-{{ c.key }}"{% if c.added %} disabled{% endif %}>
+        <span class="emo" aria-hidden="true">{{ c.starter.emoji }}</span>
+        <span class="starter-name">{{ c.starter.name }}</span>
+        {% if c.added %}<span class="starter-note">追加済み</span>{% endif %}
+      </label></li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endfor %}
   {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
-  <div class="row">
+  <div class="row starter-actions">
     <button class="btn primary" type="submit">追加する</button>
-    <button class="btn" type="button" hx-get="{% url 'web:event_new' %}" hx-target="#sheet-body">自分で作る</button>
+    <button class="btn" type="button" hx-get="{% url 'web:event_new' %}" hx-target="#sheet-body" hx-swap="innerHTML">自分で作る</button>{# フォームの hx-swap="none" を引き継がないように #}
   </div>
   <p class="note gap-t">名前・アイコン・色は、あとから変えられます。</p>
 </form>

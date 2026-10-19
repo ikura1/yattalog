@@ -10,9 +10,9 @@ from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.vary import vary_on_headers
 
 from apps.events.models import COLORS, StreakUnit
+from apps.events.services import emoji_hints, stats
 from apps.events.services import events as ev_svc
 from apps.events.services import logs as log_svc
-from apps.events.services import stats
 from apps.web.presenters import calendar_weeks, month_day_cells, season_chart, shift_month, tendency_bars, tile
 from apps.web.views.common import (
     NO_CATEGORY_TAB,
@@ -70,17 +70,23 @@ def _event_form_ctx(request, event=None, form=None, **extra) -> dict:
     def pick(name, default):
         return form.get(name) or (getattr(event, name) if event else None) or default
 
-    # アイコンは、おすすめの一覧か入力欄のどちらか一方で決める（決定 035）
+    # アイコンは、候補・おすすめの一覧か入力欄のどちらか一方で決める（決定 035）
     if form:
         custom_emoji = (form.get("emoji_custom") or "").strip()
     else:
         custom_emoji = event.emoji if event and event.emoji not in EMOJIS else ""
+    # 名前からの候補（決定 065）。新しく作るときは、いちばん合いそうなものを最初から選んでおく
+    hints = emoji_hints.suggest(pick("name", ""))
+    cur_emoji = "" if custom_emoji else pick("emoji", hints[0])
+    emoji_row = ([cur_emoji] if cur_emoji else []) + [e for e in hints if e != cur_emoji]
 
     return {
         "event": event,
         "form": form,
-        "cur_emoji": "" if custom_emoji else pick("emoji", EMOJIS[0]),
+        "cur_emoji": cur_emoji,
         "custom_emoji": custom_emoji,
+        "emoji_row": emoji_row[: emoji_hints.LIMIT],
+        "emoji_hints_json": json.dumps(emoji_hints.hints_for_client(), ensure_ascii=False),
         "cur_color": pick("color", "sky"),
         "cur_unit": pick("streak_unit", StreakUnit.DAY),
         "emojis": EMOJIS,

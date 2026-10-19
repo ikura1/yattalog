@@ -87,3 +87,4 @@
 | 062 | [「この1年でよくやったこと」と「いちばんよくやった月」を出す](062-top-events-and-best-month.md) | 決定 |
 | 063 | [実績バッジを入れる（実装の決めごと）](063-achievements-implementation.md) | 決定 |
 | 064 | [独自のドメイン yattalog.ikura1.dev で出す](064-custom-domain.md) | 決定 |
+| 065 | [主な対象を「独身・一人暮らしの20〜30代」にし、テンプレートと絵文字の選び方を合わせる](065-target-starters-emoji-hints.md) | 決定 |
