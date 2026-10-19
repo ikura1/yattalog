@@ -52,7 +52,7 @@ bash deploy/gcp-setup.sh <PROJECT_ID>
 ### 管理画面に入る
 1. 管理画面の URL を調べる（推測しにくい値にしてある）。手元のターミナルで：
    ```sh
-   echo "https://yattalog-<プロジェクト番号>.asia-southeast1.run.app/$(gcloud secrets versions access latest --secret django-admin-url --project <PROJECT_ID>)/"
+   echo "https://yattalog.ikura1.dev/$(gcloud secrets versions access latest --secret django-admin-url --project yattalog-511302)/"
    ```
 2. アプリに Google でログインした状態で、その URL を開く
 3. **はじめてのとき**：2段階認証の登録画面が出る。スマホの認証アプリ（Google Authenticator、1Password など）に登録し、6桁のコードを入れる

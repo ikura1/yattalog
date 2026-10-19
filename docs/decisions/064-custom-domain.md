@@ -1,7 +1,7 @@
 # 064. 独自のドメイン yattalog.ikura1.dev で出す
 
 - 日付：2026-10-17
-- 状態：決定（切り替えの途中。下の手順を参照）
+- 状態：決定（2026-10-19 に切り替えた。残りは手順の 8 の Umami だけ）
 
 ## 背景
 これまでは Cloud Run の URL（`yattalog-332057063162.asia-southeast1.run.app`）で出していた。覚えにくく、後からドメインを変えるとホーム画面に追加したアプリとログインがやり直しになるので、β を開く前に決める（#13）。Yuki さんが持っている `ikura1.dev`（Squarespace）のサブドメインを使う。
@@ -18,12 +18,14 @@
 ## 切り替えの手順
 1. [x] Search Console で `ikura1.dev` の持ち主を確認する（gcloud にログインしているアカウントで）
 2. [x] Cloud Run にドメインをつなぐ（`gcloud beta run domain-mappings create --service yattalog --domain yattalog.ikura1.dev --region asia-southeast1`）
-3. [ ] Squarespace：`yattalog` の転送を消し、CNAME `ghs.googlehosted.com` を足す → 証明書の発行を待つ（15分〜24時間）
+3. [x] Squarespace：`yattalog` の転送を消し、CNAME `ghs.googlehosted.com` を足す → 証明書の発行を待つ（15分〜24時間）
 4. [x] GitHub の Variable `DJANGO_ALLOWED_HOSTS` に `yattalog.ikura1.dev` を足す（次のデプロイから効く）
-5. [ ] Google ログイン：OAuth クライアントに、承認済みの JavaScript 生成元 `https://yattalog.ikura1.dev` と、リダイレクト URI `https://yattalog.ikura1.dev/accounts/google/login/callback/` を足す。同意画面の承認済みドメインに `ikura1.dev` を足す（古い run.app の分は、しばらく残す）
-6. [ ] 新しいドメインで、ログイン・記録ができることを確かめる
-7. [ ] GitHub の Variable `CANONICAL_HOST` に `yattalog.ikura1.dev` を入れて、デプロイし直す（ここから古いホストの人を送り始める）
-8. [ ] 死活監視（Variable `APP_URL`）、Umami のサイトのドメイン、Search Console をそろえる
+5. [x] Google ログイン：OAuth クライアントに、承認済みの JavaScript 生成元 `https://yattalog.ikura1.dev` と、リダイレクト URI `https://yattalog.ikura1.dev/accounts/google/login/callback/` を足す。同意画面の承認済みドメインに `ikura1.dev` を足す（古い run.app の分は、しばらく残す）
+6. [x] 新しいドメインで、ログイン・記録ができることを確かめる
+7. [x] GitHub の Variable `CANONICAL_HOST` に `yattalog.ikura1.dev` を入れて、デプロイし直す（ここから古いホストの人を送り始める）
+8. [ ] 死活監視（Variable `APP_URL`、済み）、Umami のサイトのドメイン（Yuki さん）、Search Console（済み）をそろえる
+
+古い run.app の、Google ログインのリダイレクト URI は、しばらく残す（転送されるので使われないが、消すのは急がない）
 
 ## 影響・トレードオフ
 - ホーム画面に追加したアプリは、新しいドメインでは別のアプリになる。追加し直し、ログインし直しになる（β の前なので、いまは Yuki さんだけ）
