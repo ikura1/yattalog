@@ -10,8 +10,14 @@ class Space(BaseModel):
     class Kind(models.TextChoices):
         PERSONAL = "personal", "個人"
 
+    class WeekStart(models.TextChoices):
+        MONDAY = "mon", "月曜"
+        SUNDAY = "sun", "日曜"
+
     kind = models.CharField(max_length=16, choices=Kind.choices, default=Kind.PERSONAL)
     name = models.CharField(max_length=40, blank=True)
+    # 週の始まり（決定 015・066）。連続記録の区切りと、カレンダー・草・曜日の並びに使う
+    week_start = models.CharField(max_length=3, choices=WeekStart.choices, default=WeekStart.MONDAY)
 
     class Meta:
         verbose_name = "スペース"

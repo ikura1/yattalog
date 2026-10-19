@@ -39,6 +39,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     onboarded_at = models.DateTimeField(null=True, blank=True)
     # 実績の判定を始めたか（決定 063）。False の人（機能が入る前からの人）は、最初の判定でまとめて静かに解除する
     achievements_synced = models.BooleanField(default=True)
+    # 設定（決定 066）。見た目：端末に合わせる（auto）／明るい／暗い。押したときの震え
+    theme = models.CharField(
+        max_length=5, choices=[("auto", "端末に合わせる"), ("light", "明るい"), ("dark", "暗い")], default="auto"
+    )
+    haptics = models.BooleanField(default=True)
     terms_version = models.CharField(max_length=20, blank=True)
     privacy_version = models.CharField(max_length=20, blank=True)
     terms_accepted_at = models.DateTimeField(null=True, blank=True)

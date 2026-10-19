@@ -60,7 +60,7 @@ def tile(event: Event, today: date, now: datetime | None = None) -> Tile:
         unit=unit,
         is_today=el.days == 0,
         never=el.days is None,
-        streak=streak_state(event.streak_count, event.streak_period, event.streak_unit, today),
+        streak=streak_state(event.streak_count, event.streak_period, event.streak_unit, today, event.space.week_start),
         days=el.days,
     )
 
@@ -149,9 +149,11 @@ class CalendarDay:
     is_future: bool
 
 
-def calendar_weeks(year: int, month: int, marked: set[date], today: date) -> list[list[CalendarDay]]:
-    """日曜始まりの月のカレンダー。"""
-    weeks = calendar.Calendar(firstweekday=6).monthdatescalendar(year, month)
+def calendar_weeks(
+    year: int, month: int, marked: set[date], today: date, week_start: str = "mon"
+) -> list[list[CalendarDay]]:
+    """月のカレンダー。週の始まり（月曜か日曜、決定 066）から並べる。"""
+    weeks = calendar.Calendar(firstweekday=0 if week_start == "mon" else 6).monthdatescalendar(year, month)
     return [[CalendarDay(d, d.month == month, d in marked, d > today) for d in week] for week in weeks]
 
 
@@ -175,8 +177,9 @@ class HeatCell:
 
 @dataclass(frozen=True)
 class HeatGrid:
-    weeks: list[list[HeatCell]]  # 古い週から。1週は日曜から土曜
+    weeks: list[list[HeatCell]]  # 古い週から。1週は週の始まり（月曜か日曜）から7日
     month_labels: list[str]  # 週ごとの、上に出す月（その月の1日がある週だけ「11月」。ほかは空）
+    day_labels: list[str]  # 左に出す曜日（月・水・金だけ、ほかは空）。段の順
 
     @property
     def columns(self) -> list[tuple[str, list[HeatCell]]]:
@@ -194,7 +197,9 @@ def year_weeks(review: YearReview, today: date) -> HeatGrid:
         weeks.append(week)
         labels.append(f"{first.month}月" if first else "")
         start += timedelta(weeks=1)
-    return HeatGrid(weeks=weeks, month_labels=labels)
+    order = "月火水木金土日" if review.week_start == "mon" else "日月火水木金土"
+    day_labels = [d if d in "月水金" else "" for d in order]
+    return HeatGrid(weeks=weeks, month_labels=labels, day_labels=day_labels)
 
 
 def _heat_cell(d: date, review: YearReview, today: date) -> HeatCell:

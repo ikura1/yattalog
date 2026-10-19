@@ -299,7 +299,7 @@ def at(user, event, day, hh, mm=0):
     log_svc.record(user, event.id, uuid.uuid7(), When(date=day, time=time(hh, mm)))
 
 
-def test_よくやる曜日は_そのイベントのこれまでの記録を_日曜から数える(user):
+def test_よくやる曜日は_そのイベントのこれまでの記録を_週の始まりから数える(user):
     e = ev_svc.create_event(user, name="ジョギング", emoji="🏃", color="leaf")
     other = ev_svc.create_event(user, name="水やり", emoji="🪴", color="leaf")
     logs_on(user, e, date(2025, 3, 1), date(2026, 9, 26), date(2026, 10, 3), date(2026, 10, 7))  # 土×3、水
@@ -307,7 +307,7 @@ def test_よくやる曜日は_そのイベントのこれまでの記録を_日
 
     t = stats.weekday_tendency(e)
 
-    assert (t.counts, t.headline) == ([0, 0, 0, 1, 0, 0, 3], "よくやるのは 土曜")
+    assert (t.counts, t.headline) == ([0, 0, 1, 0, 0, 3, 0], "よくやるのは 土曜")  # 月曜から（決定 066）
 
 
 def test_よくやる曜日は_記録が少ないうちは_わかるようになると伝える(user):

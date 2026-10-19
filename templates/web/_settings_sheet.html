@@ -1,0 +1,28 @@
+<button type="button" class="linkbtn back" hx-get="{% url 'web:menu' %}" hx-target="#sheet-body">← メニュー</button>
+<h2>設定</h2>
+{# 決定 066。保存すると、見た目と震えはその場で変わる #}
+<form hx-post="{% url 'web:settings' %}" hx-target="#sheet-body" class="ev-form settings">
+  <fieldset class="field"><legend class="lbl">週の始まり</legend>
+    <div class="seg seg-radio">
+      <label><input type="radio" name="week_start" value="mon"{% if week_start == "mon" %} checked{% endif %}><span>月曜</span></label>
+      <label><input type="radio" name="week_start" value="sun"{% if week_start == "sun" %} checked{% endif %}><span>日曜</span></label>
+    </div>
+    <p class="note">カレンダーやふりかえりの並びと、「毎週」の連続記録の区切りが変わります</p>
+  </fieldset>
+  <fieldset class="field"><legend class="lbl">見た目</legend>
+    <div class="seg seg-radio">
+      <label><input type="radio" name="theme" value="auto"{% if user.theme == "auto" %} checked{% endif %}><span>端末と同じ</span></label>
+      <label><input type="radio" name="theme" value="light"{% if user.theme == "light" %} checked{% endif %}><span>明るい</span></label>
+      <label><input type="radio" name="theme" value="dark"{% if user.theme == "dark" %} checked{% endif %}><span>暗い</span></label>
+    </div>
+  </fieldset>
+  <div class="field">
+    <label class="check"><input type="checkbox" name="haptics" value="1"{% if user.haptics %} checked{% endif %}>
+      <span>押したときに震える<small>記録したとき、スマホが短く震えます（対応している端末だけ）</small></span></label>
+  </div>
+  <div class="field"><label for="tzSelect">タイムゾーン</label>
+    <select id="tzSelect" name="timezone">{% for z in timezones %}<option value="{{ z }}"{% if z == user.timezone %} selected{% endif %}>{{ z }}</option>{% endfor %}</select>
+    <p class="note">記録の日付と時刻は、このタイムゾーンで決まります。旅行のときなどは、端末に合わせて切り替えを聞くこともあります</p></div>
+  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+  <div class="row"><button class="btn primary" type="submit">保存する</button></div>
+</form>

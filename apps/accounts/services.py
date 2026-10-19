@@ -60,3 +60,28 @@ def set_timezone(user, tz_name: str, *, keep: bool, now: datetime):
         user.onboarded_at = now
     user.save(update_fields=["timezone", "timezone_kept_for", "onboarded_at"])
     return user
+
+
+THEMES = {"auto", "light", "dark"}
+
+
+def save_settings(user, *, week_start: str, theme: str, haptics: bool, timezone: str, now: datetime) -> bool:
+    """設定をまとめて保存する（決定 066）。どれかが正しくなければ、何も変えずに ValidationError。
+
+    週の始まりが変わったら True を返す（ホームの連続記録を並べ直すため）。
+    """
+    from apps.events.services import events as ev_svc  # events → accounts の循環を避けるため、ここで読む
+    from apps.spaces.services import personal_space
+
+    if theme not in THEMES:
+        raise ValidationError("見た目を選んでください", code="theme")
+    if week_start not in Space.WeekStart.values:
+        raise ValidationError("週の始まりは、月曜か日曜を選んでください", code="week_start")
+    with transaction.atomic():
+        if timezone != user.timezone:
+            set_timezone(user, timezone, keep=False, now=now)  # 正しくなければ ValidationError
+        user.theme, user.haptics = theme, haptics
+        user.save(update_fields=["theme", "haptics"])
+        changed = personal_space(user).week_start != week_start
+        ev_svc.set_week_start(user, week_start)
+    return changed

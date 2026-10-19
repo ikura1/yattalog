@@ -11,7 +11,7 @@
   <p class="review-sum" id="reviewSum">この1年で <b>{{ review.total }}</b> 回、<b>{{ review.active_days }}</b> 日やった</p>
   {# GitHub の草と同じ並び：縦が曜日（日曜が上）、横が週。右端が今週。rtl で、はじめから右端（今週）が見える #}
   <div class="hm-wrap">
-    <div class="hm-days" aria-hidden="true"><span></span><span></span><span>月</span><span></span><span>水</span><span></span><span>金</span><span></span></div>
+    <div class="hm-days" aria-hidden="true"><span></span>{% for d in grid.day_labels %}<span>{{ d }}</span>{% endfor %}</div>
     <div class="hm-scroll">
       <div class="hm-grid">{% for label, week in grid.columns %}<span class="hm-m">{{ label }}</span>{% for c in week %}{% if c.is_future %}<span class="hm future"></span>{% else %}<a class="hm l{{ c.level }}{% if c.date == day %} sel{% endif %}" href="?{% if review.event %}event={{ review.event.id }}&amp;{% endif %}day={{ c.date|iso }}" hx-get="?{% if review.event %}event={{ review.event.id }}&amp;{% endif %}day={{ c.date|iso }}" hx-target="#review" aria-label="{{ c.date|md_wd }}：{% if c.logs %}{{ c.logs }}回{% else %}記録なし{% endif %}"></a>{% endif %}{% endfor %}{% endfor %}</div>
     </div>

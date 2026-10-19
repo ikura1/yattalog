@@ -14,6 +14,7 @@ from apps.events.services import sortkeys
 from apps.events.services.access import category_for, event_for
 from apps.events.services.dates import now_utc
 from apps.events.services.logs import When, record, refresh_event_cache
+from apps.spaces.models import Space
 from apps.spaces.services import personal_space
 
 EMOJI_MAX = 16  # Event.emoji の長さ。いちばん長い絵文字（肌の色つきの2人など）でも 10 文字ほど
@@ -178,7 +179,7 @@ def move_event(user, event_id, *, before_id=None, after_id=None) -> Event:
 def list_events(user):
     """ホームに出すイベント（アーカイブしていないもの）。並び順のとおり。"""
     space = personal_space(user)
-    return Event.objects.filter(space=space, is_archived=False).select_related("category").order_by("sort_key")
+    return Event.objects.filter(space=space, is_archived=False).select_related("category", "space").order_by("sort_key")
 
 
 def list_archived(user):
@@ -274,3 +275,17 @@ def events_in_category(user, category_id) -> list[Event]:
     """カテゴリに入っているイベント（アーカイブしたものは除く）。ホームの並び順。ほかの人のカテゴリは DoesNotExist。"""
     cat = category_for(user, category_id)
     return list(Event.objects.filter(category=cat, is_archived=False).order_by("sort_key"))
+
+
+@transaction.atomic
+def set_week_start(user, week_start: str) -> None:
+    """週の始まりを変え、そのスペースのイベントの連続記録を数え直す（決定 066）。"""
+    if week_start not in Space.WeekStart.values:
+        raise ValidationError("週の始まりは、月曜か日曜を選んでください", code="week_start")
+    space = personal_space(user)
+    if space.week_start == week_start:
+        return
+    space.week_start = week_start
+    space.save(update_fields=["week_start", "updated_at"])
+    for event in Event.objects.filter(space=space).select_related("space"):
+        refresh_event_cache(event)

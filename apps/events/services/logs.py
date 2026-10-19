@@ -60,7 +60,9 @@ def refresh_event_cache(event: Event) -> Event:
         .values_list("occurred_at", flat=True)
         .first()
     )
-    event.streak_count, event.streak_period = compute_streak(dates.iterator(), event.streak_unit)
+    event.streak_count, event.streak_period = compute_streak(
+        dates.iterator(), event.streak_unit, event.space.week_start
+    )
     event.save(
         update_fields=[
             "log_count",
