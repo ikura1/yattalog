@@ -58,8 +58,12 @@ def _categories(request: HttpRequest):
 
 
 def clear_device_data(response: HttpResponse) -> HttpResponse:
-    """端末に残したもの（キャッシュ、ストレージ、Service Worker）を消させる。ログアウトと退会で使う（レビュー E9）。"""
-    response["Clear-Site-Data"] = '"cache", "storage"'
+    """端末に残したもの（ストレージ、Service Worker）を消させる。ログアウトと退会で使う（レビュー E9）。
+
+    "cache" は頼まない。Chrome などは消去に数秒かかり、ログアウトが止まったように見えたため。
+    ログイン中の画面は、はじめからブラウザに保存させていない（apps/core/private_pages.py）。
+    """
+    response["Clear-Site-Data"] = '"storage"'
     return response
 
 

@@ -63,6 +63,7 @@ uv run python manage.py makemigrations --check --dry-run
 - Python 3.14：`ruff format` が `except (A, B):` を `except A, B:` に書き換える（3.14 では正しい構文）
 - インラインスクリプトは CSP で禁止。JS は `static/js/app.js` に書く
 - 開いたままの画面は、デプロイの後も古い `app.js` で動き続ける（ホーム画面に追加したアプリは特に）。HTML と JS の両方を変える機能は、**古い JS ＋ 新しい HTML** の組み合わせでも壊れないかを考える。一覧（`#grid`）の `data-app-js` が変わると、画面は自分で読み込み直す
+- ログイン中の画面と応答は、ブラウザに保存させない（`Cache-Control: no-store`、`apps/core/private_pages.py`）。そのため、JS で `fetch` した応答の中身を使わないときも、`drain()` で読み切る（読まないと受け取りが終わらず、E2E の「通信が静かになるまで待つ」が終わらない）
 - `HX-Trigger` に日本語を入れるときは `json.dumps`（ASCII エスケープ）を使う
 - `HX-Trigger` の合図は、書いた順に、操作した要素から送られる。**シートを閉じる合図（`yl:close-sheet`）は最後に置く**。先に閉じると要素が消え、後の合図（知らせなど）がどこにも届かない（`_refresh()` がこの順を守っている）
 - Neon はプール接続なので `DISABLE_SERVER_SIDE_CURSORS=True`
