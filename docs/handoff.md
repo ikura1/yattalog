@@ -74,7 +74,7 @@
 - main にマージすると、自動でデプロイされる（マイグレーション → デプロイ、2〜3分）
 - main は保護されている。`production` 環境へのデプロイも、main からだけに制限した（#46）
 - テストは 440 件ほど、E2E は 37 件。CI はすべて通っている
-- 監視：1時間ごとの死活監視（`/health`）は動いている。毎朝の報告（Ops report）は、初回の設定（`GCP_OPS_SA`）がまだなので動いていない（`docs/operations.md`）
+- 監視：1時間ごとの死活監視（`/health`）は動いている。毎朝の報告（Ops report）は 2026-10-19 から動いている（`docs/operations.md`）
 - 開いている Issue は 23 件ほど。こちらだけで進められるものは、ほぼ残っていない（残りは、Yuki さんの手作業、実機での確認、写真と v1 以降の機能）
 
 ### 複数のセッションが、同じリポジトリで作業している
@@ -89,11 +89,7 @@
 
 ### やり残し（Yuki さんの手作業。時間が取れたときに）
 **一覧は Issue #117（固定してある）にまとめた。** 終わったらチェックを付ける。下は、その補足（コマンドなど）
-- **Secret Manager の古い値の破棄**：`database-url` と `google-client-secret` の version 1（貼り付けに失敗した壊れた値。パスワードは作り直し済みなので実害はない）。Claude からは権限で実行できない
-  ```sh
-  gcloud secrets versions destroy 1 --secret database-url --project yattalog-511302
-  gcloud secrets versions destroy 1 --secret google-client-secret --project yattalog-511302
-  ```
+- **Secret Manager の古い値の破棄**：済み（2026-10-19）。`database-url` と `google-client-secret` の version 1 を破棄した（使っているのは version 2）
 - **問い合わせ用の Google フォーム**：済み（2026-10-17）。Variable `CONTACT_URL` に登録し、ポリシーの委託先に足した
 - **商標**：J-PlatPat で「ヤッタログ」「やったログ」「YATTALOG」を検索する（第9類・第42類）。下調べは #13 のコメント
 - **ロゴの元データ**：デザイナーから SVG が届いたら、`static/icons/*.svg` を差し替えて `tools/build_icons.py` を流す（#32）。いまの SVG は、案の画像を見て `tools/draw_icons.py` で描き起こしたもの
@@ -108,10 +104,10 @@
 切り替えると、誰でも登録できるようになる（先着20人、決定 038）。その前に、次をそろえる。
 - [x] 非公開の問い合わせフォーム（Google フォーム）を作り、GitHub の Variable `CONTACT_URL` に登録する（2026-10-17）
 - [ ] 規約とポリシー（`/terms/`、`/privacy/`）を Yuki さんが通して読む。`docs/legal/README.md` の「まだ確かめていないこと」を確かめる
-- [ ] 運営者の管理用アカウント（Google、GitHub、Neon）で2段階認証が有効になっていることを確かめる（ポリシーに書いている）
+- [x] 運営者の管理用アカウント（Google、GitHub、Neon）で2段階認証が有効になっていることを確かめる（2026-10-19）
 - [ ] テスト用の Google アカウントで、登録 → 記録 → 書き出し → 退会 を通しで確かめる（Google ログイン以外の流れは、`e2e/test_journey.py` が毎回自動で確かめている。実機で見たいのは、本物の Google ログインと、スマホでのダウンロード）
-- [ ] 管理者を作り、2段階認証の登録を済ませる（決定 045。手順は `deploy/README.md` の「管理者を作る・管理画面に入る」）
-- [ ] 毎朝の報告（Ops report）の初回の設定をする（任意。`docs/operations.md`）
+- [x] 管理者を作り、2段階認証の登録を済ませる（2026-10-19）
+- [x] 毎朝の報告（Ops report）の初回の設定をする（2026-10-19。Error Reporting の通知だけ Yuki さん）
 - [ ] ドメインを取るかどうかを決める（取るなら、切り替えの前に）
 
 ### 4-2. 実機で触ってから判断するもの
