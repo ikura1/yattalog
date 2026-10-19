@@ -35,3 +35,12 @@ def test_メニューから退会すると_ログイン画面に戻り_データ
     expect(page.locator(".messages")).to_contain_text("退会しました")
     expect(page.get_by_role("button", name="Google でログイン").first).to_be_visible()
     assert not User.objects.exists() and not Event.objects.exists()
+
+
+def test_ログアウトは_押した瞬間に文言が変わる(home):
+    page = home
+    page.get_by_role("button", name="メニュー").click()
+    # 送信だけ止めて、押した直後の表示を見る（アプリの処理は先に登録されているので、先に動く）
+    page.evaluate("document.addEventListener('submit', (e) => e.preventDefault())")
+    page.get_by_role("button", name="ログアウト").click()
+    expect(page.locator("#sheet-body form[data-busy] button")).to_have_text("ログアウトしています…")

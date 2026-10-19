@@ -14,6 +14,9 @@
     const h = document.body.getAttribute("hx-headers");
     try { return JSON.parse(h)["X-CSRFToken"]; } catch (_) { return ""; }
   };
+  // 応答の中身を使わない送信でも、中身は読み切る。ログイン中の応答はブラウザに保存させない（no-store）ので、
+  // 読まないと受け取りが終わらないまま残る
+  const drain = (r) => { r.text().catch(() => {}); return r; };
   const post = (url, data) => fetch(url, {
     method: "POST",
     headers: { "X-CSRFToken": csrf(), "X-Requested-With": "fetch" },
@@ -315,7 +318,7 @@
     const i = visible.indexOf(p.drag.li);
     const before = visible[i - 1]?.dataset.id || "";
     const after = visible[i + 1]?.dataset.id || "";
-    post(p.el.dataset.moveUrl, { before, after }).then((r) => {
+    post(p.el.dataset.moveUrl, { before, after }).then(drain).then((r) => {
       if (!r.ok) { toast("並べ替えを保存できませんでした"); refreshHome(); }
     }).catch(() => { toast("並べ替えを保存できませんでした"); refreshHome(); });
   }
@@ -671,15 +674,15 @@
     try { device = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (_) { return; }
     if (!device) return;
     if (a.dataset.needsTz) {
-      post(a.dataset.tzUrl, { tz: device, action: "set" }).then((r) => { if (r.ok) a.dataset.userTz = device; });
+      post(a.dataset.tzUrl, { tz: device, action: "set" }).then(drain).then((r) => { if (r.ok) a.dataset.userTz = device; });
       return;
     }
     if (device === a.dataset.userTz || device === a.dataset.keptTz) return;
     const b = $("#tzBanner");
     $("#tzName").textContent = device;
     b.hidden = false;
-    $("#tzYes").onclick = () => post(a.dataset.tzUrl, { tz: device, action: "set" }).then(() => { b.hidden = true; refreshHome(); toast(`タイムゾーンを ${device} にしました`); });
-    $("#tzNo").onclick = () => post(a.dataset.tzUrl, { tz: device, action: "keep" }).then(() => { b.hidden = true; });
+    $("#tzYes").onclick = () => post(a.dataset.tzUrl, { tz: device, action: "set" }).then(drain).then(() => { b.hidden = true; refreshHome(); toast(`タイムゾーンを ${device} にしました`); });
+    $("#tzNo").onclick = () => post(a.dataset.tzUrl, { tz: device, action: "keep" }).then(drain).then(() => { b.hidden = true; });
   }
   const netBanner = () => { const b = $("#netBanner"); if (b) b.hidden = navigator.onLine; };
 
@@ -695,6 +698,15 @@
     if (e.detail.elt.id !== "addTile") return;
     const tab = $('#tabs [aria-selected="true"]')?.dataset.tab;
     if (tab && tab !== "all") e.detail.parameters.category = tab; // "none" も送る。サーバーが「なし」として扱う
+  });
+  // ページが切り替わるまで少しかかる送信（ログアウトなど）は、押した瞬間にボタンの文言を変えて、二度押しを防ぐ
+  document.addEventListener("submit", (e) => {
+    const form = e.target.closest("form[data-busy]");
+    const btn = form && $("button[type=submit]", form);
+    if (!btn) return;
+    btn.textContent = form.dataset.busy;
+    btn.setAttribute("aria-busy", "true");
+    setTimeout(() => { btn.disabled = true; }, 0); // 送信が始まってから無効にする（先に無効にすると、送られない）
   });
   document.addEventListener("yl:close-sheet", closeSheet);
   document.addEventListener("yl:toast", (e) => toast(e.detail.message));

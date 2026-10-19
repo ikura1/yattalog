@@ -62,6 +62,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.core.private_pages.PrivatePagesMiddleware",  # ログイン中の画面は、ブラウザに保存させない
     "django_otp.middleware.OTPMiddleware",  # 2段階認証を通したかどうか（管理画面で使う）
     "apps.core.ratelimit.RateLimitMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
