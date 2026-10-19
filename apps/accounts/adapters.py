@@ -15,12 +15,23 @@ ACCOUNT_STOPPED = (
     "このアカウントは、利用を停止しています。"
     "心当たりがない場合は、プライバシーポリシーにある問い合わせ先までご連絡ください。"
 )
+# Google から受け取った情報のうち、保存するもの。プライバシーポリシー 2章の「ID、メールアドレス、表示名」に合わせ、
+# プロフィール画像の URL や氏名の内訳などは捨てる（allauth は受け取ったものを丸ごと extra_data に保存する）
+GOOGLE_KEPT_FIELDS = ("sub", "email", "email_verified", "name")
+
 SIGNUP_FULL = "ただいま満員のため、新しい登録を止めています。登録済みの方は、そのままログインできます。"
 
 
 def signup_is_full() -> bool:
     """登録できる人数の上限に達しているか（決定 038）。利用を止めた人は数えない。"""
     return User.objects.filter(is_active=True).count() >= settings.MAX_USERS
+
+
+def keep_only_policy_fields(account) -> None:
+    """Google の情報を、ポリシーに書いた項目だけにする。登録済みの人は allauth が丸ごと保存した後なので、保存し直す。"""
+    account.extra_data = {k: v for k, v in (account.extra_data or {}).items() if k in GOOGLE_KEPT_FIELDS}
+    if account.pk:
+        account.save(update_fields=["extra_data"])
 
 
 class AccountAdapter(DefaultAccountAdapter):
@@ -38,6 +49,8 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
         if sociallogin.account.provider == "google" and not data.get("email_verified", False):
             messages.error(request, "確認済みのメールアドレスを持つ Google アカウントでログインしてください。")
             raise ImmediateHttpResponse(redirect("web:login"))
+        if sociallogin.account.provider == "google":
+            keep_only_policy_fields(sociallogin.account)
         if not sociallogin.is_existing and signup_is_full():
             messages.error(request, SIGNUP_FULL)
             raise ImmediateHttpResponse(redirect("web:login"))

@@ -115,3 +115,44 @@ def test_満員のとき_ログイン画面に_新規登録を止めているこ
     body = client.get("/login/").content.decode()
 
     assert "新しい登録を止めています" in body and "Google でログイン" in body
+
+
+# --- Google から受け取った情報のうち、保存するもの（プライバシーポリシー 2章） ---
+
+GOOGLE_USER_FULL = {
+    **GOOGLE_USER,
+    "picture": "https://lh3.googleusercontent.com/a/photo",
+    "given_name": "Yuki",
+    "family_name": "Ikura",
+    "locale": "ja",
+}
+
+
+@pytest.mark.django_db
+def test_初めてのログインで_プロフィール画像などポリシーにない情報は保存しない(rf):
+    login_with_google(rf, GOOGLE_USER_FULL)
+
+    assert SocialAccount.objects.get().extra_data == GOOGLE_USER
+
+
+@pytest.mark.django_db
+def test_2回目のログインでも_プロフィール画像などポリシーにない情報は保存しない(rf):
+    login_with_google(rf, GOOGLE_USER)
+
+    login_with_google(rf, GOOGLE_USER_FULL)
+
+    assert SocialAccount.objects.get().extra_data == GOOGLE_USER
+
+
+@pytest.mark.django_db
+def test_保存済みの_ポリシーにない情報は_マイグレーションで消える(rf):
+    from importlib import import_module
+
+    from django.apps import apps
+
+    login_with_google(rf, GOOGLE_USER)
+    SocialAccount.objects.update(extra_data=GOOGLE_USER_FULL)
+
+    import_module("apps.accounts.migrations.0003_trim_google_extra_data").trim_extra_data(apps, None)
+
+    assert SocialAccount.objects.get().extra_data == GOOGLE_USER
