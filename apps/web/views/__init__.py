@@ -17,7 +17,7 @@ from apps.web.views.events import (
     event_remove,
     event_restore,
 )
-from apps.web.views.home import grid, home, menu, set_timezone, starters
+from apps.web.views.home import archived, grid, home, menu, set_timezone, starters
 from apps.web.views.records import log_delete, log_edit_sheet, record, record_sheet, share_sheet, undo
 from apps.web.views.review import review
 from apps.web.views.site import (
@@ -34,6 +34,7 @@ from apps.web.views.site import (
 __all__ = [
     "EMOJIS",
     "account_delete",
+    "archived",
     "achievement_share",
     "achievements",
     "categories",

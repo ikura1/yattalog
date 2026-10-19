@@ -16,6 +16,7 @@ urlpatterns = [
     path("privacy/", views.privacy, name="privacy"),
     path("grid/", views.grid, name="grid"),
     path("menu/", views.menu, name="menu"),
+    path("archived/", views.archived, name="archived"),
     path("review/", views.review, name="review"),
     path("achievements/", views.achievements, name="achievements"),
     path("achievements/share/", views.achievement_share, name="achievement_share"),

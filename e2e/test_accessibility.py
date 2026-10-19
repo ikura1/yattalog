@@ -45,6 +45,12 @@ def test_ホーム_ふりかえり_イベント詳細に_axe_の指摘がない(
         page.wait_for_load_state("networkidle")
         assert violations(page) == [], url
 
+    # メニュー（シート）
+    page.goto(page.base_url + "/")
+    page.get_by_role("button", name="メニュー").click()
+    page.locator("#sheet-body .menu-card").first.wait_for()
+    assert violations(page) == [], "メニュー"
+
     # カテゴリの一覧と編集画面（シート）
     page.goto(page.base_url + "/")
     page.get_by_label("カテゴリを編集").click()
