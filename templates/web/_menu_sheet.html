@@ -1,22 +1,30 @@
 <h2>メニュー</h2>
-<ul class="menu">
-  <li><button type="button" hx-get="{% url 'web:achievements' %}" hx-target="#sheet-body">実績<small>解除した実績と、これから目指せるもの</small></button></li>
-  <li><a href="{% url 'web:review' %}">ふりかえり<small>この1年に、いつ何をやったかを見られます</small></a></li>
-  <li><button type="button" hx-get="{% url 'web:categories' %}" hx-target="#sheet-body">カテゴリを管理</button></li>
-  <li><button type="button" hx-get="{% url 'web:starters' %}" hx-target="#sheet-body">テンプレートから追加</button></li>
-  <li><form method="post" action="{% url 'web:export' %}">{% csrf_token %}<button type="submit">データを書き出す<small>記録とイベントを ZIP（CSV と JSON）でダウンロードします</small></button></form></li>
-  <li><form method="post" action="{% url 'web:logout' %}" data-busy="ログアウトしています…">{% csrf_token %}<button type="submit">ログアウト</button></form></li>
+{# 組ごとに分けて並べる。アーカイブは件数だけ出し、別の画面で戻す #}
+<h3 class="menu-h">見る</h3>
+<ul class="menu menu-card">
+  <li><a href="{% url 'web:review' %}"><span class="mi" aria-hidden="true">📊</span><span class="mt">ふりかえり<small>この1年に、いつ何をやったかを見られます</small></span><span class="chev" aria-hidden="true">›</span></a></li>
+  <li><button type="button" hx-get="{% url 'web:achievements' %}" hx-target="#sheet-body"><span class="mi" aria-hidden="true">🏅</span><span class="mt">実績<small>解除した実績と、これから目指せるもの</small></span><span class="chev" aria-hidden="true">›</span></button></li>
 </ul>
-<h3 class="sub-h">アーカイブ（{{ archived|length }}）</h3>
-{% for e in archived %}
-<div class="arch"><span aria-hidden="true">{{ e.emoji }}</span><span class="arch-name">{{ e.name }}</span>
-  <button class="btn small" type="button" hx-post="{% url 'web:event_restore' e.id %}" hx-swap="none">戻す</button></div>
-{% empty %}<p class="note">アーカイブしたイベントはありません</p>{% endfor %}
-<ul class="menu gap">
-  <li><button type="button" id="menuInstall">ホーム画面に追加する方法</button></li>
-  <li><a href="{{ feedback_url }}/new/choose" target="_blank" rel="noopener">ご意見・不具合の報告<small>GitHub の Issue が開きます。書いた内容は誰でも読めます</small></a></li>
-  <li><a href="{% url 'web:terms' %}">利用規約</a></li>
-  <li><a href="{% url 'web:privacy' %}">プライバシーポリシー</a></li>
+<h3 class="menu-h">整える</h3>
+<ul class="menu menu-card">
+  <li><button type="button" hx-get="{% url 'web:categories' %}" hx-target="#sheet-body"><span class="mi" aria-hidden="true">🗂️</span><span class="mt">カテゴリを編集</span><span class="chev" aria-hidden="true">›</span></button></li>
+  <li><button type="button" hx-get="{% url 'web:starters' %}" hx-target="#sheet-body"><span class="mi" aria-hidden="true">📋</span><span class="mt">テンプレートから追加</span><span class="chev" aria-hidden="true">›</span></button></li>
+  <li><button type="button" hx-get="{% url 'web:archived' %}" hx-target="#sheet-body"><span class="mi" aria-hidden="true">📦</span><span class="mt">アーカイブしたイベント</span><span class="count">{{ archived_count }}</span><span class="chev" aria-hidden="true">›</span></button></li>
 </ul>
-<p class="note gap">タイムゾーン：{{ user_tz }}　・　α 版</p>
-<p class="note"><button type="button" class="linkbtn" hx-get="{% url 'web:account_delete' %}" hx-target="#sheet-body">退会する</button></p>
+<h3 class="menu-h">アプリ</h3>
+<ul class="menu menu-card">
+  <li><button type="button" id="menuInstall"><span class="mi" aria-hidden="true">📲</span><span class="mt">ホーム画面に追加する方法</span><span class="chev" aria-hidden="true">›</span></button></li>
+</ul>
+<h3 class="menu-h">サポート</h3>
+<ul class="menu menu-card">
+  <li><a href="{{ feedback_url }}/new/choose" target="_blank" rel="noopener"><span class="mi" aria-hidden="true">💬</span><span class="mt">ご意見・不具合の報告<small>GitHub の Issue が開きます。書いた内容は誰でも読めます</small></span><span class="chev" aria-hidden="true">↗</span></a></li>
+  <li><a href="{% url 'web:terms' %}"><span class="mi" aria-hidden="true">📄</span><span class="mt">利用規約</span><span class="chev" aria-hidden="true">›</span></a></li>
+  <li><a href="{% url 'web:privacy' %}"><span class="mi" aria-hidden="true">🔒</span><span class="mt">プライバシーポリシー</span><span class="chev" aria-hidden="true">›</span></a></li>
+</ul>
+<h3 class="menu-h">アカウント</h3>
+<ul class="menu menu-card">
+  <li><form method="post" action="{% url 'web:export' %}">{% csrf_token %}<button type="submit"><span class="mi" aria-hidden="true">💾</span><span class="mt">データを書き出す<small>記録とイベントを ZIP（CSV と JSON）でダウンロードします</small></span></button></form></li>
+  <li><form method="post" action="{% url 'web:logout' %}" data-busy="ログアウトしています…">{% csrf_token %}<button type="submit"><span class="mi" aria-hidden="true">🚪</span><span class="mt">ログアウト</span></button></form></li>
+  <li><button type="button" class="danger-row" hx-get="{% url 'web:account_delete' %}" hx-target="#sheet-body"><span class="mi" aria-hidden="true">⚠️</span><span class="mt">退会する</span><span class="chev" aria-hidden="true">›</span></button></li>
+</ul>
+<p class="note menu-foot">タイムゾーン：{{ user_tz }}　・　β 版</p>

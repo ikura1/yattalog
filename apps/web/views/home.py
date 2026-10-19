@@ -81,6 +81,16 @@ def starters(request: HttpRequest) -> HttpResponse:
 @login_required
 @require_GET
 def menu(request: HttpRequest) -> HttpResponse:
-    archived = ev_svc.list_archived(request.user)
-    ctx = {"archived": archived, "user_tz": request.user.timezone, "feedback_url": settings.FEEDBACK_URL}
+    ctx = {
+        "archived_count": ev_svc.list_archived(request.user).count(),
+        "user_tz": request.user.timezone,
+        "feedback_url": settings.FEEDBACK_URL,
+    }
     return render(request, "web/_menu_sheet.html", ctx)
+
+
+@login_required
+@require_GET
+def archived(request: HttpRequest) -> HttpResponse:
+    """アーカイブしたイベント（メニューから開く）。「戻す」でホームに戻せる。"""
+    return render(request, "web/_archived_sheet.html", {"archived": ev_svc.list_archived(request.user)})

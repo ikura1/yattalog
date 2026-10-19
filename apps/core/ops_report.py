@@ -19,7 +19,7 @@ from urllib.parse import urlsplit
 KNOWN_ROOTS = {
     "", "login", "logout", "manifest.webmanifest", "install", "terms", "privacy", "grid", "menu", "timezone",
     "categories", "starters", "export", "account", "events", "logs", "accounts", "static", "health", "sw.js", "offline",
-    "review", "achievements",
+    "review", "achievements", "archived",
 }  # fmt: skip
 ID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$|^\d+$", re.IGNORECASE)
 # 2つ目以降の部分で、そのまま出してよい単語（アプリ自身の経路に出てくるものだけ）。

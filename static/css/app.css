@@ -411,3 +411,35 @@ textarea { min-height: 84px; resize: vertical; }
 .emo-why { margin: 2px 0 0; }
 .emo-more summary { cursor: pointer; font-weight: 700; font-size: 13px; color: var(--accent); padding: 4px 0; width: fit-content; }
 .emo-more[open] summary { margin-bottom: 6px; }
+/* カテゴリの並べ替えの取っ手（ドラッグ、↑↓キー） */
+.cat-handle { cursor: grab; touch-action: none; color: var(--muted); font-size: 22px; }
+.catlist li.dragging { background: var(--surface); box-shadow: var(--shadow); border-radius: 12px; opacity: .9; }
+.catlist li.dragging .cat-handle { cursor: grabbing; }
+/* カテゴリの一覧（読むだけ）と編集画面 */
+.catlist li { flex-wrap: nowrap; }
+.cat-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; text-align: left; border: none; background: none; padding: 6px 4px; border-radius: 12px; }
+.cat-open:hover { background: var(--bg); }
+.cat-icon { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: var(--bg); font-size: 22px; color: var(--muted); }
+.cat-text { min-width: 0; display: flex; flex-direction: column; }
+.cat-text b { font-size: 15px; overflow-wrap: anywhere; }
+.cat-text small { font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.emo-opt.emo-none span { font-size: 13px; font-weight: 700; color: var(--muted); }
+.linkbtn.back { margin-bottom: 4px; font-weight: 700; color: var(--accent); }
+.cat-events { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.cat-events li { display: inline-flex; gap: 4px; align-items: center; background: var(--bg); border-radius: 999px; padding: 4px 10px; font-size: 13.5px; }
+.danger-zone { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+.danger-zone p { margin: 0; font-size: 14px; }
+.btn.danger.subtle { background: none; border-color: transparent; padding-left: 0; width: fit-content; }
+/* メニュー：組ごとのカード（設定画面の形） */
+.menu-h { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .04em; margin: 16px 4px 6px; }
+.menu-card { background: var(--bg); border-radius: 14px; overflow: hidden; }
+.menu-card li + li > a, .menu-card li + li > button, .menu-card li + li > form > button { border-top: 1px solid var(--line); }
+.menu-card a, .menu-card button, .menu-card form > button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border: none; border-top: none; background: transparent; text-align: left; text-decoration: none; color: var(--fg); font-size: 15px; }
+.menu-card form { margin: 0; }
+.menu-card .mi { flex: none; width: 24px; text-align: center; font-size: 18px; }
+.menu-card .mt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.menu-card .mt small { font-size: 12px; color: var(--muted); font-weight: 400; }
+.menu-card .chev { flex: none; color: var(--muted); font-size: 18px; }
+.menu-card .count { flex: none; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.menu-card .danger-row .mt { color: var(--danger); }
+.menu-foot { margin-top: 14px; text-align: center; }

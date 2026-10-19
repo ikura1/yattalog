@@ -2,6 +2,7 @@
 
 import unicodedata
 import uuid
+from dataclasses import dataclass
 from datetime import date, datetime
 
 import regex
@@ -245,3 +246,31 @@ def shift_category(user, category_id, direction: int) -> Category:
 def list_categories(user):
     """カテゴリ。タブの並び順のとおり。"""
     return Category.objects.filter(space__members__user=user).order_by("sort_key")
+
+
+@dataclass(frozen=True)
+class CategoryRow:
+    """カテゴリの編集の一覧に出す1行。中のイベント（アーカイブしたものは除く）の数と、先頭の絵文字。"""
+
+    category: Category
+    count: int
+    emojis: list[str]
+
+
+PREVIEW_EMOJIS = 5
+
+
+def category_rows(user) -> list[CategoryRow]:
+    events = Event.objects.filter(space__members__user=user, is_archived=False, category__isnull=False)
+    by_cat: dict = {}
+    for cat_id, emoji in events.order_by("sort_key").values_list("category_id", "emoji"):
+        by_cat.setdefault(cat_id, []).append(emoji)
+    return [
+        CategoryRow(c, len(by_cat.get(c.id, [])), by_cat.get(c.id, [])[:PREVIEW_EMOJIS]) for c in list_categories(user)
+    ]
+
+
+def events_in_category(user, category_id) -> list[Event]:
+    """カテゴリに入っているイベント（アーカイブしたものは除く）。ホームの並び順。ほかの人のカテゴリは DoesNotExist。"""
+    cat = category_for(user, category_id)
+    return list(Event.objects.filter(category=cat, is_archived=False).order_by("sort_key"))

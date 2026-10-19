@@ -1,0 +1,7 @@
+<button type="button" class="linkbtn back" hx-get="{% url 'web:menu' %}" hx-target="#sheet-body">← メニュー</button>
+<h2>アーカイブしたイベント</h2>
+<p class="note">ホームから外したイベントです。記録は残っています。「戻す」でホームに戻せます。</p>
+{% for e in archived %}
+<div class="arch"><span aria-hidden="true">{{ e.emoji }}</span><span class="arch-name">{{ e.name }}</span>
+  <button class="btn small" type="button" hx-post="{% url 'web:event_restore' e.id %}" hx-swap="none">戻す</button></div>
+{% empty %}<p class="note">アーカイブしたイベントはありません</p>{% endfor %}

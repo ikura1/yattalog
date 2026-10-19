@@ -305,3 +305,28 @@ def test_編集シートでは_いまのアイコンを候補の先頭で選び_
     row = body.split('class="emo-row"')[1].split("</div>")[0]
     assert row.index('value="🛏️" checked') < row.index("</label>")
     assert 'data-auto="1"' not in body
+
+
+def test_カテゴリは_前後を指定して並べ替えられる_タブも更新する(client_in, user):
+    a, b, c = (ev_svc.create_category(user, n) for n in ("家のこと", "身だしなみ", "からだ"))
+
+    r = client_in.post("/categories/", {"action": "move", "id": c.id, "before": a.id, "after": b.id})
+
+    assert r.status_code == 200 and "yl:changed" in r["HX-Trigger"]
+    assert [x.name for x in ev_svc.list_categories(user)] == ["家のこと", "からだ", "身だしなみ"]
+
+
+def test_カテゴリの一覧には_並べ替えの取っ手がある_矢印のボタンはない(client_in, user):
+    ev_svc.create_category(user, "家のこと")
+    body = client_in.get("/categories/").content.decode()
+    assert (
+        'class="iconbtn cat-handle"' in body and 'aria-label="「家のこと」を並べ替え（↑↓キーでも動かせます）"' in body
+    )
+    assert 'aria-label="上へ"' not in body and 'aria-label="下へ"' not in body
+
+
+def test_タブの右のボタンは_追加ではなく編集と分かる見た目にする(client_in, user, event):
+    """「＋」だと追加だけに見えるのに、名前の変更や並べ替え・削除までできる画面が開いていた。"""
+    ev_svc.create_category(user, "家のこと")
+    body = client_in.get("/").content.decode()
+    assert 'class="tab-add" aria-label="カテゴリを編集" title="カテゴリを編集"' in body and ">✎</button>" in body

@@ -61,14 +61,34 @@ def test_自分で候補を選んだら_名前を変えても選び直さない(
 def test_カテゴリを絵文字つきで追加すると_タブに絵文字が出る(home):
     page = home
     page.locator(".tab-add").click()
-    new = page.locator(".inline-new")
-    new.locator('input[name="emoji"]').press_sequentially("🧺🧹")  # 続けて打ったら、最後の1つだけ残る
-    expect(new.locator('input[name="emoji"]')).to_have_value("🧹")
-    new.locator('input[name="name"]').fill("家事")
+    page.get_by_role("button", name="＋ カテゴリを追加").click()
+    page.locator("#evName").fill("家事")
+    expect(page.locator('.emo-row input[name="emoji"]:checked')).to_have_value("")  # カテゴリの絵文字は「なし」から
+    page.get_by_text("ほかの絵文字", exact=True).click()
+    page.locator("#evEmoji").press_sequentially("🧺🧹")  # 続けて打ったら、最後の1つだけ残る
+    expect(page.locator("#evEmoji")).to_have_value("🧹")
 
-    new.get_by_role("button", name="追加").click()
+    page.get_by_role("button", name="追加する").click()
 
+    expect(page.locator("#toast-root")).to_contain_text("追加しました")
     expect(page.locator('#tabs [role="tab"]', has_text="家事").locator(".cat-emo")).to_have_text("🧹")
+
+
+def test_カテゴリの削除は_アプリの中で確かめてから消す(home, user):
+    from apps.events.services import events as ev_svc
+
+    ev_svc.create_category(user, "家事")
+    page = home
+    page.reload()
+    page.locator(".tab-add").click()
+    page.locator(".cat-open", has_text="家事").click()
+    page.get_by_role("button", name="このカテゴリを削除").click()
+    expect(page.locator("#sheet-body")).to_contain_text("「家事」を削除しますか")
+
+    page.get_by_role("button", name="削除する").click()
+
+    expect(page.locator("#toast-root")).to_contain_text("削除しました")
+    expect(page.locator('#tabs [role="tab"]', has_text="家事")).to_have_count(0)
 
 
 @pytest.mark.parametrize("opener", [".tab-add", "#grid .tile.add"])

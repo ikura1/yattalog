@@ -6,7 +6,7 @@ from datetime import date, time, timedelta
 import pytest
 from django.core.exceptions import ValidationError
 
-from apps.core.testing import NOW, TODAY
+from apps.core.testing import NOW, TODAY, new_user
 from apps.events.models import Category, Event
 from apps.events.services import events as ev_svc
 from apps.events.services import logs as log_svc
@@ -376,3 +376,31 @@ def test_いちばんよくやった月は_2回に届かなければ出さない
     e = ev_svc.create_event(user, name="散髪", emoji="✂️", color="pink")
     logs_on(user, e, date(2026, 6, 1), date(2026, 8, 1))
     assert stats.event_stats(e, TODAY).best_month_text == ""
+
+
+# --- カテゴリの一覧と、中のイベント（カテゴリの編集画面） ---
+
+
+def test_カテゴリの一覧には_中のイベントの数と_先頭の絵文字を5つまで添える(user):
+    house = ev_svc.create_category(user, "家のこと")
+    ev_svc.create_category(user, "からだ")
+    for i, e in enumerate(["🛏️", "🚽", "🛁", "🧺", "🧊", "🌀"]):
+        ev_svc.create_event(user, name=f"e{i}", emoji=e, color="sky", category_id=house.id)
+    archived = ev_svc.create_event(user, name="昔の", emoji="📦", color="sky", category_id=house.id)
+    ev_svc.set_archived(user, archived.id, True)
+
+    rows = ev_svc.category_rows(user)
+
+    assert [(r.category.name, r.count) for r in rows] == [("家のこと", 6), ("からだ", 0)]
+    assert len(rows[0].emojis) == 5 and "📦" not in rows[0].emojis
+
+
+def test_カテゴリに入っているイベントを_ホームの並び順で返す_ほかの人のカテゴリは見えない(user):
+    house = ev_svc.create_category(user, "家のこと")
+    a = ev_svc.create_event(user, name="a", emoji="⭐", color="sky", category_id=house.id)
+    b = ev_svc.create_event(user, name="b", emoji="⭐", color="sky", category_id=house.id)
+    ev_svc.create_event(user, name="c", emoji="⭐", color="sky")
+    assert ev_svc.events_in_category(user, house.id) == [b, a]
+    other = new_user(email="b@example.com")
+    with pytest.raises(Category.DoesNotExist):
+        ev_svc.events_in_category(other, house.id)
