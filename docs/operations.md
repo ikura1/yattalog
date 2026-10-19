@@ -35,8 +35,8 @@ Claude が見られるのは、伏せた報告（経路の形、回数、例外�
 - エラーの本文と例外のメッセージ → 捨てる
 - Cloud Logging の生のデータ → ランナーのファイルにだけ書いて、使い終わったら消す
 
-## 初回の設定（Yuki さん）
-この PR をマージしたら、一度だけ行う。
+## 初回の設定
+2026-10-19 に、1・2・4 を済ませた（読むだけのアカウント `yattalog-ops` を Claude が gcloud で作り、Variable `GCP_OPS_SA` を登録。Ops report の成功を確認）。3 の Error Reporting の通知は Yuki さんが画面で行う。
 
 1. **読むだけのアカウントを作る**：Cloud Shell で
    ```sh
@@ -48,7 +48,9 @@ Claude が見られるのは、伏せた報告（経路の形、回数、例外�
 3. **Error Reporting の通知を入れる**：Google Cloud のコンソール →「Error Reporting」→「通知を構成」で、メールの通知チャネル（自分のアドレス）を選ぶ
 4. 確かめる：Actions の「Ops report」を手動で実行し、サマリーが出ることを見る（Claude に「本番を見て」と頼んでもよい）
 
-ドメインを変えたら（#13）、Variables に `APP_URL`（例：`https://yattalog.example`）を足す。足さなければ今の run.app の URL を見る。
+`APP_URL` は `https://yattalog.ikura1.dev`（2026-10-19、決定 064）。
+
+独自のドメインにしてから、自動の探索（`/.git`、`/actuator`、`/wp-json` など）が来ていて、4xx（ほとんど 404）が多く出る。証明書の公開の記録にドメインが載るためで、どれも 404 を返すだけなので、気にしなくてよい。
 
 ## 費用
 増えない。公開リポジトリの Actions は無料。Cloud Logging の読み出し・Error Reporting・1日24回の `/health` は無料枠に収まる。`/health` は DB に触れないので、Neon の計算時間も使わない。
