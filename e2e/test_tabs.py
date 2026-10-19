@@ -31,24 +31,27 @@ def test_カテゴリなしのタブで_カテゴリに入っていないイベ�
 
 
 @pytest.mark.parametrize("width", [320, 390])
-def test_スマホの幅でも_カテゴリの管理で名前が読める(home, user, width):
+def test_スマホの幅でも_カテゴリの一覧で名前が読め_編集画面で直せる(home, user, width):
     ev_svc.create_category(user, "からだのメンテナンス")
     page = home
     page.set_viewport_size({"width": width, "height": 640})
     page.reload()
     page.get_by_label("カテゴリを編集").click()
-    name = page.locator(".catlist input[name=name]")
-    expect(name).to_be_visible()
-    # 10文字（全角）が切れずに入る幅。ボタンと同じ行に並べると、320px の画面では 75px しか残らない
-    assert name.bounding_box()["width"] >= 200
-    # 並べ替えと削除のボタンは、画面からはみ出さない
-    delete = page.get_by_label("からだのメンテナンスを削除").bounding_box()
-    assert delete["x"] + delete["width"] <= width
+    row = page.locator(".catlist .cat-open", has_text="からだのメンテナンス")
+    expect(row).to_be_visible()
+    # 並べ替えの取っ手は、画面からはみ出さない
+    handle = page.get_by_label("「からだのメンテナンス」を並べ替え（↑↓キーでも動かせます）").bounding_box()
+    assert handle["x"] + handle["width"] <= width
+
+    row.click()
+    name = page.locator("#evName")
+    expect(name).to_have_value("からだのメンテナンス")
+    assert name.bounding_box()["width"] >= 200  # 10文字（全角）が切れずに入る幅
 
 
 def names(page):
-    return page.locator("#sheet-body .catlist > li[data-id] input[name=name]").evaluate_all(
-        "els => els.map(e => e.value)"
+    return page.locator("#sheet-body .catlist > li[data-id] .cat-text b").evaluate_all(
+        "els => els.map(e => e.textContent.trim())"
     )
 
 

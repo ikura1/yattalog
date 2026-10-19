@@ -8,6 +8,8 @@ from apps.web.views.achievements import achievement_share, achievements
 from apps.web.views.events import (
     EMOJIS,
     categories,
+    category_edit,
+    category_new,
     event_detail,
     event_edit,
     event_move,
@@ -35,6 +37,8 @@ __all__ = [
     "achievement_share",
     "achievements",
     "categories",
+    "category_edit",
+    "category_new",
     "event_detail",
     "event_edit",
     "event_move",

@@ -183,9 +183,34 @@ def event_move(request: HttpRequest, event_id) -> HttpResponse:
     return HttpResponse(status=204)
 
 
+CATEGORY_DONE = {"create": "追加しました", "rename": "保存しました", "delete": "削除しました"}
+
+
+def _category_form_ctx(request, cat=None, form=None, error=None, confirm=False) -> dict:
+    """カテゴリの編集画面。絵文字は付けなくてもよいので、候補の前に「なし」を置く（決定 065）。"""
+    form = form or {}
+    name = form.get("name", cat.name if cat else "")
+    cur = _posted_emoji(form) if form else (cat.emoji if cat else "")
+    row = [cur] if cur else []
+    row += [e for e in emoji_hints.suggest(name) if e != cur][
+        : emoji_hints.LIMIT - 1 - len(row)
+    ]  # 「なし」と合わせて5つ
+    return {
+        "cat": cat,
+        "name": name,
+        "cur_emoji": cur,
+        "emoji_row": row,
+        "emoji_hints_json": json.dumps(emoji_hints.hints_for_client(), ensure_ascii=False),
+        "events": ev_svc.events_in_category(request.user, cat.id) if cat else [],
+        "confirm": confirm,
+        "error": error,
+    }
+
+
 @login_required
 @owned_or_404
 def categories(request: HttpRequest) -> HttpResponse:
+    """カテゴリの一覧（読むだけ）と、追加・名前と絵文字の変更・削除・並べ替えの受け口。"""
     error = None
     if request.method == "POST":
         p = request.POST
@@ -193,9 +218,9 @@ def categories(request: HttpRequest) -> HttpResponse:
         try:
             match action:
                 case "create":
-                    ev_svc.create_category(request.user, p.get("name", ""), p.get("emoji", ""))
+                    ev_svc.create_category(request.user, p.get("name", ""), _posted_emoji(p))
                 case "rename":
-                    ev_svc.rename_category(request.user, p.get("id"), p.get("name", ""), p.get("emoji"))
+                    ev_svc.rename_category(request.user, p.get("id"), p.get("name", ""), _posted_emoji(p))
                 case "delete":
                     ev_svc.delete_category(request.user, p.get("id"))
                 case "move":  # ドラッグや ↑↓ キーで動かしたあと、前後のカテゴリを受け取る
@@ -208,11 +233,30 @@ def categories(request: HttpRequest) -> HttpResponse:
                     return HttpResponse(status=400)
         except ValidationError as e:
             error = " ".join(e.messages)
-    rows = [(c, c.events.filter(is_archived=False).count()) for c in _categories(request)]
-    resp = render(request, "web/_categories_sheet.html", {"rows": rows, "error": error})
+            if p.get("form"):  # 編集画面からの誤りは、同じ画面で知らせる
+                cat = ev_svc.category_for(request.user, p.get("id")) if action == "rename" else None
+                ctx = _category_form_ctx(request, cat, form=p, error=error)
+                return render(request, "web/_category_form.html", ctx)
+    resp = render(request, "web/_categories_sheet.html", {"rows": ev_svc.category_rows(request.user), "error": error})
     if request.method == "POST" and not error:
-        resp["HX-Trigger"] = json.dumps({"yl:changed": True})
+        trig = {"yl:toast": {"message": CATEGORY_DONE[action]}} if action in CATEGORY_DONE else {}
+        resp["HX-Trigger"] = json.dumps({**trig, "yl:changed": True})
     return resp
+
+
+@login_required
+@require_GET
+def category_new(request: HttpRequest) -> HttpResponse:
+    return render(request, "web/_category_form.html", _category_form_ctx(request))
+
+
+@login_required
+@owned_or_404
+@require_GET
+def category_edit(request: HttpRequest, category_id) -> HttpResponse:
+    cat = ev_svc.category_for(request.user, category_id)
+    ctx = _category_form_ctx(request, cat, confirm=request.GET.get("confirm") == "1")
+    return render(request, "web/_category_form.html", ctx)
 
 
 @login_required

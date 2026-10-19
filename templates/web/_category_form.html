@@ -1,0 +1,41 @@
+{# カテゴリの追加・編集（決定 065）。保存したら一覧に戻る。削除はアプリの中で確かめる（ブラウザの確認画面は使わない） #}
+<button type="button" class="linkbtn back" hx-get="{% url 'web:categories' %}" hx-target="#sheet-body">← カテゴリ一覧</button>
+<h2>{% if cat %}カテゴリを編集{% else %}カテゴリを追加{% endif %}</h2>
+<form hx-post="{% url 'web:categories' %}" hx-target="#sheet-body" class="ev-form">
+  <input type="hidden" name="action" value="{% if cat %}rename{% else %}create{% endif %}">
+  <input type="hidden" name="form" value="1">
+  {% if cat %}<input type="hidden" name="id" value="{{ cat.id }}">{% endif %}
+  <div class="field"><label for="evName">名前</label>
+    <input type="text" id="evName" name="name" value="{{ name }}" maxlength="20" required placeholder="例：家のこと" autocomplete="off"></div>
+  <fieldset class="field emoji-field" data-emoji-hints="{{ emoji_hints_json }}" data-optional="1"{% if not cat %} data-auto="1"{% endif %}>
+    <legend class="lbl">絵文字（なくてもかまいません）</legend>
+    <div class="emo-row"><label class="emo-opt emo-none"><input type="radio" name="emoji" value=""{% if not cur_emoji %} checked{% endif %}><span>なし</span></label>{% for e in emoji_row %}<label class="emo-opt"><input type="radio" name="emoji" value="{{ e }}"{% if e == cur_emoji %} checked{% endif %}><span>{{ e }}</span></label>{% endfor %}</div>
+    <p class="note emo-why" aria-live="polite">タブで、名前の前に出ます</p>
+    <details class="emo-more"><summary>ほかの絵文字</summary>
+      <div class="emo-custom"><label for="evEmoji">絵文字を1つ入れる</label>
+        <input type="text" id="evEmoji" name="emoji_custom" value="" maxlength="16" placeholder="😀" data-one-emoji
+               autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+    </details>
+  </fieldset>
+  {% if cat %}
+  <div class="field"><span class="lbl">入っているイベント（{{ events|length }}）</span>
+    {% if events %}<ul class="cat-events">{% for e in events %}<li><span aria-hidden="true">{{ e.emoji }}</span>{{ e.name }}</li>{% endfor %}</ul>
+    {% else %}<p class="note">まだイベントはありません。</p>{% endif %}
+    <p class="note">イベントの編集で、どのカテゴリに入れるかを変えられます。</p></div>
+  {% endif %}
+  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+  <div class="row"><button class="btn primary" type="submit">{% if cat %}保存する{% else %}追加する{% endif %}</button></div>
+</form>
+{% if cat %}
+<div class="danger-zone">
+  {% if confirm %}
+  <p role="alert">「{{ cat.name }}」を削除しますか？ 入っている{{ events|length }}件のイベントは「カテゴリなし」になります（イベントと記録は消えません）。</p>
+  <div class="row">
+    <button class="btn danger" type="button" hx-post="{% url 'web:categories' %}" hx-vals='{"action": "delete", "id": "{{ cat.id }}"}' hx-target="#sheet-body">削除する</button>
+    <button class="btn" type="button" hx-get="{% url 'web:category_edit' cat.id %}" hx-target="#sheet-body">やめる</button>
+  </div>
+  {% else %}
+  <button class="btn danger subtle" type="button" hx-get="{% url 'web:category_edit' cat.id %}?confirm=1" hx-target="#sheet-body">このカテゴリを削除</button>
+  {% endif %}
+</div>
+{% endif %}

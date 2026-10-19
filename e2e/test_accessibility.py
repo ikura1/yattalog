@@ -30,6 +30,8 @@ def busy(logged_in_page, user):
 
 
 def violations(page) -> list[str]:
+    # シートが開く動きの途中だと、色が薄く測られる。動きが終わってから検査する
+    page.wait_for_function("() => document.getAnimations().every((a) => a.playState !== 'running')")
     result = Axe().run(page)
     return [f"{v['id']}（{v['impact']}）: {v['nodes'][0]['target']}" for v in result.response["violations"]]
 
@@ -42,6 +44,15 @@ def test_ホーム_ふりかえり_イベント詳細に_axe_の指摘がない(
         page.goto(page.base_url + url)
         page.wait_for_load_state("networkidle")
         assert violations(page) == [], url
+
+    # カテゴリの一覧と編集画面（シート）
+    page.goto(page.base_url + "/")
+    page.get_by_label("カテゴリを編集").click()
+    page.locator("#sheet-body .catlist").wait_for()
+    assert violations(page) == [], "カテゴリの一覧"
+    page.locator(".cat-open").first.click()
+    page.locator("#evName").wait_for()
+    assert violations(page) == [], "カテゴリの編集"
 
     # 実績の一覧（シート）
     page.goto(page.base_url + "/")

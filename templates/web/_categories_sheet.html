@@ -1,26 +1,17 @@
 <h2>カテゴリ</h2>
-<p class="note">ホーム上部のタブになります。1つのイベントは1つのカテゴリに入ります。左の欄には、絵文字を1つ付けられます（なくてもかまいません）。</p>
+{# 一覧は読むだけ。行を押すと編集画面、取っ手（≡）で並べ替え #}
+<p class="note">ホーム上部のタブになります。押すと名前や絵文字を変えられます。≡ を押したまま動かすと、並べ替えられます。</p>
 <ul class="catlist" data-move-url="{% url 'web:categories' %}">
-  {% for c, n in rows %}
-  <li data-id="{{ c.id }}">
-    <form hx-post="{% url 'web:categories' %}" hx-target="#sheet-body" class="cat-rename">
-      <input type="hidden" name="action" value="rename"><input type="hidden" name="id" value="{{ c.id }}">
-      <input type="text" name="emoji" value="{{ c.emoji }}" maxlength="16" class="cat-emoji" data-one-emoji placeholder="😀" aria-label="{{ c.name }}の絵文字（なくてもよい）"
-             autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" hx-trigger="change" hx-post="{% url 'web:categories' %}" hx-target="#sheet-body" hx-include="closest form">
-      <input type="text" name="name" value="{{ c.name }}" maxlength="20" aria-label="カテゴリ名" hx-trigger="change" hx-post="{% url 'web:categories' %}" hx-target="#sheet-body" hx-include="closest form">
-    </form>
-    <span class="cnt">{{ n }}件</span>
-    <button class="iconbtn cat-handle" type="button" aria-label="「{{ c.name }}」を並べ替え（↑↓キーでも動かせます）">≡</button>
-    <button class="iconbtn" type="button" aria-label="{{ c.name }}を削除" hx-post="{% url 'web:categories' %}" hx-vals='{"action":"delete","id":"{{ c.id }}"}' hx-target="#sheet-body"
-            hx-confirm="「{{ c.name }}」を削除すると、入っている{{ n }}件のイベントは「なし」になります（イベントと記録は消えません）。">🗑</button>
+  {% for r in rows %}
+  <li data-id="{{ r.category.id }}">
+    <button type="button" class="cat-open" hx-get="{% url 'web:category_edit' r.category.id %}" hx-target="#sheet-body">
+      <span class="cat-icon" aria-hidden="true">{{ r.category.emoji|default:"・" }}</span>
+      <span class="cat-text"><b>{{ r.category.name }}</b>
+        <small>{% if r.count %}<span aria-hidden="true">{{ r.emojis|join:"" }}</span> {{ r.count }}件{% else %}まだイベントはありません{% endif %}</small></span>
+    </button>
+    <button class="iconbtn cat-handle" type="button" aria-label="「{{ r.category.name }}」を並べ替え（↑↓キーでも動かせます）">≡</button>
   </li>
-  {% empty %}<li class="note">まだカテゴリがありません</li>{% endfor %}
+  {% empty %}<li class="note">まだカテゴリがありません。下の「カテゴリを追加」から作れます。</li>{% endfor %}
 </ul>
-<form hx-post="{% url 'web:categories' %}" hx-target="#sheet-body" class="inline-new">
-  <input type="hidden" name="action" value="create">
-  <input type="text" name="emoji" maxlength="16" class="cat-emoji" data-one-emoji placeholder="😀" aria-label="新しいカテゴリの絵文字（なくてもよい）"
-         autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
-  <input type="text" name="name" maxlength="20" placeholder="新しいカテゴリ名" aria-label="新しいカテゴリ名" required>
-  <button class="btn small primary" type="submit">追加</button>
-</form>
 {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+<div class="row"><button class="btn" type="button" hx-get="{% url 'web:category_new' %}" hx-target="#sheet-body">＋ カテゴリを追加</button></div>

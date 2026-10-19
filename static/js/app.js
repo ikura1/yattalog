@@ -446,23 +446,29 @@
     let byHand = false;
     field.addEventListener("change", (e) => { if (e.isTrusted && e.target.name === "emoji") byHand = true; });
     if (custom) custom.addEventListener("input", () => { if (custom.value) byHand = true; });
+    // カテゴリの絵文字は付けなくてもよい（data-optional）。先頭に「なし」を置いて選んでおき、候補は並べるだけにする
+    const optional = field.dataset.optional === "1";
+    const option = (value, label, checked) => {
+      const el = document.createElement("label");
+      el.className = "emo-opt" + (value ? "" : " emo-none");
+      const r = document.createElement("input");
+      r.type = "radio"; r.name = "emoji"; r.value = value; r.checked = checked;
+      const span = document.createElement("span");
+      span.textContent = label;
+      el.append(r, span);
+      return el;
+    };
     const refresh = () => {
       if (byHand) return;
       const text = name.value.trim();
       const list = suggestEmojis(text, data);
-      row.replaceChildren(...list.map((e, i) => {
-        const label = document.createElement("label");
-        label.className = "emo-opt";
-        const r = document.createElement("input");
-        r.type = "radio"; r.name = "emoji"; r.value = e; r.checked = i === 0;
-        const span = document.createElement("span");
-        span.textContent = e;
-        label.append(r, span);
-        return label;
-      }));
+      const opts = list.map((e, i) => option(e, e, !optional && i === 0));
+      row.replaceChildren(...(optional ? [option("", "なし", true), ...opts.slice(0, data.limit - 1)] : opts));
       if (custom) custom.value = "";
-      why.textContent = !text ? "名前を入れると、合いそうな絵文字を選んでおきます"
-        : list === data.fallback || list.join() === data.fallback.join() ? "合う候補が見つからなかったので、よく使うものを出しています"
+      const none = list.join() === data.fallback.join();
+      if (optional) why.textContent = text && !none ? "合いそうな絵文字です。押すと付けられます" : "タブで、名前の前に出ます";
+      else why.textContent = !text ? "名前を入れると、合いそうな絵文字を選んでおきます"
+        : none ? "合う候補が見つからなかったので、よく使うものを出しています"
         : `「${text}」に合いそうなものを選んでおきました`;
     };
     name.addEventListener("input", refresh);

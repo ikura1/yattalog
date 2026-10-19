@@ -36,6 +36,9 @@ NOT_YOURS_ROUTES = [
 ]
 
 
+# カテゴリの ID を受け取る URL（編集画面）。他人や存在しないカテゴリは 404
+CATEGORY_ROUTES = ["/categories/{c}/", "/categories/{c}/?confirm=1"]
+
 # 取り消しは再送に備えて「何も起きない」で返す（404 にはしない）。下のテストで別に確かめている
 UNDO_ROUTE = "/logs/{l}/undo/"
 
@@ -45,8 +48,12 @@ def test_IDを受け取るURLは_すべて他人のデータのテストに入�
     from apps.web.urls import urlpatterns
 
     routes = {"/" + str(p.pattern) for p in urlpatterns if "<uuid:" in str(p.pattern)}
-    with_id = {r.replace("<uuid:event_id>", "{e}").replace("<uuid:log_id>", "{l}") for r in routes}
-    assert with_id == {path for _, path in NOT_YOURS_ROUTES} | {UNDO_ROUTE}
+    with_id = {
+        r.replace("<uuid:event_id>", "{e}").replace("<uuid:log_id>", "{l}").replace("<uuid:category_id>", "{c}")
+        for r in routes
+    }
+    categories = {path.split("?")[0] for path in CATEGORY_ROUTES}
+    assert with_id == {path for _, path in NOT_YOURS_ROUTES} | {UNDO_ROUTE} | categories
 
 
 @pytest.mark.parametrize("method,path", NOT_YOURS_ROUTES)
@@ -63,12 +70,19 @@ def test_他人の記録の取り消しは何も起きない(client_in, theirs):
     assert Log.objects.filter(id=lid).exists()
 
 
-@pytest.mark.parametrize("action", ["up", "down", "rename", "delete"])
+@pytest.mark.parametrize("action", ["up", "down", "rename", "delete", "move"])
 def test_他人や存在しないカテゴリの操作は404(client_in, other_user, action):
     theirs = ev_svc.create_category(other_user, "趣味")
     for cid in (theirs.id, uuid.uuid4()):
-        r = client_in.post("/categories/", {"action": action, "id": str(cid), "name": "x"})
+        r = client_in.post("/categories/", {"action": action, "id": str(cid), "name": "x", "form": "1"})
         assert r.status_code == 404
+
+
+@pytest.mark.parametrize("path", CATEGORY_ROUTES)
+def test_他人や存在しないカテゴリの編集画面は404(client_in, other_user, path):
+    theirs = ev_svc.create_category(other_user, "趣味")
+    for cid in (theirs.id, uuid.uuid4()):
+        assert client_in.get(path.format(c=cid)).status_code == 404
 
 
 def test_並べ替えの位置に他人のイベントを渡すと422(client_in, user, theirs, event):
