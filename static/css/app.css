@@ -441,8 +441,10 @@ textarea { min-height: 84px; resize: vertical; }
 /* 並べ替えの行と取っ手は、文字を選ぶ対象にしない。長押しで文字選択やメニュー（iOS）が出て、ドラッグにならないことがあった */
 .catlist > li, .cat-handle { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 body.sorting, body.sorting * { user-select: none !important; -webkit-user-select: none !important; cursor: grabbing; }
-.catlist li.dragging { background: var(--surface); box-shadow: var(--shadow); border-radius: 12px; opacity: .9; }
-.catlist li.dragging .cat-handle { cursor: grabbing; }
+/* ドラッグしている行は、色を変えて浮かせる（シートの地と同じ白だと、どれを動かしているか見分けにくかった） */
+.catlist li.dragging { position: relative; z-index: 1; background: var(--t-teal); box-shadow: 0 0 0 2px var(--accent), 0 8px 20px rgba(17, 24, 39, .18); border-radius: 12px; border-top-color: transparent; }
+.catlist li.dragging + li { border-top-color: transparent; }
+.catlist li.dragging .cat-handle { cursor: grabbing; color: var(--accent); }
 /* カテゴリの一覧（読むだけ）と編集画面 */
 .catlist li { flex-wrap: nowrap; }
 .cat-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; text-align: left; border: none; background: none; padding: 6px 4px; border-radius: 12px; }
