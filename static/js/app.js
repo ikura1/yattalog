@@ -95,10 +95,50 @@
   }
   function closeSheet() {
     if (!sheet()) return;
+    clearTimeout(sheetWait);
+    revertThemePreview(); // 見た目を試したまま、保存せずに閉じたら元に戻す
     sheet().hidden = true;
     $("#scrim").hidden = true;
     $("#sheet-body").innerHTML = "";
     reloadIfPending(); // シートを開いている間に見送った読み込み直しを、ここで行う
+  }
+  // 押してからサーバーの返事が届くまでの間も、反応が見えるようにする（2026-10-20）。
+  // 閉じているときは、すぐに「読み込み中」のシートを開く。開いているときは、いまの中身を薄くする。
+  // すぐに返事が来たときにちらつかないよう、少しだけ待ってから出す
+  let sheetWait = 0;
+  const SHEET_WAIT_MS = 80;
+  function sheetLoading() {
+    clearTimeout(sheetWait);
+    sheetWait = setTimeout(() => {
+      const body = $("#sheet-body");
+      if (sheet().hidden) {
+        body.innerHTML = '<div class="sheet-loading" role="status"><span class="sr-only">読み込み中</span><i></i><i></i><i></i></div>';
+        openSheet();
+      } else body.classList.add("loading");
+    }, SHEET_WAIT_MS);
+  }
+  function sheetLoaded(ok) {
+    clearTimeout(sheetWait);
+    $("#sheet-body").classList.remove("loading");
+    if (!ok && $("#sheet-body .sheet-loading")) closeSheet(); // 届かなければ、空のシートを残さない（知らせは別に出る）
+  }
+
+  // 設定の「見た目」は、選んだ時点で画面に当てて試せる。保存せずに閉じたら元に戻す（決定 066 の追記）
+  let themeBefore = null; // 試している間だけ、試す前の値（"" は「端末と同じ」）
+  function applyTheme(theme) {
+    if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
+    else delete document.documentElement.dataset.theme;
+  }
+  function revertThemePreview() {
+    if (themeBefore === null) return;
+    applyTheme(themeBefore);
+    themeBefore = null;
+  }
+  function bindThemePreview(root) {
+    $$('input[name="theme"]', root).forEach((r) => r.addEventListener("change", () => {
+      if (themeBefore === null) themeBefore = document.documentElement.dataset.theme || "";
+      applyTheme(r.value);
+    }));
   }
   function loadSheet(url) {
     if (window.htmx) window.htmx.ajax("GET", url, { target: "#sheet-body" });
@@ -810,7 +850,7 @@
   /* ---------- htmx との連携 ---------- */
   document.addEventListener("htmx:afterSwap", (e) => {
     const t = e.detail.target;
-    if (t.id === "sheet-body") { openSheet(); bindRecordForm(t); bindEmojiField(t); bindShare(t); bindCategorySort(t); }
+    if (t.id === "sheet-body") { revertThemePreview(); openSheet(); bindThemePreview(t); bindRecordForm(t); bindEmojiField(t); bindShare(t); bindCategorySort(t); }
     if (t.id === "grid-wrap") { gridLoadedAt = Date.now(); bindHome(); applyTab(currentTab()); reloadIfNewBuild(); }
     if (t.id === "detail") { bindSeason(t); bindTend(t); }
   });
@@ -832,8 +872,8 @@
   // 設定を保存したら、見た目と震えをその場で変える（決定 066）
   document.addEventListener("yl:prefs", (e) => {
     const { theme, haptics } = e.detail || {};
-    if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
-    else delete document.documentElement.dataset.theme;
+    themeBefore = null; // 保存したので、閉じても戻さない
+    applyTheme(theme);
     if (haptics === false) document.body.dataset.haptics = "0";
     else delete document.body.dataset.haptics;
   });
@@ -845,6 +885,9 @@
     const d = $("#detail");
     if (d && window.htmx) window.htmx.ajax("GET", location.pathname + location.search, { target: "#detail", swap: "innerHTML" });
   });
+  const toSheet = (e) => e.detail.target && e.detail.target.id === "sheet-body";
+  document.addEventListener("htmx:beforeRequest", (e) => { if (toSheet(e) && e.detail.requestConfig?.verb === "get") sheetLoading(); });
+  document.addEventListener("htmx:afterRequest", (e) => { if (toSheet(e)) sheetLoaded(e.detail.successful); });
   document.addEventListener("htmx:responseError", (e) => toast(e.detail.xhr && e.detail.xhr.status === 429 ? TOO_MANY : "うまくいきませんでした。もう一度お試しください"));
   document.addEventListener("htmx:sendError", () => toast("通信できませんでした。つながっているか確認してください"));
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && sheet() && !sheet().hidden) closeSheet(); });
