@@ -329,7 +329,9 @@ def test_タブの右のボタンは_追加ではなく編集と分かる見た�
     """「＋」だと追加だけに見えるのに、名前の変更や並べ替え・削除までできる画面が開いていた。"""
     ev_svc.create_category(user, "家のこと")
     body = client_in.get("/").content.decode()
-    assert 'class="tab-add" aria-label="カテゴリを編集" title="カテゴリを編集"' in body and ">✎</button>" in body
+    assert 'class="tab-add" aria-label="カテゴリを編集" title="カテゴリを編集"' in body
+    # 鉛筆は文字（✎）ではなく絵にする。文字だとペン先の向きがフォントで変わる。ペン先は左下に向ける
+    assert '<svg class="pencil"' in body and "✎" not in body
 
 
 def test_詳細のカレンダーは_週の始まりの曜日から並ぶ(client_in, user, event):
