@@ -49,6 +49,13 @@ def test_スマホの幅でも_カテゴリの一覧で名前が読め_編集画
     assert name.bounding_box()["width"] >= 200  # 10文字（全角）が切れずに入る幅
 
 
+def open_categories(page):
+    """カテゴリの一覧を開き、シートが動き終わるのを待つ（動いている間に位置を測ると、ドラッグがずれる）。"""
+    page.get_by_label("カテゴリを編集").click()
+    expect(page.locator("#sheet-body .catlist")).to_be_visible()
+    page.wait_for_function("() => document.getAnimations().every((a) => a.playState !== 'running')")
+
+
 def names(page):
     return page.locator("#sheet-body .catlist > li[data-id] .cat-text b").evaluate_all(
         "els => els.map(e => e.textContent.trim())"
@@ -60,7 +67,7 @@ def test_カテゴリは_取っ手をドラッグして並べ替えられ_タブ
         ev_svc.create_category(user, n)
     page = home
     page.reload()
-    page.get_by_label("カテゴリを編集").click()
+    open_categories(page)
     handle = page.get_by_label("「からだ」を並べ替え（↑↓キーでも動かせます）")
     target = page.locator("#sheet-body .catlist > li[data-id]").first
 
@@ -80,7 +87,7 @@ def test_カテゴリは_取っ手で上下のキーを押しても並べ替え�
         ev_svc.create_category(user, n)
     page = home
     page.reload()
-    page.get_by_label("カテゴリを編集").click()
+    open_categories(page)
     handle = page.get_by_label("「身だしなみ」を並べ替え（↑↓キーでも動かせます）")
 
     handle.focus()
@@ -97,7 +104,7 @@ def test_並べ替えのとき_文字が選ばれない(home, user):
         ev_svc.create_category(user, n)
     page = home
     page.reload()
-    page.get_by_label("カテゴリを編集").click()
+    open_categories(page)
     handle = page.get_by_label("「からだ」を並べ替え（↑↓キーでも動かせます）")
     # 取っ手と行は、文字を選ぶ対象にしない（長押しで文字選択やメニューが出ないように）
     for el in (handle, page.locator(".catlist > li").first):
