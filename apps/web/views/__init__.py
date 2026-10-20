@@ -3,7 +3,7 @@
 機能ごとにファイルを分けている。URL（apps/web/urls.py）からは、ここを通して呼ぶ。
 """
 
-from apps.web.views.account import account_delete, export
+from apps.web.views.account import account_delete, export, settings_sheet
 from apps.web.views.achievements import achievement_share, achievements
 from apps.web.views.events import (
     EMOJIS,
@@ -63,6 +63,7 @@ __all__ = [
     "review",
     "service_worker",
     "set_timezone",
+    "settings_sheet",
     "share_sheet",
     "starters",
     "terms",

@@ -28,10 +28,10 @@ def water(user):
     return ev_svc.create_event(user, name="水やり", emoji="🪴", color="leaf", streak_unit="none")
 
 
-def test_期間は_今週を含めて53週_日曜から今日まで(user):
-    """GitHub の草と同じ並び。2026-10-10 は土曜なので、今週は 10-04（日）から。"""
+def test_期間は_今週を含めて53週_週の始まりから今日まで(user):
+    """GitHub の草と同じ並び。2026-10-10 は土曜で、既定は月曜始まりなので、今週は 10-05（月）から（決定 066）。"""
     review = year_review(user, TODAY)
-    assert (review.start, review.end) == (date(2025, 10, 5), TODAY)
+    assert (review.start, review.end) == (date(2025, 10, 6), TODAY)
 
 
 def test_日ごとに_記録の回数と_やったイベントの種類の数を数える(user, sheets, water):
@@ -48,12 +48,12 @@ def test_日ごとに_記録の回数と_やったイベントの種類の数を
 
 
 def test_期間より前の記録は_数えない(user, water):
-    record(user, water, date(2025, 10, 4))
     record(user, water, date(2025, 10, 5))
+    record(user, water, date(2025, 10, 6))
 
     review = year_review(user, TODAY)
 
-    assert list(review.days) == [date(2025, 10, 5)]
+    assert list(review.days) == [date(2025, 10, 6)]
 
 
 def test_イベントで絞ると_そのイベントの記録だけを数える(user, sheets, water):

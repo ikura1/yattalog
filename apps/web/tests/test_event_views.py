@@ -330,3 +330,13 @@ def test_タブの右のボタンは_追加ではなく編集と分かる見た�
     ev_svc.create_category(user, "家のこと")
     body = client_in.get("/").content.decode()
     assert 'class="tab-add" aria-label="カテゴリを編集" title="カテゴリを編集"' in body and ">✎</button>" in body
+
+
+def test_詳細のカレンダーは_週の始まりの曜日から並ぶ(client_in, user, event):
+    def first_dow():
+        body = client_in.get(f"/events/{event.id}/").content.decode()
+        return body.split('<span class="dow">')[1][0]
+
+    assert first_dow() == "月"
+    ev_svc.set_week_start(user, "sun")
+    assert first_dow() == "日"

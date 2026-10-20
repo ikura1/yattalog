@@ -13,7 +13,7 @@ UNIT_WORD = {StreakUnit.DAY: "日", StreakUnit.WEEK: "週", StreakUnit.MONTH: "�
 CURRENT_WORD = {StreakUnit.DAY: "今日", StreakUnit.WEEK: "今週", StreakUnit.MONTH: "今月"}
 
 
-def compute_streak(dates_desc: Iterable[date], unit: str) -> tuple[int, int | None]:
+def compute_streak(dates_desc: Iterable[date], unit: str, week_start: str = "mon") -> tuple[int, int | None]:
     """新しい順の記録の日付から、(連続回数, 連続の最後の期間の番号) を返す。
 
     最新の期間から遡り、記録がある期間が途切れたところで止まる。
@@ -25,7 +25,7 @@ def compute_streak(dates_desc: Iterable[date], unit: str) -> tuple[int, int | No
     last: int | None = None
     prev: int | None = None
     for d in dates_desc:
-        p = period_index(d, unit)
+        p = period_index(d, unit, week_start)
         if prev is None:
             last, prev, count = p, p, 1
             continue
@@ -54,7 +54,9 @@ class StreakState:
         return f"（{CURRENT_WORD[self.unit]}はまだ）"
 
 
-def streak_state(streak_count: int, streak_period: int | None, unit: str, today: date) -> StreakState | None:
+def streak_state(
+    streak_count: int, streak_period: int | None, unit: str, today: date, week_start: str = "mon"
+) -> StreakState | None:
     """キャッシュと今日の日付から、バッジを出すかどうかと出し方を決める。
 
     - 連続の最後の期間 ＝ 今の期間 → 連続中
@@ -63,7 +65,7 @@ def streak_state(streak_count: int, streak_period: int | None, unit: str, today:
     """
     if unit == StreakUnit.NONE or streak_period is None or streak_count < STREAK_MIN:
         return None
-    now = period_index(today, unit)
+    now = period_index(today, unit, week_start)
     if streak_period == now:
         return StreakState(streak_count, True, unit)
     if streak_period == now - 1:

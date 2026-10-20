@@ -29,6 +29,7 @@
      画面の外に置いたスイッチ（input[switch]）を切り替えて、OS の手ごたえを借りる（対応していない端末では何も起きない）。 */
   let hapticSwitch = null;
   function haptic(ms) {
+    if (document.body.dataset.haptics === "0") return; // 設定でオフ（決定 066）
     try {
       if (navigator.vibrate) { navigator.vibrate(ms); return; }
       if (!hapticSwitch) {
@@ -818,6 +819,14 @@
     btn.textContent = form.dataset.busy;
     btn.setAttribute("aria-busy", "true");
     setTimeout(() => { btn.disabled = true; }, 0); // 送信が始まってから無効にする（先に無効にすると、送られない）
+  });
+  // 設定を保存したら、見た目と震えをその場で変える（決定 066）
+  document.addEventListener("yl:prefs", (e) => {
+    const { theme, haptics } = e.detail || {};
+    if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
+    else delete document.documentElement.dataset.theme;
+    if (haptics === false) document.body.dataset.haptics = "0";
+    else delete document.body.dataset.haptics;
   });
   document.addEventListener("yl:close-sheet", closeSheet);
   document.addEventListener("yl:toast", (e) => toast(e.detail.message));

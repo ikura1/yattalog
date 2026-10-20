@@ -21,6 +21,10 @@
   <li><a href="{% url 'web:terms' %}"><span class="mi" aria-hidden="true">📄</span><span class="mt">利用規約</span><span class="chev" aria-hidden="true">›</span></a></li>
   <li><a href="{% url 'web:privacy' %}"><span class="mi" aria-hidden="true">🔒</span><span class="mt">プライバシーポリシー</span><span class="chev" aria-hidden="true">›</span></a></li>
 </ul>
+<h3 class="menu-h">設定</h3>
+<ul class="menu menu-card">
+  <li><button type="button" hx-get="{% url 'web:settings' %}" hx-target="#sheet-body"><span class="mi" aria-hidden="true">⚙️</span><span class="mt">設定<small>週の始まり、見た目、押したときの震え、タイムゾーン</small></span><span class="chev" aria-hidden="true">›</span></button></li>
+</ul>
 <h3 class="menu-h">アカウント</h3>
 <ul class="menu menu-card">
   <li><form method="post" action="{% url 'web:export' %}">{% csrf_token %}<button type="submit"><span class="mi" aria-hidden="true">💾</span><span class="mt">データを書き出す<small>記録とイベントを ZIP（CSV と JSON）でダウンロードします</small></span></button></form></li>

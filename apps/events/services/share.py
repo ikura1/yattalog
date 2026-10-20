@@ -44,7 +44,7 @@ def _headline(log: Log) -> tuple[str, str]:
     earlier |= Q(local_date=log.local_date, created_at=log.created_at, id__lt=log.id)
     nth = until.filter(earlier).count() + 1
     dates = until.order_by("-local_date").values_list("local_date", flat=True).distinct()
-    count, _ = compute_streak(dates.iterator(), event.streak_unit)
+    count, _ = compute_streak(dates.iterator(), event.streak_unit, event.space.week_start)
     if count >= STREAK_MIN:
         return f"🔥 {count}{UNIT_WORD[event.streak_unit]}連続", f"通算 {nth}回目"
     if nth == 1:

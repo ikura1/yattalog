@@ -5,10 +5,10 @@ import re
 from apps.events.services import events as ev_svc
 
 
-def test_メニューは_見る_整える_アプリ_サポート_アカウントの組に分けて並べる(client_in):
+def test_メニューは_見る_整える_アプリ_サポート_設定_アカウントの組に分けて並べる(client_in):
     body = client_in.get("/menu/").content.decode()
     heads = re.findall(r'<h3 class="menu-h">([^<]+)</h3>', body)
-    assert heads == ["見る", "整える", "アプリ", "サポート", "アカウント"]
+    assert heads == ["見る", "整える", "アプリ", "サポート", "設定", "アカウント"]
     account = body.split('<h3 class="menu-h">アカウント</h3>')[1]
     assert "データを書き出す" in account and "ログアウト" in account and "退会する" in account
 

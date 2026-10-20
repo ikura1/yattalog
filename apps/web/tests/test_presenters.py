@@ -36,8 +36,9 @@ def test_目盛りは0から始まり最大値以上まである():
     assert values[0] == 0 and values[-1] >= 13
 
 
-def test_カレンダーは日曜始まりで未来の日が分かる():
-    weeks = calendar_weeks(2026, 10, {date(2026, 10, 9)}, TODAY)
+def test_カレンダーは週の始まりから並び_未来の日が分かる():
+    assert calendar_weeks(2026, 10, set(), TODAY)[0][0].date.weekday() == 0  # 既定は月曜（決定 066）
+    weeks = calendar_weeks(2026, 10, {date(2026, 10, 9)}, TODAY, "sun")
     first = weeks[0]
     assert first[0].date.weekday() == 6  # 日曜
     days = {c.date: c for w in weeks for c in w if c.in_month}
@@ -57,11 +58,12 @@ from datetime import timedelta  # noqa: E402
 from apps.core.testing import NOW  # noqa: E402
 from apps.events.models import Event  # noqa: E402
 from apps.events.services.dates import period_index  # noqa: E402
+from apps.spaces.models import Space  # noqa: E402
 from apps.web.presenters import tile  # noqa: E402
 
 
 def make_event(**kw) -> Event:
-    defaults = dict(name="シーツ交換", emoji="🛏️", color="sky", streak_unit="day", last_local_date=None)
+    defaults = dict(name="シーツ交換", emoji="🛏️", color="sky", streak_unit="day", last_local_date=None, space=Space())
     return Event(**{**defaults, **kw})
 
 

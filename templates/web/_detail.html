@@ -88,7 +88,7 @@
     <a class="iconbtn" aria-label="次の月" href="?y={{ next_m.0 }}&m={{ next_m.1 }}" hx-get="?y={{ next_m.0 }}&m={{ next_m.1 }}" hx-target="#detail" hx-push-url="true">›</a>
   </div>
   <div class="cal">
-    {% for w in "日月火水木金土" %}<span class="dow">{{ w }}</span>{% endfor %}
+    {% for w in dow %}<span class="dow">{{ w }}</span>{% endfor %}
     {% for week in cal_weeks %}{% for c in week %}
       {% if not c.in_month %}<span class="pad"></span>
       {% elif c.is_future %}<span class="day future" aria-disabled="true">{{ c.date.day }}</span>

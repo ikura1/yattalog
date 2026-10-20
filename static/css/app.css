@@ -15,8 +15,9 @@
   --r: 18px;
   color-scheme: light;
 }
+/* 暗い画面。端末が暗いとき（設定で「明るい」を選んでいなければ）と、設定で「暗い」を選んだとき（決定 066） */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #12161E; --surface: #1B212C; --fg: #E8ECF3; --muted: #98A2B3; --line: #2C3442;
     --accent: #5CC9A7; --accent-fg: #0E1A16; --danger: #FF7B6E; --toast: #E8ECF3; --toast-fg: #12161E;
     --scrim: rgba(0, 0, 0, .6); --shadow: 0 1px 2px rgba(0, 0, 0, .4);
@@ -27,6 +28,17 @@
     --s-tomato: #F07A64; --s-tangerine: #F09A50; --s-sun: #E6BD3C; --s-leaf: #74C25A;
     --s-teal: #4CC1AB; --s-sky: #6AA5EC; --s-grape: #A68BEA; --s-pink: #E88CB8; color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+  --bg: #12161E; --surface: #1B212C; --fg: #E8ECF3; --muted: #98A2B3; --line: #2C3442;
+  --accent: #5CC9A7; --accent-fg: #0E1A16; --danger: #FF7B6E; --toast: #E8ECF3; --toast-fg: #12161E;
+  --scrim: rgba(0, 0, 0, .6); --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+  --t-tomato: #4A2A27; --t-tangerine: #4A3522; --t-sun: #463E1E; --t-leaf: #2A3F25;
+  --t-teal: #1F3F3A; --t-sky: #22344D; --t-grape: #35294F; --t-pink: #4A2638;
+  --tile-fg: #EEF1F6; --dot: #5CC9A7;
+  --g0: #242C38; --g1: #1E4239; --g2: #2B6E5A; --g3: #3FA283; --g4: #6BD8B5;
+  --s-tomato: #F07A64; --s-tangerine: #F09A50; --s-sun: #E6BD3C; --s-leaf: #74C25A;
+  --s-teal: #4CC1AB; --s-sky: #6AA5EC; --s-grape: #A68BEA; --s-pink: #E88CB8; color-scheme: dark;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -443,3 +455,8 @@ textarea { min-height: 84px; resize: vertical; }
 .menu-card .count { flex: none; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
 .menu-card .danger-row .mt { color: var(--danger); }
 .menu-foot { margin-top: 14px; text-align: center; }
+/* 設定（決定 066） */
+.settings .seg { display: grid; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; }
+.settings .seg span { justify-content: center; text-align: center; }
+.settings input[type="checkbox"] { accent-color: var(--accent); }
+.settings .check small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }

@@ -11,7 +11,7 @@ START = date(2025, 10, 5)  # 2026-10-10（土）の週から52週前の日曜
 
 
 def review(days, event=None):
-    return YearReview(start=START, end=TODAY, event=event, days=days)
+    return YearReview(start=START, end=TODAY, event=event, days=days, week_start="sun")
 
 
 def cells_of(grid):
@@ -52,3 +52,15 @@ def test_今日より後の日は_先の日として印を付ける():
     last = grid.weeks[-1]
     assert [c.is_future for c in last] == [False, False, False, False, True, True, True]
     assert isinstance(last[0], HeatCell)
+
+
+def test_月曜始まりなら_1週は月曜から日曜で_左の見出しは月水金が上から1_3_5段目():
+    start = date(2025, 10, 6)  # 月曜
+    grid = year_weeks(YearReview(start=start, end=TODAY, event=None, days={}, week_start="mon"), TODAY)
+    assert grid.weeks[0][0].date == start and grid.weeks[0][0].date.weekday() == 0
+    assert grid.day_labels == ["月", "", "水", "", "金", "", ""]
+
+
+def test_日曜始まりなら_左の見出しは月水金が2_4_6段目():
+    grid = year_weeks(review({}), TODAY)
+    assert grid.day_labels == ["", "月", "", "水", "", "金", ""]

@@ -34,18 +34,18 @@ def today_in(tz_name: str, now: datetime | None = None) -> date:
     return (now or now_utc()).astimezone(zone(tz_name)).date()
 
 
-def period_index(d: date, unit: str) -> int:
-    """連続記録の「期間の番号」（決定 015・032）。
+def period_index(d: date, unit: str, week_start: str = "mon") -> int:
+    """連続記録の「期間の番号」（決定 015・032・066）。
 
     - day: 日付の通し番号
-    - week: 月曜始まりの週の通し番号
+    - week: 週の通し番号。週の始まりは月曜（既定）か日曜
     - month: 年×12＋月
     """
     if unit == StreakUnit.DAY:
         return d.toordinal()
     if unit == StreakUnit.WEEK:
-        # date.toordinal() は 0001-01-01（月曜）が 1。月曜始まりの週にそろえる
-        return (d.toordinal() - 1) // 7
+        # date.toordinal() は 0001-01-01（月曜）が 1。月曜始まりなら 1 を引き、日曜始まりならそのまま割る
+        return (d.toordinal() - (1 if week_start == "mon" else 0)) // 7
     if unit == StreakUnit.MONTH:
         return d.year * 12 + (d.month - 1)
     raise ValueError(f"unknown streak unit: {unit}")

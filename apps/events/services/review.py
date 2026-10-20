@@ -11,6 +11,7 @@ from django.db.models import Count, F
 
 from apps.events.models import Event, Log
 from apps.events.services.access import event_for
+from apps.spaces.services import personal_space
 
 WEEKS = 53  # 今週を含めて53週（GitHub の草と同じ）
 
@@ -27,6 +28,7 @@ class YearReview:
     end: date
     event: Event | None  # 絞っているイベント。すべてなら None
     days: dict[date, DayCount] = field(default_factory=dict)  # 記録がある日だけ
+    week_start: str = "mon"  # 週の始まり（決定 066）
 
     @property
     def total(self) -> int:
@@ -37,10 +39,10 @@ class YearReview:
         return len(self.days)
 
 
-def first_day(today: date) -> date:
-    """期間の始まり：今週の日曜から52週前の日曜。"""
-    sunday = today - timedelta((today.weekday() + 1) % 7)
-    return sunday - timedelta(weeks=WEEKS - 1)
+def first_day(today: date, week_start: str = "mon") -> date:
+    """期間の始まり：今週の始まり（月曜か日曜、決定 066）から52週前。"""
+    back = today.weekday() if week_start == "mon" else (today.weekday() + 1) % 7
+    return today - timedelta(back) - timedelta(weeks=WEEKS - 1)
 
 
 def _logs(user, event: Event | None):
@@ -51,7 +53,8 @@ def _logs(user, event: Event | None):
 def year_review(user, today: date, event_id=None) -> YearReview:
     """1年分（53週）の、日ごとの記録の数。ほかの人のイベントで絞ろうとしたら Event.DoesNotExist。"""
     event = event_for(user, event_id) if event_id else None
-    start = first_day(today)
+    week_start = personal_space(user).week_start
+    start = first_day(today, week_start)
     rows = (
         _logs(user, event)
         .filter(local_date__range=(start, today))
@@ -60,7 +63,7 @@ def year_review(user, today: date, event_id=None) -> YearReview:
         .order_by("local_date")
     )
     days = {r["local_date"]: DayCount(r["logs"], r["kinds"]) for r in rows}
-    return YearReview(start=start, end=today, event=event, days=days)
+    return YearReview(start=start, end=today, event=event, days=days, week_start=week_start)
 
 
 DAY_LIMIT = 200  # その日の記録を、この件数まで出す
@@ -138,7 +141,7 @@ def top_events(user, today: date) -> list[TopEvent]:
     """草と同じ1年分（53週）で、回数の多いイベントを3つ。"""
     rows = (
         _logs(user, None)
-        .filter(local_date__range=(first_day(today), today))
+        .filter(local_date__range=(first_day(today, personal_space(user).week_start), today))
         .values("event")
         .annotate(n=Count("id"))
         .order_by("-n", "event__sort_key")[:TOP]

@@ -11,7 +11,14 @@ from apps.events.services.dates import friendly_interval, period_index, zone
 from apps.events.services.streaks import STREAK_MIN, UNIT_WORD
 
 SEASON_RATIO = 0.7  # 最大回数の7割以上の月を「よくやる時期」とする（曜日・時間帯・日にちも同じ）
-WEEKDAY_NAMES = "日月火水木金土"  # 日曜始まり（カレンダーと同じ）
+WEEKDAY_NAMES = "日月火水木金土"  # 日曜始まり（ExtractWeekDay の並び）
+
+
+def weekday_names(week_start: str) -> str:
+    """週の始まりから並べた曜日（決定 066）。"""
+    return "月火水木金土日" if week_start == "mon" else WEEKDAY_NAMES
+
+
 TIME_SLOTS = ("朝", "昼", "夕方", "夜")  # 4:00〜 / 11:00〜 / 16:00〜 / 19:00〜3:59
 THIRDS = ("上旬", "中旬", "下旬")  # 1〜10日 / 11〜20日 / 21日〜
 
@@ -94,7 +101,7 @@ def best_streak(event: Event) -> int:
     best = run = 0
     prev = None
     for d in dates.iterator():
-        p = period_index(d, event.streak_unit)
+        p = period_index(d, event.streak_unit, event.space.week_start)
         if p == prev:
             continue
         run = run + 1 if prev is not None and p == prev + 1 else 1
@@ -193,8 +200,15 @@ def _count_by(event: Event, part, size: int, offset: int) -> list[int]:
 
 def weekday_tendency(event: Event) -> Tendency:
     counts = _count_by(event, ExtractWeekDay, 7, 1)  # ExtractWeekDay は 1＝日曜〜7＝土曜
+    week_start = event.space.week_start
+    if week_start == "mon":
+        counts = counts[1:] + counts[:1]  # 月曜から並べる
     return _tendency(
-        WEEKDAY_NAMES, counts, few="記録が増えると、よくやる曜日がわかります", even="どの曜日も同じくらい", suffix="曜"
+        weekday_names(week_start),
+        counts,
+        few="記録が増えると、よくやる曜日がわかります",
+        even="どの曜日も同じくらい",
+        suffix="曜",
     )
 
 

@@ -51,6 +51,13 @@ def test_ホーム_ふりかえり_イベント詳細に_axe_の指摘がない(
     page.locator("#sheet-body .menu-card").first.wait_for()
     assert violations(page) == [], "メニュー"
 
+    # 設定（シート）
+    page.goto(page.base_url + "/")
+    page.get_by_role("button", name="メニュー").click()
+    page.locator("#sheet-body .menu-card button", has_text="週の始まり").click()
+    page.locator("#sheet-body form.settings").wait_for()
+    assert violations(page) == [], "設定"
+
     # カテゴリの一覧と編集画面（シート）
     page.goto(page.base_url + "/")
     page.get_by_label("カテゴリを編集").click()
