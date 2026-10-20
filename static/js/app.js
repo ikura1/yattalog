@@ -297,6 +297,8 @@
     document.body.appendChild(g);
     press.drag = { ghost: g, ox: e.clientX - r.left, oy: e.clientY - r.top, li: press.el.closest("li") };
     press.el.classList.add("dragging");
+    window.getSelection()?.removeAllRanges();
+    document.body.classList.add("sorting"); // ドラッグのあいだ、画面のどこでも文字を選ばせない
     moveDrag(e);
   }
   function moveDrag(e) {
@@ -315,6 +317,7 @@
   function endDrag(p) {
     p.drag.ghost.remove();
     p.el.classList.remove("dragging");
+    document.body.classList.remove("sorting");
     const visible = $$("#grid > li[data-id]").filter((li) => !li.hidden);
     const i = visible.indexOf(p.drag.li);
     const before = visible[i - 1]?.dataset.id || "";
@@ -347,8 +350,10 @@
       const handle = e.target.closest(".cat-handle");
       if (!handle) return;
       e.preventDefault();
+      window.getSelection()?.removeAllRanges(); // すでに選ばれている文字があれば外す
       drag = { li: handle.closest("li"), moved: false };
       drag.li.classList.add("dragging");
+      document.body.classList.add("sorting"); // ドラッグのあいだ、画面のどこでも文字を選ばせない
       try { handle.setPointerCapture(e.pointerId); } catch (_) { /* 捕まえられなくても、一覧の中なら動く */ }
     });
     list.addEventListener("pointermove", (e) => {
@@ -366,11 +371,15 @@
     const end = () => {
       if (!drag) return;
       drag.li.classList.remove("dragging");
+      document.body.classList.remove("sorting");
       if (drag.moved) save(drag.li);
       drag = null;
     };
     list.addEventListener("pointerup", end);
     list.addEventListener("pointercancel", end);
+    // 指が一覧の外で離れても、ドラッグを終える
+    document.addEventListener("pointerup", end);
+    document.addEventListener("selectstart", (e) => { if (drag) e.preventDefault(); });
     list.addEventListener("keydown", (e) => {
       const handle = e.target.closest(".cat-handle");
       if (!handle || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;

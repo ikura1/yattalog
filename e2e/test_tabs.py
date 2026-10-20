@@ -89,3 +89,26 @@ def test_カテゴリは_取っ手で上下のキーを押しても並べ替え�
     assert names(page) == ["身だしなみ", "家のこと"]
     expect(handle).to_be_focused()
     expect(page.locator("#tabs [data-tab]").nth(1)).to_contain_text("身だしなみ")
+
+
+def test_並べ替えのとき_文字が選ばれない(home, user):
+    """取っ手を押して動かすと、名前の文字が選ばれて、ドラッグにならないことがあった。"""
+    for n in ("家のこと", "身だしなみ", "からだ"):
+        ev_svc.create_category(user, n)
+    page = home
+    page.reload()
+    page.get_by_label("カテゴリを編集").click()
+    handle = page.get_by_label("「からだ」を並べ替え（↑↓キーでも動かせます）")
+    # 取っ手と行は、文字を選ぶ対象にしない（長押しで文字選択やメニューが出ないように）
+    for el in (handle, page.locator(".catlist > li").first):
+        assert el.evaluate("e => getComputedStyle(e).userSelect || getComputedStyle(e).webkitUserSelect") == "none"
+
+    box = handle.bounding_box()
+    first = page.locator(".catlist .cat-text b").first.bounding_box()
+    page.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+    page.mouse.down()
+    page.mouse.move(first["x"] + 5, first["y"] + 5, steps=10)  # 名前の文字の上を通る
+    page.mouse.up()
+
+    assert page.evaluate("window.getSelection().toString()") == ""
+    assert names(page)[0] == "からだ"

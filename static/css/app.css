@@ -424,7 +424,10 @@ textarea { min-height: 84px; resize: vertical; }
 .emo-more summary { cursor: pointer; font-weight: 700; font-size: 13px; color: var(--accent); padding: 4px 0; width: fit-content; }
 .emo-more[open] summary { margin-bottom: 6px; }
 /* カテゴリの並べ替えの取っ手（ドラッグ、↑↓キー） */
-.cat-handle { cursor: grab; touch-action: none; color: var(--muted); font-size: 22px; }
+.cat-handle { cursor: grab; touch-action: none; color: var(--muted); font-size: 22px; width: 44px; height: 44px; }
+/* 並べ替えの行と取っ手は、文字を選ぶ対象にしない。長押しで文字選択やメニュー（iOS）が出て、ドラッグにならないことがあった */
+.catlist > li, .cat-handle { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+body.sorting, body.sorting * { user-select: none !important; -webkit-user-select: none !important; cursor: grabbing; }
 .catlist li.dragging { background: var(--surface); box-shadow: var(--shadow); border-radius: 12px; opacity: .9; }
 .catlist li.dragging .cat-handle { cursor: grabbing; }
 /* カテゴリの一覧（読むだけ）と編集画面 */
