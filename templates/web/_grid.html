@@ -4,7 +4,7 @@
   {% for c, n in categories %}<button type="button" role="tab" data-tab="{{ c.id }}" aria-selected="false">{% if c.emoji %}<span class="cat-emo" aria-hidden="true">{{ c.emoji }}</span>{% endif %}{{ c.name }}<span class="n">{{ n }}</span></button>{% endfor %}
   {% if uncategorized %}<button type="button" role="tab" data-tab="none" aria-selected="false">カテゴリなし<span class="n">{{ uncategorized }}</span></button>{% endif %}
 </nav>
-<button type="button" class="tab-add" aria-label="カテゴリを編集" title="カテゴリを編集" hx-get="{% url 'web:categories' %}" hx-target="#sheet-body">✎</button>
+<button type="button" class="tab-add" aria-label="カテゴリを編集" title="カテゴリを編集" hx-get="{% url 'web:categories' %}" hx-target="#sheet-body"><svg class="pencil" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5l4 4L9 19H5v-4z"/><path d="M13 7l4 4"/></svg></button>
 </div>
 {% if not total %}
 <section class="welcome" id="welcome" aria-labelledby="welcomeTitle">
