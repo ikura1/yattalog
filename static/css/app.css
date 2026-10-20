@@ -340,6 +340,19 @@ textarea { min-height: 84px; resize: vertical; }
 .login-note { font-size: 13px; font-weight: 700; padding: 10px 14px; margin: 0; background: var(--surface); border-radius: 12px; }
 .messages { list-style: none; padding: 10px 14px; margin: 0; background: var(--surface); border-radius: 12px; color: var(--danger); font-weight: 700; }
 
+/* 押した瞬間の手ごたえ（2026-10-20）。返事を待たずに、押したことが見えるようにする */
+.btn, .pill, .iconbtn, .tab-add, .linkbtn, .cat-open, .menu-card a, .menu-card button, .tabs [data-tab] { touch-action: manipulation; transition: transform .08s ease, background-color .08s ease, opacity .12s ease; }
+.btn:active, .pill:active, .iconbtn:active, .tab-add:active, .tabs [data-tab]:active { transform: scale(.96); }
+.menu-card a:active, .menu-card button:active, .cat-open:active { background: var(--line); }
+.linkbtn:active { opacity: .6; }
+.htmx-request.btn, .htmx-request.pill, .htmx-request.iconbtn { opacity: .7; }
+/* シートの中身を読み込んでいる間 */
+#sheet-body.loading { opacity: .55; transition: opacity .12s ease; pointer-events: none; }
+.sheet-loading { display: flex; justify-content: center; gap: 8px; padding: 40px 0 56px; }
+.sheet-loading i { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); animation: blink 1s ease-in-out infinite; }
+.sheet-loading i:nth-child(3) { animation-delay: .15s; }
+.sheet-loading i:nth-child(4) { animation-delay: .3s; }
+@keyframes blink { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 
 /* ---- ふりかえり（1年の草、決定 058） ---- */
