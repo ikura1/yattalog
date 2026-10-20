@@ -119,3 +119,25 @@ def test_並べ替えのとき_文字が選ばれない(home, user):
 
     assert page.evaluate("window.getSelection().toString()") == ""
     assert names(page)[0] == "からだ"
+
+
+def test_ドラッグしている行は_色が変わって見分けられ_離すと元に戻る(home, user):
+    for n in ("家のこと", "身だしなみ"):
+        ev_svc.create_category(user, n)
+    page = home
+    page.reload()
+    open_categories(page)
+    handle = page.get_by_label("「身だしなみ」を並べ替え（↑↓キーでも動かせます）")
+    row = page.locator("#sheet-body .catlist > li[data-id]", has_text="身だしなみ")
+    bg = "e => getComputedStyle(e).backgroundColor"
+    sheet_bg = page.locator("#sheet").evaluate(bg)
+
+    box = handle.bounding_box()
+    page.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+    page.mouse.down()
+    page.wait_for_function("() => document.getAnimations().every((a) => a.playState !== 'running')")
+    assert row.evaluate(bg) not in (sheet_bg, "rgba(0, 0, 0, 0)")  # シートの地の色と見分けられる
+
+    page.mouse.up()
+    expect(row).not_to_have_class("dragging")
+    assert row.evaluate(bg) == "rgba(0, 0, 0, 0)"
