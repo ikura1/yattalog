@@ -89,3 +89,4 @@
 | 064 | [独自のドメイン yattalog.ikura1.dev で出す](064-custom-domain.md) | 決定 |
 | 065 | [主な対象を「独身・一人暮らしの20〜30代」にし、テンプレートと絵文字の選び方を合わせる](065-target-starters-emoji-hints.md) | 決定 |
 | 066 | [設定の画面を作る（週の始まり、見た目、押したときの震え、タイムゾーン）](066-settings.md) | 決定 |
+| 067 | [運用の通知を Discord に送る](067-ops-discord.md) | 決定 |

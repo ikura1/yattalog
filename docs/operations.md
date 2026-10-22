@@ -5,12 +5,13 @@
 ## 自動で動いているもの
 | 名前 | いつ | 何をする | 異常のとき |
 |---|---|---|---|
-| Uptime（`.github/workflows/uptime.yml`） | 1時間ごと | `/health` が 200 を返すか（DB には触れない） | Issue「本番に繋がらない（死活監視）」（ラベル `ops`） |
-| Ops report（`.github/workflows/ops-report.yml`） | 毎朝 9:07・手動 | 直近24時間のリクエストとエラーをまとめてサマリーに出す | エラーの種類ごとに Issue「本番のエラー：…」（`ops`） |
+| Uptime（`.github/workflows/uptime.yml`） | 1時間ごと | `/health` が 200 を返すか（DB には触れない） | Issue「本番に繋がらない（死活監視）」（ラベル `ops`）と Discord |
+| Ops report（`.github/workflows/ops-report.yml`） | 毎朝 9:07・手動 | 直近24時間のリクエストとエラーをまとめてサマリーに出す | エラーの種類ごとに Issue「本番のエラー：…」（`ops`）と Discord（題名と回数だけ） |
 | Error Reporting（Google Cloud） | 常に | 例外を種類ごとにまとめる | 新しい種類が出たらメール |
 | 予算アラート（Google Cloud） | 常に | 月 ¥500 を超えそうか | メール |
 
 Issue はリポジトリの通知で Yuki さんにも届く。Claude は同じ Issue を見る。
+Discord の知らせ（決定 067）は Secret `OPS_WEBHOOK_URL` があるときだけ送る。送るのは `apps/core/ops_notify.py`。
 
 ## Claude への頼み方
 プロジェクトのチャットで、次のように頼む。
@@ -47,6 +48,12 @@ Claude が見られるのは、伏せた報告（経路の形、回数、例外�
 2. **GitHub に登録する**：Settings → Secrets and variables → Actions → Variables に `GCP_OPS_SA` を足す
 3. **Error Reporting の通知を入れる**：Google Cloud のコンソール →「Error Reporting」→「通知を構成」で、メールの通知チャネル（自分のアドレス）を選ぶ
 4. 確かめる：Actions の「Ops report」を手動で実行し、サマリーが出ることを見る（Claude に「本番を見て」と頼んでもよい）
+
+5. **Discord の通知を入れる**（決定 067）
+   1. Discord で自分だけのサーバーを作り、通知用のチャンネル（例：`#yattalog-ops`）を作る
+   2. チャンネルの設定 →「連携サービス」→「ウェブフック」→「新しいウェブフック」→「ウェブフック URL をコピー」
+   3. GitHub の Settings → Secrets and variables → Actions → **Secrets** に `OPS_WEBHOOK_URL` として登録する（URL は書き込みの鍵なので、チャットや Issue には貼らない）
+   4. 確かめる：Actions の「Ops report」を手動で実行し、「Discord にテストの知らせを送る」に印を付ける（Claude に「通知を確かめて」と頼んでもよい）。ふだんは、エラーがあったときだけ送る
 
 `APP_URL` は `https://yattalog.ikura1.dev`（2026-10-19、決定 064）。
 

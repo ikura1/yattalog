@@ -1,4 +1,5 @@
 # 本番が応答しているかを1時間ごとに確かめる（決定 046）。落ちていたら Issue（ラベル ops）を開く。
+# あわせて Discord にも知らせる（Secret の OPS_WEBHOOK_URL があるときだけ、決定 067）。
 # /health は DB に触れないので、Neon は起こさない。
 name: Uptime
 
@@ -42,3 +43,17 @@ jobs:
           n=$(gh issue list --label ops --state open --json number,title --jq "map(select(.title == \"$title\"))[0].number // empty")
           body="$(date -u +%FT%TZ) に /health が応答しませんでした。$RUN_URL"
           if [ -n "$n" ]; then gh issue comment "$n" --body "$body"; else gh issue create --title "$title" --label ops --body "$body"; fi
+
+      # 通知は、落ちたときだけ。ふだんの1時間ごとの確認では、リポジトリを取ってこない
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: failure()
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        if: failure()
+      - name: Notify（Discord に知らせる）
+        if: failure()
+        env:
+          OPS_WEBHOOK_URL: ${{ secrets.OPS_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          uv run --no-dev python -m apps.core.ops_notify \
+            --message "🚨 Yattalog：本番に繋がりません（/health が応答しない）。$RUN_URL"

@@ -1,5 +1,6 @@
 # 本番の様子をまとめる（決定 046）。毎朝と、手動（Claude からも実行できる）で動く。
 # 結果は実行のサマリーに出し、新しいエラーは Issue（ラベル ops）にする。
+# エラーがあれば、Discord にも知らせる（Secret の OPS_WEBHOOK_URL があるときだけ、決定 067）。
 #
 # リポジトリは公開なので、Actions のログもサマリーも誰でも読める。
 # Cloud Logging の生のデータはファイルにだけ書き、画面に出すのは apps/core/ops_report.py が伏せたものだけにする。
@@ -14,6 +15,10 @@ on:
       hours:
         description: 直近何時間ぶんを見るか
         default: "24"
+      notify_test:
+        description: Discord にテストの知らせを送る（通知の設定を確かめるとき）
+        type: boolean
+        default: false
 
 concurrency:
   group: ops-report
@@ -86,3 +91,15 @@ jobs:
           $RUN_URL"
             fi
           done
+
+      - name: Notify（エラーがあれば Discord に、題名と回数だけ送る）
+        env:
+          OPS_WEBHOOK_URL: ${{ secrets.OPS_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          NOTIFY_TEST: ${{ inputs.notify_test }}
+        run: |
+          if [ "$NOTIFY_TEST" = "true" ]; then
+            uv run --no-dev python -m apps.core.ops_notify --message "✅ Yattalog：通知のテストです。$RUN_URL"
+          fi
+          uv run --no-dev python -m apps.core.ops_notify --issues "$RUNNER_TEMP/ops/issues.json" \
+            --hours "$HOURS" --run-url "$RUN_URL"
