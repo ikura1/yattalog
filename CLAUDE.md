@@ -34,7 +34,7 @@
 - 設定（週の始まり・見た目・震え・タイムゾーン）は `views/account.settings_sheet` と `accounts.services.save_settings`。週の始まりは `Space.week_start` に持ち、連続記録の計算（`period_index` など）とカレンダー・草・曜日の並びに渡す（決定 066）
 - シェアは、見出しと投稿文を `services/share.py` が決め、画像は `app.js` の `drawShareCard()` が端末の Canvas で作る（サーバーには送らない、決定 053）
 - レート制限は `apps/core/ratelimit.py` のミドルウェア。上限は `settings.RATE_LIMITS`、回数はプロセス内に持つ（決定 037）
-- 監視と運用は `docs/operations.md`（決定 046）。Claude は Google Cloud に入れないので、Actions の「Ops report」を手動で実行してサマリーと Issue（ラベル `ops`）を読む。報告は `apps/core/ops_report.py` で伏せる（リポジトリは公開）
+- 監視と運用は `docs/operations.md`（決定 046）。Claude は Google Cloud に入れないので、Actions の「Ops report」を手動で実行してサマリーと Issue（ラベル `ops`）を読む。報告は `apps/core/ops_report.py` で伏せる（リポジトリは公開）。困ったときは Discord にも知らせる（`apps/core/ops_notify.py`、Secret `OPS_WEBHOOK_URL`、決定 067）
 - 本番のログは1行1件の JSON（`apps/core/logging.py`）。`/health` は DB に触れない（`/healthz` は使えない。Cloud Run が z で終わる経路の一部を横取りして 404 を返す）
 
 ## コマンド
