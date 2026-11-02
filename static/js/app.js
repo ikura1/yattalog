@@ -479,11 +479,24 @@
   /* ---------- 名前からアイコンの候補を出す（決定 065） ----------
      辞書はサーバーと同じもの（data-emoji-hints）。新しく作るときだけ、名前を打つたびに候補を出し直し、先頭を選んでおく。
      自分で選んだら（候補・一覧・入力欄のどれでも）、そのあとは変えない */
+  // 比べる前にそろえる：全角・半角（NFKC）、大文字・小文字、カタカナ → ひらがな（サーバーの normalize() と同じ）
+  const normalizeHint = (s) => s.normalize("NFKC").toLowerCase()
+    .replace(/[\u30a1-\u30f6]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60));
+  // 当たった言葉が長い組ほど先。同じ長さなら名前の先に出てくる言葉の組、それも同じなら辞書の上の組（サーバーの suggest() と同じ）
   function suggestEmojis(name, data) {
-    const found = [];
-    data.hints.forEach(([words, emojis]) => {
-      if (words.some((w) => name.includes(w))) emojis.forEach((e) => { if (!found.includes(e)) found.push(e); });
+    const text = normalizeHint(name);
+    const ranked = [];
+    data.hints.forEach(([words, emojis], order) => {
+      let best = null;
+      words.forEach((w) => {
+        const nw = normalizeHint(w), at = text.indexOf(nw);
+        if (at >= 0 && (!best || nw.length > best.len || (nw.length === best.len && at < best.at))) best = { len: nw.length, at };
+      });
+      if (best) ranked.push({ ...best, order, emojis });
     });
+    ranked.sort((a, b) => b.len - a.len || a.at - b.at || a.order - b.order);
+    const found = [];
+    ranked.forEach(({ emojis }) => emojis.forEach((e) => { if (!found.includes(e)) found.push(e); }));
     return found.length ? found.slice(0, data.limit) : data.fallback.slice();
   }
   function bindEmojiHints(root) {
