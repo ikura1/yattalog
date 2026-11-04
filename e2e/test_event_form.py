@@ -47,6 +47,18 @@ def test_名前を入れると_合いそうな絵文字が選ばれて_そのア
     expect(page.locator("#grid .tile", has_text="排水口の掃除").locator(".emo")).to_have_text("🕳️")
 
 
+@pytest.mark.parametrize(
+    ("name", "first"),
+    [("カメラ", "📸"), ("写真の整理", "📸"), ("自転車", "🚲"), ("ネコ", "🐈"), ("ランチ", "🍽️"), ("ｼｰﾂ交換", "🛏️")],
+)
+def test_端末でも_サーバーと同じ当て方で候補を出す(home, name, first):
+    """長く当たった言葉を優先し、カタカナ・ひらがな、全角・半角をそろえて当てる（2026-11-02）。"""
+    page = home
+    page.locator("#addTile").click()
+    page.locator("#evName").fill(name)
+    expect(page.locator('.emo-row input[name="emoji"]:checked')).to_have_value(first)
+
+
 def test_自分で候補を選んだら_名前を変えても選び直さない(home):
     page = home
     page.locator("#addTile").click()
