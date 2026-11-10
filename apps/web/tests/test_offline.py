@@ -70,5 +70,5 @@ def test_どのページからも_Service_Worker_を登録する(client, db):
 
     from django.conf import settings as conf
 
-    js = (Path(conf.BASE_DIR) / "static" / "js" / "app.js").read_text()
+    js = (Path(conf.BASE_DIR) / "static" / "js" / "app.js").read_text()  # 入口（どのページも読み込む）
     assert 'navigator.serviceWorker.register("/sw.js")' in js

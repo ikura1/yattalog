@@ -16,7 +16,7 @@ from apps.events.services import events as ev_svc
 from apps.events.services import logs as log_svc
 from apps.events.services.logs import When
 
-APP_JS = (Path(settings.BASE_DIR) / "static" / "js" / "app.js").read_text()
+APP_JS = "\n".join(p.read_text() for p in sorted((Path(settings.BASE_DIR) / "static" / "js").glob("*.js")))
 
 
 def test_操作が多すぎるときの文言は_サーバーと画面で同じ():

@@ -14,7 +14,7 @@ from django.http import HttpRequest, HttpResponse
 
 from apps.core import clock
 
-TOO_MANY = "操作が多すぎます。少し待ってから、もう一度お試しください。"  # static/js/app.js の TOO_MANY と同じ文言
+TOO_MANY = "操作が多すぎます。少し待ってから、もう一度お試しください。"  # static/js/dom.js の TOO_MANY と同じ文言
 LOGIN_PREFIX = "/accounts/"
 RECORD_SUFFIX = "/record/"
 EXPORT_PATH = "/export/"

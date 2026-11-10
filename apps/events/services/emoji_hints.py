@@ -2,7 +2,7 @@
 
 アプリの中の小さな言葉の辞書で決める（AI は使わないので、費用も通信も増えない）。
 名前に含まれる言葉に当てはまった組を、長く当たった順に並べ、先頭をいちばん合いそうなものとして、最初から選んでおく。
-同じ辞書を端末（app.js）にも渡し、名前を打つたびに、その場で候補を出し直す。
+同じ辞書を端末（static/js/emoji.js）にも渡し、名前を打つたびに、その場で候補を出し直す。
 """
 
 import unicodedata
@@ -88,7 +88,7 @@ _KATAKANA = {code: code - 0x60 for code in range(0x30A1, 0x30F7)}  # ァ〜ヶ �
 
 
 def normalize(text: str) -> str:
-    """比べる前にそろえる：全角・半角（NFKC）、大小の文字、カタカナ → ひらがな。app.js の normalizeHint() と同じ"""
+    """比べる前にそろえる：全角・半角（NFKC）、大小の文字、カタカナ → ひらがな。emoji.js の normalizeHint() と同じ"""
     return unicodedata.normalize("NFKC", text).lower().translate(_KATAKANA)
 
 
@@ -96,7 +96,7 @@ def suggest(name: str) -> list[str]:
     """名前に合いそうな絵文字（多くても5つ、重なりなし）。合う言葉がなければ、よく使うもの。
 
     当たった言葉が長い組ほど先に並べる（「自転車」は「車」より先）。同じ長さなら、名前の先に出てくる言葉の組、
-    それも同じなら辞書の上にある組を先にする。app.js の suggestEmojis() も同じ当て方にしている。
+    それも同じなら辞書の上にある組を先にする。emoji.js の suggestEmojis() も同じ当て方にしている。
     """
     text = normalize(name)
     ranked = []
@@ -115,7 +115,7 @@ def suggest(name: str) -> list[str]:
 
 
 def hints_for_client() -> dict:
-    """端末（app.js）に渡す辞書。サーバーと同じ候補を、名前を打つたびに出し直すため。"""
+    """端末（emoji.js）に渡す辞書。サーバーと同じ候補を、名前を打つたびに出し直すため。"""
     return {
         "hints": [[list(words), list(emojis)] for words, emojis in HINTS],
         "fallback": list(FALLBACK),
