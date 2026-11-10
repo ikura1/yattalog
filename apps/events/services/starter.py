@@ -27,7 +27,7 @@ class Starter:
 GROUPS = {
     "家のこと": "一人暮らしだと、誰も代わりに覚えていてくれないもの",
     "身だしなみ": "間隔が空いて、忘れがちなもの",
-    "からだ": "",
+    "からだ": "体調の波も、記録しておくと「前回いつ？」に答えられる",
     "人づきあい": "",
     "楽しみ": "",
 }
@@ -56,6 +56,10 @@ STARTERS = [
     Starter("gym", "ジム", "🏋️", "tomato", "week", "からだ"),
     Starter("running", "ランニング", "🏃", "leaf", "week", "からだ"),
     Starter("checkup", "健康診断", "🩺", "teal", "none", "からだ"),
+    Starter("headache", "頭痛", "🤕", "tomato", "none", "からだ"),
+    Starter("painkiller", "痛み止めを飲む", "💊", "pink", "none", "からだ"),
+    Starter("cold", "風邪をひく", "🤧", "sky", "none", "からだ"),
+    Starter("period", "生理", "🌙", "grape", "none", "からだ"),
     Starter("family", "実家に連絡", "📞", "tangerine", "month", "人づきあい"),
     Starter("friends", "友達とごはん", "🍻", "sun", "none", "人づきあい"),
     Starter("gift", "プレゼントを贈る", "🎁", "pink", "none", "人づきあい"),

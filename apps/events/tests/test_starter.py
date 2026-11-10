@@ -93,3 +93,10 @@ def test_一覧は_組ごとにまとめて_組の説明も出せる(user):
     house = groups[0]
     assert house.note and house.choices[0].key in {s.key for s in STARTERS if s.category == "家のこと"}
     assert any(c.added for c in house.choices)
+
+
+def test_からだの組には_体調の波を_できごととして残すテンプレートがある():
+    """毎日の気分の点数は持たない。頭痛や風邪を「前回いつ？」で振り返れるようにする（決定 068）。"""
+    body = {s.name: s.streak_unit for s in STARTERS if s.category == "からだ"}
+    for name in ("頭痛", "痛み止めを飲む", "風邪をひく", "生理"):
+        assert body[name] == "none"  # 続けるものではないので、連続記録は数えない
