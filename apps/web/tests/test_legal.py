@@ -69,7 +69,7 @@ def test_メニューから_規約とポリシーと報告の窓口を開ける(
 def test_登録のときに記録する版は_規約もポリシーも改定日と同じ():
     from apps.accounts.models import PRIVACY_VERSION, TERMS_VERSION
 
-    assert (TERMS_VERSION, PRIVACY_VERSION) == ("2026-10-19", "2026-10-17")
+    assert (TERMS_VERSION, PRIVACY_VERSION) == ("2026-10-19", "2026-11-10")
 
 
 def test_規約には改定日が出る(client, db):
@@ -94,9 +94,19 @@ def test_規約の変更は_重要なものは事前に知らせる(client, db):
 
 
 def test_ポリシーには改定日が出る(client, db):
-    assert "改定日：2026年10月17日" in client.get("/privacy/").content.decode()
+    assert "改定日：2026年11月10日" in client.get("/privacy/").content.decode()
 
 
 def test_ポリシーの委託先に_問い合わせの受付_Googleフォーム_がある(client, db):
     body = client.get("/privacy/").content.decode()
     assert "Google LLC（Google フォーム）" in body and "問い合わせの受付" in body
+
+
+def test_ポリシーには_健康に関する記録の扱いを書く(client, db):
+    """体調のテンプレート（頭痛・生理など、決定 068）で、健康に関することを記録する人が増える。
+
+    病歴などは要配慮個人情報にあたりうるので、ほかのユーザーデータと同じく、サービスの提供のためだけに使い、
+    第三者に渡さず、分析や広告に使わないことを書いておく（決定 069）。
+    """
+    body = client.get("/privacy/").content.decode()
+    assert "健康に関すること" in body

@@ -5,7 +5,7 @@ from django.utils import timezone as dj_timezone
 from apps.core.models import new_id
 
 TERMS_VERSION = "2026-10-19"
-PRIVACY_VERSION = "2026-10-17"
+PRIVACY_VERSION = "2026-11-10"
 
 
 class UserManager(BaseUserManager):
