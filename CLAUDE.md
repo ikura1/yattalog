@@ -77,7 +77,7 @@ uv run python manage.py makemigrations --check --dry-run
 - レート制限の回数はキャッシュに残る。テストでは `conftest.py` の `empty_cache` が毎回消している
 - 秘密の値を端末で貼り付けるとき（`read -rs`）は画面に出ないので、二重に貼りやすい。登録したら長さと形だけを確かめる（値は表示しない）
 
-## 現状（2026-10-14）
+## 現状（2026-11-10）
 - **本番で動いている**：https://yattalog.ikura1.dev （決定 064。古い https://yattalog-332057063162.asia-southeast1.run.app は、GET を新しいドメインへ転送する。Variable `CANONICAL_HOST`）（Cloud Run シンガポール + Neon、Google Cloud のプロジェクトは `yattalog-511302`）
   - **β を 2026-10-19 に始めた**。Google の同意画面は「本番」で、誰でも登録できる（先着20人、決定 038）。成功の基準は「続けて使っている人が5人以上」（決定 051、管理画面の「利用状況」）
   - 残りは Yuki さんの手作業で、**Issue #117（固定）にチェックリストとしてまとめている**。終わったと聞いたら、Claude がチェックを付ける
