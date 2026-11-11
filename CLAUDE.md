@@ -41,6 +41,7 @@
 ```sh
 export DJANGO_DEBUG=1
 uv run pytest                     # 単体・結合（E2E は除外される）
+uv run pytest --cov               # カバレッジつき。CI は 90% を割ると落ちる（決定 071）
 uv run pytest -m e2e              # Playwright の E2E（初回は uv run playwright install chromium）
 uv run ruff check . && uv run ruff format --check .
 uv run python manage.py makemigrations --check --dry-run

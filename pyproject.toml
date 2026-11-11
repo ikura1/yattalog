@@ -25,6 +25,7 @@ dev = [
     "hypothesis>=6.168.5",
     "playwright>=1.56,<1.65",
     "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
     "pytest-django>=4.14.0",
     "pytest-playwright>=0.7",
     "ruff>=0.17.0",
@@ -35,6 +36,16 @@ DJANGO_SETTINGS_MODULE = "config.test_settings"
 python_files = ["test_*.py"]
 addopts = "-q --strict-markers -m 'not e2e'"
 markers = ["e2e: ブラウザを動かす E2E テスト（uv run pytest -m e2e で実行）"]
+
+# カバレッジは CI で測り、下限を割ったら落とす（決定 071）。手元では uv run pytest --cov
+[tool.coverage.run]
+source = ["apps", "config"]
+omit = ["*/migrations/*", "*/tests/*"]
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+skip_covered = true
 
 [tool.ruff]
 line-length = 120
