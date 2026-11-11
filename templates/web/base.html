@@ -21,7 +21,22 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   <script src="{% static 'vendor/htmx-2.0.4.min.js' %}" defer></script>
-  <script src="{% static 'js/app.js' %}" defer></script>
+  <script type="module" src="{% static 'js/app.js' %}"></script>
+  {# 入口が読み込むファイル。入口と一緒に取りにいかせる（決定 070） #}
+  <link rel="modulepreload" href="{% static 'js/build.js' %}">
+  <link rel="modulepreload" href="{% static 'js/categories.js' %}">
+  <link rel="modulepreload" href="{% static 'js/detail.js' %}">
+  <link rel="modulepreload" href="{% static 'js/dom.js' %}">
+  <link rel="modulepreload" href="{% static 'js/emoji.js' %}">
+  <link rel="modulepreload" href="{% static 'js/feedback.js' %}">
+  <link rel="modulepreload" href="{% static 'js/home.js' %}">
+  <link rel="modulepreload" href="{% static 'js/install.js' %}">
+  <link rel="modulepreload" href="{% static 'js/record-form.js' %}">
+  <link rel="modulepreload" href="{% static 'js/share.js' %}">
+  <link rel="modulepreload" href="{% static 'js/sheet.js' %}">
+  <link rel="modulepreload" href="{% static 'js/tabs.js' %}">
+  <link rel="modulepreload" href="{% static 'js/theme.js' %}">
+  <link rel="modulepreload" href="{% static 'js/timezone.js' %}">
   {% block analytics %}{% endblock %}
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'{% if user.is_authenticated and not user.haptics %} data-haptics="0"{% endif %}>

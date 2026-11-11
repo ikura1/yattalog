@@ -28,7 +28,7 @@
   {% if latest_log %}<button class="btn" type="button" hx-get="{% url 'web:share' latest_log.id %}" hx-target="#sheet-body">シェア</button>{% endif %}</div>
 
 {% if stats.total %}
-{# よくやる（時期・曜日・時間帯・日にち）。1枚のカードで切り替える（決定 060）。最後に選んだものは端末に覚える（app.js） #}
+{# よくやる（時期・曜日・時間帯・日にち）。1枚のカードで切り替える（決定 060）。最後に選んだものは端末に覚える（static/js/detail.js） #}
 <section class="card tend-card">
   <div class="season-head"><h2>よくやる</h2>
     <div class="seg2 tend-tabs" role="tablist" aria-label="よくやる">

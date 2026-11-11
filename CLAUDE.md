@@ -22,7 +22,7 @@
 - 退会は `apps/accounts/services.py` の `delete_account()`。その場で全データを消す（写真が入るまで、決定 040）
 - 規約とポリシーの本文は `templates/web/legal/`（変えるときの手順は `docs/legal/README.md`、決定 041）
 - 主な対象は**独身・一人暮らしの20〜30代**（決定 065）。はじめて使う人向けのテンプレートは `services/starter.py`（5つの組）。イベントが0個のホームに一覧を出す（決定 042）
-- アイコンの絵文字は、名前から `services/emoji_hints.py` の辞書で候補を出す（同じ辞書を app.js にも渡す、決定 065）
+- アイコンの絵文字は、名前から `services/emoji_hints.py` の辞書で候補を出す（同じ辞書を端末にも渡し、`static/js/emoji.js` が同じ当て方で出す、決定 065）
 - アイコンの元データは `static/icons/*.svg`。絵は 057 のスタンプ風で、SVG は `uv run python tools/draw_icons.py` で書き出す。PNG は `uv run python tools/build_icons.py` で作り直す（決定 043）。リンクのプレビュー用の画像（`og.png`）の元は `tools/og.html`
 - 管理画面の入口は `apps/accounts/admin_site.py`（メールアドレスの許可と2段階認証、決定 045）。手順は `deploy/README.md`
 - アクセス解析は Umami Cloud。ログイン前の画面だけで、`UMAMI_WEBSITE_ID` があるときに読み込む（`templates/web/_analytics.html`、決定 047）
@@ -32,7 +32,7 @@
 - イベント詳細の「そのイベントのくせ」（よくやる曜日・時間帯・日にち）は `services/stats.py` の `weekday_tendency()` などで、見出しは `_tendency()` で共通（決定 060）
 - 実績バッジは `services/achievements.py`（定義と判定）。記録・編集・イベントの追加のあとに `check()` を呼び、知らせに添える。機能より前からの人は `User.achievements_synced=False` で、最初の判定で静かに解除（決定 063）
 - 設定（週の始まり・見た目・震え・タイムゾーン）は `views/account.settings_sheet` と `accounts.services.save_settings`。週の始まりは `Space.week_start` に持ち、連続記録の計算（`period_index` など）とカレンダー・草・曜日の並びに渡す（決定 066）
-- シェアは、見出しと投稿文を `services/share.py` が決め、画像は `app.js` の `drawShareCard()` が端末の Canvas で作る（サーバーには送らない、決定 053）
+- シェアは、見出しと投稿文を `services/share.py` が決め、画像は `static/js/share.js` の `drawShareCard()` が端末の Canvas で作る（サーバーには送らない、決定 053）
 - レート制限は `apps/core/ratelimit.py` のミドルウェア。上限は `settings.RATE_LIMITS`、回数はプロセス内に持つ（決定 037）
 - 監視と運用は `docs/operations.md`（決定 046）。Claude は Google Cloud に入れないので、Actions の「Ops report」を手動で実行してサマリーと Issue（ラベル `ops`）を読む。報告は `apps/core/ops_report.py` で伏せる（リポジトリは公開）。困ったときは Discord にも知らせる（`apps/core/ops_notify.py`、Secret `OPS_WEBHOOK_URL`、決定 067）
 - 本番のログは1行1件の JSON（`apps/core/logging.py`）。`/health` は DB に触れない（`/healthz` は使えない。Cloud Run が z で終わる経路の一部を横取りして 404 を返す）
@@ -63,8 +63,8 @@ uv run python manage.py makemigrations --check --dry-run
 
 ## ハマりどころ
 - Python 3.14：`ruff format` が `except (A, B):` を `except A, B:` に書き換える（3.14 では正しい構文）
-- インラインスクリプトは CSP で禁止。JS は `static/js/app.js` に書く
-- 開いたままの画面は、デプロイの後も古い `app.js` で動き続ける（ホーム画面に追加したアプリは特に）。HTML と JS の両方を変える機能は、**古い JS ＋ 新しい HTML** の組み合わせでも壊れないかを考える。一覧（`#grid`）の `data-app-js` が変わると、画面は自分で読み込み直す
+- インラインスクリプトは CSP で禁止。JS は `static/js/` に書く。入口は `app.js` で、機能ごとのファイルを `import` する（決定 070）。`import` は `import { a } from "./x.js";` の形で1行に書き、ファイルを足したら `base.html` の `modulepreload` にも足す（どちらもテストが確かめる）。本番では `apps/core/staticfiles.py` が、読み込む先の名前もハッシュ入りに書き換える
+- 開いたままの画面は、デプロイの後も古いスクリプトで動き続ける（ホーム画面に追加したアプリは特に）。HTML と JS の両方を変える機能は、**古い JS ＋ 新しい HTML** の組み合わせでも壊れないかを考える。一覧（`#grid`）の `data-app-js` が変わると、画面は自分で読み込み直す
 - ログイン中の画面と応答は、ブラウザに保存させない（`Cache-Control: no-store`、`apps/core/private_pages.py`）。そのため、JS で `fetch` した応答の中身を使わないときも、`drain()` で読み切る（読まないと受け取りが終わらず、E2E の「通信が静かになるまで待つ」が終わらない）
 - `HX-Trigger` に日本語を入れるときは `json.dumps`（ASCII エスケープ）を使う
 - `HX-Trigger` の合図は、書いた順に、操作した要素から送られる。**シートを閉じる合図（`yl:close-sheet`）は最後に置く**。先に閉じると要素が消え、後の合図（知らせなど）がどこにも届かない（`_refresh()` がこの順を守っている）

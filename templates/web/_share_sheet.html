@@ -1,5 +1,5 @@
 <h2>シェア</h2>
-{# 画像は、この材料から端末で作る（static/js/app.js の drawShareCard）。サーバーには送らない #}
+{# 画像は、この材料から端末で作る（static/js/share.js の drawShareCard）。サーバーには送らない #}
 <div class="share-prev" id="shareCard"
      data-emoji="{{ info.event.emoji }}" data-name="{{ info.event.name }}" data-color="{{ info.event.color }}"
      data-headline="{{ info.headline }}" data-sub="{{ info.subline }}" data-when="{{ info.when }}" data-memo="{{ info.memo }}" data-text="{{ info.text }}" data-shared-url="{% url 'web:achievement_share' %}">

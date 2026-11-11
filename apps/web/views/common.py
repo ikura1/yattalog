@@ -143,7 +143,7 @@ def parse_uuid(raw: str | None) -> uuid.UUID:
         raise ValidationError("ID の形式が正しくありません", code="id") from None
 
 
-NO_CATEGORY_TAB = "none"  # 「カテゴリなし」のタブの印（static/js/app.js と合わせる）
+NO_CATEGORY_TAB = "none"  # 「カテゴリなし」のタブの印（static/js/tabs.js と合わせる）
 
 
 def _int_param(request, name: str, default: int, lo: int, hi: int) -> int:
