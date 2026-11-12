@@ -21,6 +21,7 @@
 - データの書き出しは `services/export.py`。その場で ZIP を作って返す（写真が入るまで、決定 039）
 - 退会は `apps/accounts/services.py` の `delete_account()`。その場で全データを消す（写真が入るまで、決定 040）
 - 規約とポリシーの本文は `templates/web/legal/`（変えるときの手順は `docs/legal/README.md`、決定 041）
+- 規約やポリシーを改定したら、ホームの帯で知らせる（`apps/accounts/notices.py`。同意した版といまの版を比べ、閉じたら `User.terms_seen`・`privacy_seen` に覚える、決定 073）
 - 主な対象は**独身・一人暮らしの20〜30代**（決定 065）。はじめて使う人向けのテンプレートは `services/starter.py`（5つの組）。イベントが0個のホームに一覧を出す（決定 042）
 - アイコンの絵文字は、名前から `services/emoji_hints.py` の辞書で候補を出す（同じ辞書を端末にも渡し、`static/js/emoji.js` が同じ当て方で出す、決定 065）
 - アイコンの元データは `static/icons/*.svg`。絵は 057 のスタンプ風で、SVG は `uv run python tools/draw_icons.py` で書き出す。PNG は `uv run python tools/build_icons.py` で作り直す（決定 043）。リンクのプレビュー用の画像（`og.png`）の元は `tools/og.html`

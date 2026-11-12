@@ -19,7 +19,7 @@ from urllib.parse import urlsplit
 KNOWN_ROOTS = {
     "", "login", "logout", "manifest.webmanifest", "install", "terms", "privacy", "grid", "menu", "timezone",
     "categories", "starters", "export", "account", "events", "logs", "accounts", "static", "health", "sw.js", "offline",
-    "review", "achievements", "archived", "settings",
+    "review", "achievements", "archived", "settings", "notices",
 }  # fmt: skip
 ID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$|^\d+$", re.IGNORECASE)
 # 2つ目以降の部分で、そのまま出してよい単語（アプリ自身の経路に出てくるものだけ）。
@@ -27,6 +27,7 @@ ID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
 KNOWN_PARTS = {
     "new", "edit", "remove", "restore", "move", "record", "record-sheet", "undo", "delete", "share",  # イベントと記録
     "google", "login", "callback", "logout", "signup",  # ログイン（/accounts/）
+    "legal",  # 改定の知らせ（/notices/）
     "css", "js", "icons", "vendor",  # 静的ファイルの置き場所（ファイル名は出さない）
 }  # fmt: skip
 FRAME = re.compile(r'^\s*File "(?:/app/)?((?:apps|config)/[^"]+)", line (\d+), in (\w+)')
