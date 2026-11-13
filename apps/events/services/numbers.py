@@ -6,6 +6,7 @@
 
 import re
 import unicodedata
+from collections import Counter
 from dataclasses import dataclass
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
@@ -19,6 +20,9 @@ from apps.events.models import Event, Log, NumberKind
 UNIT_MAX = 8
 TREND_POINTS = 30  # 推移は、新しいほうからこの件数を見る（古い数字に、平均や最小・最大を引きずらせない）
 SUM_MONTHS = 12  # 合計の棒は、今月までのこの月数
+QUICK_MAX = 4  # よく使う数字のボタンの数（決定 075）
+QUICK_RECENT = 50  # よく使う数字は、新しいほうからこの件数で数える（昔の習慣を引きずらせない）
+QUICK_MIN_COUNT = 2  # この回数から「よく使う」とみなす
 # 整数は9桁、小数は3桁まで（Log.value の桁数）。指数表記や符号は受け取らない
 _NUMBER = re.compile(r"[0-9]{1,9}(?:\.[0-9]{0,3})?")
 _ZERO = Decimal(0)
@@ -70,6 +74,15 @@ def _valued(event: Event):
 def last_value(event: Event) -> Decimal | None:
     """前回の数字（数字の付いた、いちばん新しい記録のもの）。記録するシートに、はじめから入れておく。"""
     return _valued(event).values_list("value", flat=True).first()
+
+
+def frequent_values(event: Event) -> list[Decimal]:
+    """よく使う数字（決定 075）。回数の多い順で、同じ回数なら新しく使ったほうが先。"""
+    recent = list(_valued(event).values_list("value", flat=True)[:QUICK_RECENT])  # 新しい順
+    counts = Counter(recent)
+    # sorted は順を保つので、同じ回数なら recent に先に出たほう（新しいほう）が前に残る
+    ranked = sorted(dict.fromkeys(recent), key=lambda v: -counts[v])
+    return [v for v in ranked if counts[v] >= QUICK_MIN_COUNT][:QUICK_MAX]
 
 
 @dataclass(frozen=True)

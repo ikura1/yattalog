@@ -59,6 +59,29 @@ def test_数字を聞くイベントは_押すとシートが開き_数字を入
     expect(value).to_have_value("3")
 
 
+def test_よく使う数字は_押すだけで_その数字で記録する(run, user):
+    page, event = run
+    today = today_in(user.timezone)
+    for i, value in enumerate(["5", "3", "5", "3", "5"]):
+        log_svc.record(user, event.id, uuid.uuid4(), When(date=today - timedelta(i + 1)), "", value=value)
+
+    number_tile(page).click()
+    quick = page.get_by_role("group", name="よく使う数字").get_by_role("button")
+    expect(quick).to_have_text(["5km", "3km"])
+    expect(page.get_by_label("ほかの数字（km）")).to_have_value("5")
+    assert violations(page) == []
+    shot(page, "number-quick")
+    page.get_by_text("日付やメモも入れる").click()
+    page.get_by_label("メモ").fill("川沿い")
+    page.get_by_role("button", name="3km で記録").click()
+
+    expect(page.locator(".toast:not(.hint)")).to_contain_text("記録しました")
+    expect(page.locator("#sheet")).to_be_hidden()
+    expect(number_tile(page).locator(".ago")).to_have_text("さっき")
+    log = Log.objects.filter(event=event, local_date=today).get()
+    assert (log.value, log.memo) == (Decimal("3"), "川沿い")  # 開いて入れたメモも、一緒に記録する
+
+
 def test_数字を空にしても_記録できる(run):
     page, event = run
 
