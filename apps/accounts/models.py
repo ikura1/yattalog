@@ -47,6 +47,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     terms_version = models.CharField(max_length=20, blank=True)
     privacy_version = models.CharField(max_length=20, blank=True)
     terms_accepted_at = models.DateTimeField(null=True, blank=True)
+    # 改定の知らせを閉じたときの版（決定 073）。空なら、登録のときの版のまま
+    terms_seen = models.CharField(max_length=20, blank=True)
+    privacy_seen = models.CharField(max_length=20, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     deletion_requested_at = models.DateTimeField(null=True, blank=True)

@@ -7,6 +7,7 @@ from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_POST
 
+from apps.accounts import notices
 from apps.accounts import services as account_svc
 from apps.core import clock
 from apps.events.services import events as ev_svc
@@ -44,7 +45,16 @@ def _home_ctx(request: HttpRequest) -> dict:
 @login_required
 @require_GET
 def home(request: HttpRequest) -> HttpResponse:
-    return render(request, "web/home.html", _home_ctx(request))
+    ctx = {**_home_ctx(request), "legal_notices": notices.legal_notices(request.user)}
+    return render(request, "web/home.html", ctx)
+
+
+@login_required
+@require_POST
+def legal_seen(request: HttpRequest) -> HttpResponse:
+    """改定の知らせを閉じる（決定 073）。空を返し、画面の知らせと差し替える。"""
+    notices.mark_legal_seen(request.user)
+    return HttpResponse("")
 
 
 @login_required
