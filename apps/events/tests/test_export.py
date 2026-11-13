@@ -50,18 +50,54 @@ def test_CSV_は_Excel_で文字化けしないよう_BOM_つきの_UTF8(exporte
 
 def test_logs_csv_は_1行1記録で_新しい順(exported):
     assert rows(exported["logs.csv"]) == [
-        ["イベント名", "カテゴリ", "日付", "時刻", "タイムゾーン", "メモ", "写真のファイル名", "記録元"],
-        ["シーツ交換", "家事", "2026-10-10", "12:00", "Asia/Tokyo", "冬用に替えた", "", "アプリ"],
-        ["散髪", "", "2026-09-08", "", "", "", "", "アプリ"],
+        [
+            "イベント名",
+            "カテゴリ",
+            "日付",
+            "時刻",
+            "タイムゾーン",
+            "メモ",
+            "写真のファイル名",
+            "記録元",
+            "数字",
+            "単位",
+        ],
+        ["シーツ交換", "家事", "2026-10-10", "12:00", "Asia/Tokyo", "冬用に替えた", "", "アプリ", "", ""],
+        ["散髪", "", "2026-09-08", "", "", "", "", "アプリ", "", ""],
     ]
 
 
 def test_events_csv_は_1行1イベントで_ホームの並び順_アーカイブ済みも含む(exported):
     assert rows(exported["events.csv"]) == [
-        ["名前", "アイコン", "色", "カテゴリ", "連続記録の単位", "アーカイブ済み", "作成日"],
-        ["散髪", "✂️", "grape", "", "毎月", "はい", "2026-10-10"],
-        ["シーツ交換", "🛏️", "sky", "家事", "毎週", "いいえ", "2026-10-10"],
+        [
+            "名前",
+            "アイコン",
+            "色",
+            "カテゴリ",
+            "連続記録の単位",
+            "アーカイブ済み",
+            "作成日",
+            "数字の記録",
+            "数字の単位",
+        ],
+        ["散髪", "✂️", "grape", "", "毎月", "はい", "2026-10-10", "なし", ""],
+        ["シーツ交換", "🛏️", "sky", "家事", "毎週", "いいえ", "2026-10-10", "なし", ""],
     ]
+
+
+def test_数字と単位も書き出す(user):
+    """決定 074。数字は、桁区切りを入れず、余分な 0 を落として出す。"""
+    run = ev_svc.create_event(user, name="ランニング", emoji="🏃", color="leaf", number_kind="sum", number_unit="km")
+    log_svc.record(user, run.id, uuid.uuid7(), value="1200.50")
+    log_svc.record(user, run.id, uuid.uuid7(), When(date=TODAY - timedelta(1)))
+
+    out = unzip(build_export(user, NOW))
+
+    assert [row[-2:] for row in rows(out["logs.csv"])] == [["数字", "単位"], ["1200.5", "km"], ["", "km"]]
+    assert rows(out["events.csv"])[1][-2:] == ["合計を見る", "km"]
+    data = json.loads(out["data.json"])
+    assert (data["events"][0]["number_kind"], data["events"][0]["number_unit"]) == ("sum", "km")
+    assert [log["value"] for log in data["logs"]] == ["1200.5", None]
 
 
 def test_data_json_には_取り込み直せるだけの全データが入っている(exported):

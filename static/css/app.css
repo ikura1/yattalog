@@ -478,3 +478,25 @@ body.sorting, body.sorting * { user-select: none !important; -webkit-user-select
 .settings .seg span { justify-content: center; text-align: center; }
 .settings input[type="checkbox"] { accent-color: var(--accent); }
 .settings .check small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+
+/* ---------- 数字の記録（決定 074） ---------- */
+.seg.n3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.num-field .note { margin: 8px 0 0; }
+.num-unit { margin-top: 10px; }
+.num-field:has(input[value="none"]:checked) .num-unit { display: none; }
+.rec-more { margin-bottom: 12px; }
+.rec-more summary { cursor: pointer; font-weight: 700; font-size: 13px; color: var(--accent); padding: 6px 0; width: fit-content; }
+.rec-more[open] summary { margin-bottom: 8px; }
+#recValue { font-family: var(--f-display); font-weight: 800; font-size: 22px; font-variant-numeric: tabular-nums; }
+.num { font-family: var(--f-display); font-weight: 800; font-size: 16px; font-variant-numeric: tabular-nums; }
+.num small { font-size: 11px; margin-left: 2px; }
+.num-card .stats { margin-bottom: 12px; }
+.num-card .stat { background: var(--bg); }
+.num-card .note { margin: 10px 0 0; font-size: 12px; }
+.wbars.n12 { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px; }
+.wbars.n12 .wn { font-size: 10px; min-height: 15px; }
+.wbars.n12 .wd { font-size: 11px; }
+.trend { width: 100%; height: auto; display: block; overflow: visible; }
+.tline { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.tdot { fill: var(--accent); }
+.tdot.last { stroke: var(--surface); stroke-width: 2; }

@@ -159,7 +159,7 @@ SOCIALACCOUNT_PROVIDERS = {
 OPERATOR_NAME = "ikura1"
 LEGAL_DATE = "2026年10月12日"  # 制定日（規約・ポリシー共通）
 TERMS_REVISED = "2026年10月19日"  # 規約の改定日。変えたら accounts.models の TERMS_VERSION もそろえる
-PRIVACY_REVISED = "2026年11月10日"  # ポリシーの改定日。変えたら accounts.models の PRIVACY_VERSION もそろえる
+PRIVACY_REVISED = "2026年11月13日"  # ポリシーの改定日。変えたら accounts.models の PRIVACY_VERSION もそろえる
 FEEDBACK_URL = "https://github.com/ikura1/yattalog/issues"  # 意見・不具合（公開の場）
 CONTACT_FORM_URL = os.environ.get("YATTALOG_CONTACT_URL", "")  # 個人情報に関わる問い合わせ（非公開の窓口）
 

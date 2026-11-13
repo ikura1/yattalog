@@ -123,3 +123,72 @@ def test_前回の日付は_年が違うときは年も出す():
     assert rel_day(date(2026, 8, 8), TODAY) == "8月8日"
     assert rel_day(date(2024, 8, 1), TODAY) == "2024年8月1日"
     assert rel_day(TODAY - timedelta(1), TODAY) == "昨日"
+
+
+# --- 数字のグラフ（決定 074） ---------------------------------------------------
+
+
+def test_合計の棒は_いちばん多い月を100として高さを決め_その月だけ値を出す():
+    from decimal import Decimal
+
+    from apps.events.services.numbers import NumberSum
+    from apps.web.presenters import sum_bars
+
+    months = [(2026, m, Decimal(0)) for m in range(1, 10)] + [(2026, 10, Decimal("2.5")), (2026, 11, Decimal(10))]
+    bars = sum_bars(NumberSum("km", Decimal(0), Decimal(0), Decimal(0), 2, months))
+
+    assert [(b.name, b.height, b.is_peak, b.text) for b in bars[-2:]] == [
+        ("10", 25, False, ""),
+        ("11", 100, True, "10"),
+    ]
+    assert bars[0].height == 0 and bars[-1].y == 0
+    assert bars[-2].label == "2026年10月：2.5km"
+
+
+def test_合計がすべて0なら_どの棒も立てない():
+    from decimal import Decimal
+
+    from apps.events.services.numbers import NumberSum
+    from apps.web.presenters import sum_bars
+
+    bars = sum_bars(NumberSum("km", Decimal(0), Decimal(0), Decimal(0), 0, [(2026, 1, Decimal(0))]))
+
+    assert [(b.height, b.is_peak) for b in bars] == [(0, False)]
+
+
+def test_折れ線は_日付の間隔どおりに左から右へ_大きい数字ほど上に置く():
+    from datetime import date
+    from decimal import Decimal
+
+    from apps.web.presenters import TREND_BOTTOM, TREND_LEFT, TREND_RIGHT, TREND_TOP, trend_chart
+
+    chart = trend_chart(
+        [(date(2026, 10, 1), Decimal(64)), (date(2026, 10, 2), Decimal(62)), (date(2026, 10, 5), Decimal(63))]
+    )
+
+    assert [d.x for d in chart.dots] == [TREND_LEFT, TREND_LEFT + (TREND_RIGHT - TREND_LEFT) / 4, TREND_RIGHT]
+    assert [d.y for d in chart.dots] == [TREND_TOP, TREND_BOTTOM, (TREND_TOP + TREND_BOTTOM) / 2]
+    assert chart.line == " ".join(f"{d.x},{d.y}" for d in chart.dots)
+    assert (chart.first, chart.last, chart.high, chart.low) == ("10/1", "10/5", "64", "62")
+
+
+def test_数字がすべて同じなら_線は真ん中に引く_同じ日だけなら横の真ん中に置く():
+    from datetime import date
+    from decimal import Decimal
+
+    from apps.web.presenters import TREND_BOTTOM, TREND_LEFT, TREND_RIGHT, TREND_TOP, trend_chart
+
+    chart = trend_chart([(date(2026, 10, 1), Decimal(5)), (date(2026, 10, 1), Decimal(5))])
+
+    assert {d.y for d in chart.dots} == {(TREND_TOP + TREND_BOTTOM) / 2}
+    assert {d.x for d in chart.dots} == {(TREND_LEFT + TREND_RIGHT) / 2}
+
+
+def test_数字が2つに満たなければ_折れ線は作らない():
+    from datetime import date
+    from decimal import Decimal
+
+    from apps.web.presenters import trend_chart
+
+    assert trend_chart([]) is None
+    assert trend_chart([(date(2026, 10, 1), Decimal(5))]) is None

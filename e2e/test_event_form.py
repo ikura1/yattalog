@@ -86,6 +86,24 @@ def test_カテゴリを絵文字つきで追加すると_タブに絵文字が�
     expect(page.locator('#tabs [role="tab"]', has_text="家事").locator(".cat-emo")).to_have_text("🧹")
 
 
+def test_カテゴリの名前を打つと_合いそうな絵文字が並び_押すと付けられる(home):
+    page = home
+    page.locator(".tab-add").click()
+    page.get_by_role("button", name="＋ カテゴリを追加").click()
+
+    page.locator("#evName").fill("健康")
+
+    row = page.locator(".emo-row")
+    expect(row.locator('input[name="emoji"]:checked')).to_have_value("")  # 「なし」のまま。勝手には付けない
+    expect(row.locator('input[value="🩺"]')).to_have_count(1)
+    expect(page.locator(".emo-why")).to_have_text("合いそうな絵文字です。押すと付けられます")
+    row.get_by_text("🩺").click()
+    page.get_by_role("button", name="追加する").click()
+
+    expect(page.locator("#toast-root")).to_contain_text("追加しました")
+    expect(page.locator('#tabs [role="tab"]', has_text="健康").locator(".cat-emo")).to_have_text("🩺")
+
+
 def test_カテゴリの削除は_アプリの中で確かめてから消す(home, user):
     from apps.events.services import events as ev_svc
 

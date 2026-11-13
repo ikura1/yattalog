@@ -34,6 +34,14 @@ class StreakUnit(models.TextChoices):
     MONTH = "month", "毎月"
 
 
+class NumberKind(models.TextChoices):
+    """記録に付ける数字を、詳細でどう見せるか（決定 074）。"""
+
+    NONE = "none", "なし"
+    SUM = "sum", "合計を見る"  # 距離・金額・回数など、足して意味のあるもの
+    TREND = "trend", "推移を見る"  # 体重・体温など、足しても意味のないもの
+
+
 class Category(BaseModel):
     space = models.ForeignKey(Space, on_delete=models.CASCADE, related_name="categories")
     name = models.CharField(max_length=20)
@@ -58,6 +66,9 @@ class Event(BaseModel):
     emoji = models.CharField(max_length=16)
     color = models.CharField(max_length=16, choices=[(c, c) for c in COLORS], default="sky")
     streak_unit = models.CharField(max_length=8, choices=StreakUnit.choices, default=StreakUnit.DAY)
+    # 記録に付ける数字（決定 074）。イベントごとに1つ。単位は自由（「km」「円」「kg」など）
+    number_kind = models.CharField(max_length=8, choices=NumberKind.choices, default=NumberKind.NONE)
+    number_unit = models.CharField(max_length=8, blank=True, default="")
     sort_key = SortKeyField()
     is_archived = models.BooleanField(default=False)
     archived_at = models.DateTimeField(null=True, blank=True)
@@ -77,6 +88,7 @@ class Event(BaseModel):
         constraints = [
             models.CheckConstraint(condition=Q(color__in=COLORS), name="event_color_valid"),
             models.CheckConstraint(condition=Q(streak_unit__in=StreakUnit.values), name="event_streak_unit_valid"),
+            models.CheckConstraint(condition=Q(number_kind__in=NumberKind.values), name="event_number_kind_valid"),
         ]
         indexes = [
             models.Index(fields=["space", "is_archived", "sort_key"]),
@@ -85,6 +97,10 @@ class Event(BaseModel):
 
     def __str__(self) -> str:
         return f"{self.emoji} {self.name}"
+
+    @property
+    def has_number(self) -> bool:
+        return self.number_kind != NumberKind.NONE
 
 
 class Log(BaseModel):
@@ -102,6 +118,8 @@ class Log(BaseModel):
     occurred_at = models.DateTimeField(null=True, blank=True)  # 時刻ありの記録だけ
     timezone = models.CharField(max_length=64, blank=True, default="")  # 時刻ありの記録だけ
     memo = models.TextField(blank=True, default="")
+    # 数字（決定 074）。数字を記録するイベントでも、空のまま記録できる
+    value = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
     source = models.CharField(max_length=8, choices=Source.choices, default=Source.APP)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
 
@@ -117,6 +135,7 @@ class Log(BaseModel):
             ),
             models.CheckConstraint(condition=Q(memo__length__lte=1000), name="log_memo_max_1000"),
             models.CheckConstraint(condition=Q(source__in=["app", "ai", "url"]), name="log_source_valid"),
+            models.CheckConstraint(condition=Q(value__isnull=True) | Q(value__gte=0), name="log_value_not_negative"),
         ]
         indexes = [
             models.Index(fields=["event", "-local_date", "-occurred_at"], name="log_event_date_idx"),
