@@ -40,7 +40,7 @@ jobs:
       - name: Test (PostgreSQL)
         run: |
           set -o pipefail
-          uv run pytest -rfE 2>&1 | tee pytest.log
+          uv run pytest -rfE --cov 2>&1 | tee pytest.log
       - name: Report test failures as annotations
         if: failure()
         run: grep -E "^(FAILED|ERROR) |^E  " pytest.log | head -40 | sed 's/^/::error title=pytest::/' || true
