@@ -9,11 +9,12 @@ import regex
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from apps.events.models import COLORS, Category, Event, StreakUnit
+from apps.events.models import COLORS, Category, Event, NumberKind, StreakUnit
 from apps.events.services import sortkeys
 from apps.events.services.access import category_for, event_for
 from apps.events.services.dates import now_utc
 from apps.events.services.logs import When, record, refresh_event_cache
+from apps.events.services.numbers import clean_unit
 from apps.spaces.models import Space
 from apps.spaces.services import personal_space
 
@@ -109,6 +110,8 @@ def create_event(
     category_id=None,
     last_done: date | None = None,
     now: datetime | None = None,
+    number_kind: str = NumberKind.NONE,
+    number_unit: str = "",
 ) -> Event:
     """イベントを先頭に作る。last_done（前回やった日）があれば、時刻なしの記録を1件作る（SPEC 3.2.1）。"""
     space = personal_space(user)
@@ -119,6 +122,8 @@ def create_event(
         emoji=_clean_emoji(emoji),
         color=color,
         streak_unit=streak_unit,
+        number_kind=number_kind,
+        number_unit=clean_unit(number_kind, number_unit),
         category=_category_or_none(user, category_id),
         sort_key=_key_between(None, _first_key(Event.objects.filter(space=space))),
         created_by=user,
@@ -130,7 +135,19 @@ def create_event(
 
 
 @transaction.atomic
-def update_event(user, event_id, *, name: str, emoji: str, color: str, streak_unit: str, category_id=None) -> Event:
+def update_event(
+    user,
+    event_id,
+    *,
+    name: str,
+    emoji: str,
+    color: str,
+    streak_unit: str,
+    category_id=None,
+    number_kind: str | None = None,
+    number_unit: str = "",
+) -> Event:
+    """number_kind が None なら、数字の設定はそのまま（数字の欄がない古い画面からの保存で、消さない）。"""
     event = event_for(user, event_id, lock=True)
     _check(color, streak_unit)
     unit_changed = event.streak_unit != streak_unit
@@ -138,6 +155,9 @@ def update_event(user, event_id, *, name: str, emoji: str, color: str, streak_un
     event.emoji = _clean_emoji(emoji)
     event.color = color
     event.streak_unit = streak_unit
+    if number_kind is not None:
+        event.number_kind = number_kind
+        event.number_unit = clean_unit(number_kind, number_unit)
     event.category = _category_or_none(user, category_id)
     event.save()
     if unit_changed:

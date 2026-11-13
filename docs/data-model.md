@@ -95,6 +95,8 @@ Django のカスタムユーザー。パスワードは使わない（Google ロ
 | emoji | varchar(16) | 絵文字1つ（書記素1つ分を検証する） |
 | color | varchar(16) | パレットの名前（tomato, tangerine, sun, leaf, teal, sky, grape, pink） |
 | streak_unit | varchar(8) | `none` / `day` / `week` / `month`。初期値は `day`（決定 015） |
+| number_kind | varchar(8) | 数字の記録。`none` / `sum`（合計を見る）/ `trend`（推移を見る）。初期値は `none`（決定 074） |
+| number_unit | varchar(8) | 数字の単位（「km」など）。空でもよい。`none` のときは空 |
 | sort_key | varchar(64) | ホームの並び順（分数インデックス、決定 008・013） |
 | is_archived | bool | |
 | archived_at | timestamptz null | |
@@ -107,7 +109,7 @@ Django のカスタムユーザー。パスワードは使わない（Google ロ
 | streak_count | int | 連続回数（連続の最後の期間までの値） |
 | streak_period | int null | 連続の最後の期間の番号（下記） |
 
-- 制約：`CHECK (streak_unit IN (...))`、`CHECK (color IN (...))`
+- 制約：`CHECK (streak_unit IN (...))`、`CHECK (color IN (...))`、`CHECK (number_kind IN (...))`
 - インデックス：`(space, is_archived, sort_key)`（ホームの表示）、`(space, category, is_archived, sort_key)`（タブの表示）
 
 **連続記録のキャッシュの使い方**
@@ -129,11 +131,12 @@ Django のカスタムユーザー。パスワードは使わない（Google ロ
 | occurred_at | timestamptz null | 時刻ありの記録の瞬間（UTC） |
 | timezone | varchar(64) null | 時刻ありの記録をしたときのタイムゾーン |
 | memo | text | 1,000文字まで。空文字も可 |
+| value | numeric(12, 3) null | 記録に付けた数字（決定 074）。0 以上。数字を聞くイベントの記録だけに入る。空でもよい |
 | source | varchar(8) | `app` / `ai` / `url`（AI から記録した印、3.9） |
 | created_by | FK → User（SET NULL）null | 共有に備えて持っておく |
 | created_at / updated_at | timestamptz | |
 
-- 制約：`CHECK ((occurred_at IS NULL) = (timezone IS NULL))`、`CHECK (char_length(memo) <= 1000)`、`CHECK (source IN (...))`
+- 制約：`CHECK ((occurred_at IS NULL) = (timezone IS NULL))`、`CHECK (char_length(memo) <= 1000)`、`CHECK (source IN (...))`、`CHECK (value >= 0)`
 - インデックス
   - `(event, local_date DESC, occurred_at DESC)`：履歴の表示、連続記録の計算
   - `(space, local_date)`：実績の判定（1日に5種類など）、書き出し
@@ -229,6 +232,8 @@ R2 上のファイルを確実に削除するための待ち行列。記録・�
 | 平均間隔 | 記録がある日の数を N として、`(MAX(local_date) − MIN(local_date)) ÷ (N − 1)`。N が2未満なら出さない |
 | よくやる時期 | `GROUP BY EXTRACT(YEAR FROM local_date), EXTRACT(MONTH FROM local_date)` |
 | カレンダー | 表示している月の `DISTINCT local_date` |
+| 数字の合計 | `SUM(value) WHERE value IS NOT NULL` を、今月・今年・全体と、今月までの12か月の月ごとに（決定 074） |
+| 数字の推移 | `value IS NOT NULL` の記録を新しい順に30件。最新・平均・最小・最大・前回との差は、その30件から |
 
 ## 決めていないこと
 

@@ -15,6 +15,7 @@ from django.views.decorators.http import require_GET, require_POST
 from apps.core import clock
 from apps.events.models import Event, Log
 from apps.events.services import logs as log_svc
+from apps.events.services import numbers
 from apps.events.services import share as share_svc
 from apps.web.presenters import tile
 from apps.web.views.common import (
@@ -47,6 +48,7 @@ def record(request: HttpRequest, event_id) -> JsonResponse:
             parse_uuid(request.POST.get("log_id")),
             parse_when(request.POST),
             request.POST.get("memo", ""),
+            value=request.POST.get("value"),
         )
     except PermissionDenied as e:
         return JsonResponse({"error": str(e)}, status=409)
@@ -77,9 +79,16 @@ def undo(request: HttpRequest, log_id) -> JsonResponse:
 
 def _record_ctx(request, event: Event, log: Log | None = None, **extra) -> dict:
     today = _today(request)
+    form = extra.get("form")
+    # 数字の欄（決定 074）。新しく記録するときは、前回の数字を入れておく
+    last = None if log or form or not event.has_number else numbers.last_value(event)
     return {
         "event": event,
         "log": log,
+        "value": form.get("value", "") if form else numbers.plain_value(log.value if log else last),
+        "prefilled": last is not None,
+        # タイルを押して開く小さなシート。数字を先に聞き、日付とメモは畳んでおく
+        "compact": event.has_number and not log and (request.GET.get("compact") or request.POST.get("compact")) == "1",
         "today": today,
         "yesterday": date.fromordinal(today.toordinal() - 1),
         "day_before": date.fromordinal(today.toordinal() - 2),
@@ -102,6 +111,7 @@ def record_sheet(request: HttpRequest, event_id) -> HttpResponse:
                 parse_uuid(request.POST.get("log_id")),
                 parse_when(request.POST),
                 request.POST.get("memo", ""),
+                value=request.POST.get("value"),
             )
         except PermissionDenied as e:
             return _form_error(
@@ -126,7 +136,13 @@ def log_edit_sheet(request: HttpRequest, log_id) -> HttpResponse:
     log = _log(request, log_id)
     if request.method == "POST":
         try:
-            edited = log_svc.edit(request.user, log.id, parse_when(request.POST), request.POST.get("memo", ""))
+            edited = log_svc.edit(
+                request.user,
+                log.id,
+                parse_when(request.POST),
+                request.POST.get("memo", ""),
+                value=request.POST.get("value"),
+            )
         except ValidationError as e:
             return _form_error(
                 request, "web/_record_sheet.html", _record_ctx(request, log.event, log, form=request.POST), e
