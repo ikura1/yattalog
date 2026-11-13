@@ -3,6 +3,7 @@
           data-id="{{ t.event.id }}"
           data-record-url="{% url 'web:record' t.event.id %}"
           data-sheet-url="{% url 'web:record_sheet' t.event.id %}"
+          {% if t.event.has_number %}data-number-url="{% url 'web:record_sheet' t.event.id %}?compact=1"{% endif %}
           data-detail-url="{% url 'web:event_detail' t.event.id %}"
           data-remove-url="{% url 'web:event_remove' t.event.id %}"
           data-move-url="{% url 'web:event_move' t.event.id %}"

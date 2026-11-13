@@ -9,11 +9,20 @@ from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.vary import vary_on_headers
 
-from apps.events.models import COLORS, StreakUnit
-from apps.events.services import emoji_hints, stats
+from apps.events.models import COLORS, NumberKind, StreakUnit
+from apps.events.services import emoji_hints, numbers, stats
 from apps.events.services import events as ev_svc
 from apps.events.services import logs as log_svc
-from apps.web.presenters import calendar_weeks, month_day_cells, season_chart, shift_month, tendency_bars, tile
+from apps.web.presenters import (
+    calendar_weeks,
+    month_day_cells,
+    season_chart,
+    shift_month,
+    sum_bars,
+    tendency_bars,
+    tile,
+    trend_chart,
+)
 from apps.web.views.common import (
     NO_CATEGORY_TAB,
     _categories,
@@ -89,6 +98,10 @@ def _event_form_ctx(request, event=None, form=None, **extra) -> dict:
         "emoji_hints_json": json.dumps(emoji_hints.hints_for_client(), ensure_ascii=False),
         "cur_color": pick("color", "sky"),
         "cur_unit": pick("streak_unit", StreakUnit.DAY),
+        # 数字の記録（決定 074）
+        "cur_number_kind": pick("number_kind", NumberKind.NONE),
+        "number_unit": form.get("number_unit", "") if form else (event.number_unit if event else ""),
+        "number_kinds": NumberKind.choices,
         "emojis": EMOJIS,
         "colors": COLORS,
         "units": UNITS,
@@ -117,6 +130,8 @@ def event_new(request: HttpRequest) -> HttpResponse:
                 streak_unit=p.get("streak_unit", StreakUnit.DAY),
                 category_id=p.get("category") or None,
                 last_done=parse_date_or_none(p.get("last_done")),
+                number_kind=p.get("number_kind", NumberKind.NONE),
+                number_unit=p.get("number_unit", ""),
             )
         except ValidationError as e:
             return _form_error(request, "web/_event_sheet.html", _event_form_ctx(request, form=p), e)
@@ -139,6 +154,8 @@ def event_edit(request: HttpRequest, event_id) -> HttpResponse:
                 color=p.get("color", ""),
                 streak_unit=p.get("streak_unit", StreakUnit.DAY),
                 category_id=p.get("category") or None,
+                number_kind=p.get("number_kind"),  # 欄のない古い画面からは届かない（そのままにする）
+                number_unit=p.get("number_unit", ""),
             )
         except ValidationError as e:
             return _form_error(request, "web/_event_sheet.html", _event_form_ctx(request, event, form=p), e)
@@ -259,6 +276,16 @@ def category_edit(request: HttpRequest, category_id) -> HttpResponse:
     return render(request, "web/_category_form.html", ctx)
 
 
+def _number_ctx(event, today) -> dict:
+    """数字の合計・推移のカード（決定 074）。数字を記録しないイベントでは出さない。"""
+    found = numbers.number_stats(event, today)
+    if found is None:
+        return {"number": None}
+    if found.kind == NumberKind.SUM:
+        return {"number": found, "number_bars": sum_bars(found)}
+    return {"number": found, "number_chart": trend_chart(found.points)}
+
+
 @login_required
 @owned_or_404
 @require_GET
@@ -307,6 +334,7 @@ def event_detail(request: HttpRequest, event_id) -> HttpResponse:
         "time_bars": tendency_bars(times),
         "mdays": (mdays := stats.month_days(event)),
         "mday_cells": month_day_cells(mdays),
+        **_number_ctx(event, today),
     }
     template = "web/_detail.html" if request.htmx and not request.htmx.boosted else "web/detail.html"
     return render(request, template, ctx)
