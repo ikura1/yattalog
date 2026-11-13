@@ -12,7 +12,15 @@
   {% if not log %}<input type="hidden" name="log_id" value="{{ form.log_id|default:new_log_id }}">{% endif %}
   {% if event.has_number %}
   {# 数字（決定 074）。空のままでも記録できる。日付とメモより先に聞く #}
-  <div class="field"><label for="recValue">数字{% if event.number_unit %}（{{ event.number_unit }}）{% endif %}</label>
+  {% if quick %}
+  {# よく使う数字（決定 075）。押すと、欄の中身ではなく、その数字でそのまま記録する #}
+  <div class="field"><span class="lbl" id="quickL">よく使う数字</span>
+    <div class="quick" role="group" aria-labelledby="quickL" aria-describedby="quickNote">
+      {% for q in quick %}<button class="btn" type="button" name="quick" value="{{ q.value }}" aria-label="{{ q.text }}{{ event.number_unit }} で記録" hx-post="{% url 'web:record_sheet' event.id %}" hx-swap="none">{{ q.text }}{% if event.number_unit %}<small>{{ event.number_unit }}</small>{% endif %}</button>{% endfor %}
+    </div>
+    <p class="note" id="quickNote">押すと、そのまま記録します</p></div>
+  {% endif %}
+  <div class="field"><label for="recValue">{% if quick %}ほかの数字{% else %}数字{% endif %}{% if event.number_unit %}（{{ event.number_unit }}）{% endif %}</label>
     <input type="text" id="recValue" name="value" inputmode="decimal" autocomplete="off" maxlength="16" value="{{ value }}" aria-describedby="recValueNote">
     <p class="note" id="recValueNote">{% if prefilled %}前回の数字を入れてあります。{% endif %}空のままでも記録できます</p></div>
   {% endif %}
