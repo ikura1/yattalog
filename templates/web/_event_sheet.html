@@ -23,6 +23,14 @@
     <div class="seg seg-radio">{% for v, l in units %}<label><input type="radio" name="streak_unit" value="{{ v }}" {% if v == cur_unit %}checked{% endif %}><span>{{ l }}</span></label>{% endfor %}</div>
     <p class="note">期間に1回以上やると、🔥がつながります（期限や通知はありません）</p>
   </fieldset>
+  {# 数字の記録（決定 074）。「なし」のあいだは、単位の欄を隠す（CSS の :has） #}
+  <fieldset class="field num-field"><legend class="lbl">数字の記録</legend>
+    <div class="seg seg-radio n3">{% for v, l in number_kinds %}<label><input type="radio" name="number_kind" value="{{ v }}" {% if v == cur_number_kind %}checked{% endif %}><span>{{ l }}</span></label>{% endfor %}</div>
+    <p class="note">距離や金額は「合計」、体重や体温は「推移」が向いています。押すたびに数字を聞きます（空のままでも記録できます）</p>
+    <div class="num-unit"><label for="evNumUnit">単位</label>
+      <input type="text" id="evNumUnit" name="number_unit" value="{{ number_unit }}" maxlength="8" placeholder="例：km"
+             autocomplete="off" autocapitalize="off"></div>
+  </fieldset>
   <fieldset class="field"><legend class="lbl">カテゴリ</legend>
     <div class="chips">
       <label><input type="radio" name="category" value="" {% if not selected_category %}checked{% endif %}><span>なし</span></label>

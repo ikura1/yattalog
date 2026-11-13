@@ -1,0 +1,39 @@
+{% load yl %}
+{# 数字の合計・推移（決定 074）。棒と線の位置は SVG の属性で渡す（CSP で style 属性が使えない） #}
+<section class="card num-card">
+  <h2>{% if number.kind == "sum" %}数字の合計{% else %}数字の推移{% endif %}</h2>
+  {% if not number.count %}
+  <p class="note">数字を付けて記録すると、ここに{% if number.kind == "sum" %}合計{% else %}推移{% endif %}が出ます</p>
+  {% elif number.kind == "sum" %}
+  <div class="stats">
+    <div class="stat"><div class="k">今月</div><div class="v">{{ number.month|num }}<small>{{ number.unit }}</small></div></div>
+    <div class="stat"><div class="k">今年</div><div class="v">{{ number.year|num }}<small>{{ number.unit }}</small></div></div>
+    <div class="stat"><div class="k">これまで</div><div class="v">{{ number.total|num }}<small>{{ number.unit }}</small></div></div>
+  </div>
+  <ol class="wbars n12" aria-label="月ごとの合計（今月までの12か月）">{% for b in number_bars %}
+    <li class="wbar nb{% if b.is_peak %} peak{% endif %}" aria-label="{{ b.label }}"><span class="wn" aria-hidden="true">{{ b.text }}</span><svg class="wcol" viewBox="0 0 10 100" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="{{ b.y }}" width="10" height="{{ b.height }}"/></svg><span class="wd" aria-hidden="true">{{ b.name }}</span></li>{% endfor %}
+  </ol>
+  <p class="note">数字を付けた記録 {{ number.count }}件の合計です。棒は、今月までの12か月</p>
+  {% else %}
+  <div class="stats four">
+    <div class="stat"><div class="k">最新</div><div class="v">{{ number.latest|num }}<small>{{ number.unit }}</small></div></div>
+    <div class="stat"><div class="k">平均</div><div class="v">{{ number.average|num }}<small>{{ number.unit }}</small></div></div>
+    <div class="stat"><div class="k">最小</div><div class="v">{{ number.lowest|num }}<small>{{ number.unit }}</small></div></div>
+    <div class="stat"><div class="k">最大</div><div class="v">{{ number.highest|num }}<small>{{ number.unit }}</small></div></div>
+  </div>
+  {% if number_chart %}
+  <svg class="trend" viewBox="0 0 320 120" role="img" aria-label="数字の推移（下の表と同じ内容）">
+    {% if not number_chart.flat %}<line class="sgrid" x1="{{ number_chart.left }}" x2="{{ number_chart.right }}" y1="{{ number_chart.top }}" y2="{{ number_chart.top }}"/>
+    <text class="sax" x="{{ number_chart.left }}" y="{{ number_chart.top|add:-5 }}">{{ number_chart.high }}</text>{% endif %}
+    <line class="sgrid base" x1="{{ number_chart.left }}" x2="{{ number_chart.right }}" y1="{{ number_chart.bottom }}" y2="{{ number_chart.bottom }}"/>
+    <text class="sax" x="{{ number_chart.left }}" y="{{ number_chart.label_y }}">{{ number_chart.first }}</text>
+    <text class="sax" x="{{ number_chart.right }}" y="{{ number_chart.label_y }}" text-anchor="end">{{ number_chart.last }}</text>
+    {% if not number_chart.flat %}<text class="sax" x="160" y="{{ number_chart.label_y }}" text-anchor="middle">下の線は {{ number_chart.low }}</text>{% endif %}
+    <polyline class="tline" points="{{ number_chart.line }}"/>
+    {% for d in number_chart.dots %}<circle class="tdot{% if forloop.last %} last{% endif %}" cx="{{ d.x }}" cy="{{ d.y }}" r="{% if forloop.last %}4{% else %}2.5{% endif %}"/>{% endfor %}
+  </svg>
+  <table class="sr-only"><caption>数字の推移</caption><tr><th>日付</th><th>数字</th></tr>{% for d, v in number.points %}<tr><td>{{ d.month }}月{{ d.day }}日</td><td>{{ v|num }}{{ number.unit }}</td></tr>{% endfor %}</table>
+  {% else %}<p class="note">数字が2つたまると、グラフが出ます</p>{% endif %}
+  <p class="note">{% if number.diff is not None %}前回より {{ number.diff|num_diff }}{{ number.unit }}。{% endif %}数字を付けた記録の、新しいほうから{{ number.count }}件で見ています</p>
+  {% endif %}
+</section>

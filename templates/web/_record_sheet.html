@@ -10,6 +10,14 @@
       {% if log %}hx-post="{% url 'web:log_edit' log.id %}"{% else %}hx-post="{% url 'web:record_sheet' event.id %}"{% endif %}
       hx-swap="none" data-today="{{ today|iso }}" data-yesterday="{{ yesterday|iso }}" data-day-before="{{ day_before|iso }}">
   {% if not log %}<input type="hidden" name="log_id" value="{{ form.log_id|default:new_log_id }}">{% endif %}
+  {% if event.has_number %}
+  {# 数字（決定 074）。空のままでも記録できる。日付とメモより先に聞く #}
+  <div class="field"><label for="recValue">数字{% if event.number_unit %}（{{ event.number_unit }}）{% endif %}</label>
+    <input type="text" id="recValue" name="value" inputmode="decimal" autocomplete="off" maxlength="16" value="{{ value }}" aria-describedby="recValueNote">
+    <p class="note" id="recValueNote">{% if prefilled %}前回の数字を入れてあります。{% endif %}空のままでも記録できます</p></div>
+  {% endif %}
+  {% if compact %}<input type="hidden" name="compact" value="1">
+  <details class="rec-more"{% if form %} open{% endif %}><summary>日付やメモも入れる</summary>{% endif %}
   {% with mode=form.when|default:'' %}
   <div class="field"><span class="lbl" id="whenL">いつやった？</span>
     <div class="seg" role="radiogroup" aria-labelledby="whenL" data-when-seg
@@ -32,10 +40,11 @@
   {% endwith %}
   <div class="field"><label for="recMemo">メモ</label>
     <textarea id="recMemo" name="memo" maxlength="1000" placeholder="例：新しい洗剤を試した">{% if form %}{{ form.memo }}{% elif log %}{{ log.memo }}{% endif %}</textarea></div>
+  {% if compact %}</details>{% endif %}
   {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
   <div class="row"><button class="btn primary" type="submit">{% if log %}保存する{% else %}やった！を記録{% endif %}</button></div>
 </form>
-{% if not log %}
+{% if not log and not compact %}
 <div class="links">
   <a class="btn" href="{% url 'web:event_detail' event.id %}">履歴・統計を見る</a>
   <button class="btn" type="button" hx-get="{% url 'web:event_edit' event.id %}" hx-target="#sheet-body">イベントを編集</button>

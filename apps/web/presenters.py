@@ -3,9 +3,11 @@
 import calendar
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
+from decimal import Decimal
 
 from apps.events.models import Event
 from apps.events.services.dates import elapsed, now_utc
+from apps.events.services.numbers import NumberSum, format_value
 from apps.events.services.review import YearReview
 from apps.events.services.stats import MonthDays, Tendency
 from apps.events.services.streaks import StreakState, streak_state
@@ -248,3 +250,94 @@ def month_day_cells(md: MonthDays) -> list[MonthDayCell]:
     return [
         MonthDayCell(day=i + 1, count=c, level=lv) for i, (c, lv) in enumerate(zip(md.counts, md.levels, strict=True))
     ]
+
+
+# --- イベント詳細：数字の合計と推移（決定 074） -----------------------------------------
+
+
+@dataclass(frozen=True)
+class SumBar:
+    """月ごとの合計の棒。"""
+
+    name: str  # 月（「10」）
+    label: str  # 読み上げ用（「2026年10月：8.5km」）
+    height: int  # いちばん多い月を 100 とした高さ
+    is_peak: bool
+    text: str  # 棒の上に出す値。いちばん多い月だけ（12本すべてに出すと、スマホで重なる）
+
+    @property
+    def y(self) -> int:
+        return 100 - self.height
+
+
+def sum_bars(s: NumberSum) -> list[SumBar]:
+    top = max((v for _, _, v in s.months), default=Decimal(0))
+    bars = []
+    for y, m, v in s.months:
+        is_peak = v > 0 and v == top
+        bars.append(
+            SumBar(
+                name=str(m),
+                label=f"{y}年{m}月：{format_value(v)}{s.unit}",
+                height=round(v * 100 / top) if top else 0,
+                is_peak=is_peak,
+                text=format_value(v) if is_peak else "",
+            )
+        )
+    return bars
+
+
+TREND_W, TREND_H = 320, 120
+TREND_LEFT, TREND_RIGHT, TREND_TOP, TREND_BOTTOM = 8, 312, 20, 96
+
+
+@dataclass(frozen=True)
+class Dot:
+    x: float
+    y: float
+
+
+@dataclass(frozen=True)
+class TrendChart:
+    """推移の折れ線（SVG の座標）。上の線がいちばん大きい数字、下の線がいちばん小さい数字。"""
+
+    dots: list[Dot]
+    line: str  # polyline の points
+    high: str
+    low: str
+    first: str  # 左端の日付（「10/1」）
+    last: str
+    left: int = TREND_LEFT
+    right: int = TREND_RIGHT
+    top: int = TREND_TOP
+    bottom: int = TREND_BOTTOM
+    label_y: int = TREND_H - 6
+
+    @property
+    def flat(self) -> bool:
+        return self.high == self.low
+
+
+def trend_chart(points: list[tuple[date, Decimal]]) -> TrendChart | None:
+    """横は日付の間隔どおり、縦は最小〜最大をいっぱいに使う。数字が2つに満たなければ作らない。"""
+    if len(points) < 2:
+        return None
+    first, last = points[0][0], points[-1][0]
+    low, high = min(v for _, v in points), max(v for _, v in points)
+    span_d, span_v = (last - first).days, high - low
+    mid_x, mid_y = (TREND_LEFT + TREND_RIGHT) / 2, (TREND_TOP + TREND_BOTTOM) / 2
+
+    def dot(d: date, v: Decimal) -> Dot:
+        x = TREND_LEFT + (TREND_RIGHT - TREND_LEFT) * (d - first).days / span_d if span_d else mid_x
+        y = TREND_BOTTOM - (TREND_BOTTOM - TREND_TOP) * float((v - low) / span_v) if span_v else mid_y
+        return Dot(round(x, 1), round(y, 1))
+
+    dots = [dot(d, v) for d, v in points]
+    return TrendChart(
+        dots=dots,
+        line=" ".join(f"{d.x},{d.y}" for d in dots),
+        high=format_value(high),
+        low=format_value(low),
+        first=f"{first.month}/{first.day}",
+        last=f"{last.month}/{last.day}",
+    )

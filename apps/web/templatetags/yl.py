@@ -4,6 +4,7 @@ from django import template
 
 from apps.events.models import Log
 from apps.events.services.dates import zone
+from apps.events.services.numbers import format_value, signed
 from apps.events.services.stats import since_text
 
 register = template.Library()
@@ -68,3 +69,15 @@ def local_md(at, tz_name: str) -> str:
 @register.filter
 def iso(d: date) -> str:
     return d.isoformat() if d else ""
+
+
+@register.filter
+def num(value) -> str:
+    """記録の数字（決定 074）。「62.5」「1,200」。ないときは空。"""
+    return "" if value is None else format_value(value)
+
+
+@register.filter
+def num_diff(value) -> str:
+    """前回との差。「+1.25」「−0.6」「±0」。"""
+    return "" if value is None else signed(value)

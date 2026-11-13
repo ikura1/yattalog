@@ -33,6 +33,8 @@ function replaceTile(li, html) {
   return fresh;
 }
 
+// 数字を聞くイベントは、押すと数字のシートを開く（決定 074）。ほかは、そのまま記録する
+const tapRecord = (t) => (t.dataset.numberUrl ? loadSheet(t.dataset.numberUrl) : quickRecord(t));
 async function quickRecord(btn, logId = crypto.randomUUID()) {
   if (!navigator.onLine) { toast("オフラインです。つながると記録できます"); return; }
   const li = btn.closest("li");
@@ -116,7 +118,7 @@ export function bindHome() {
     if (!t || t.classList.contains("add")) return;
     if (e.target.closest("[data-x]") && editing) { loadSheet(t.dataset.removeUrl); return; }
     // キーボード（Enter/Space）は detail=0 の click になる
-    if (e.detail === 0) { editing ? (location.href = t.dataset.detailUrl) : quickRecord(t); }
+    if (e.detail === 0) { editing ? (location.href = t.dataset.detailUrl) : tapRecord(t); }
   });
   grid.addEventListener("keydown", (e) => {
     const t = e.target.closest(".tile");
@@ -148,7 +150,7 @@ window.addEventListener("pointerup", (e) => {
   if (p.moved || p.long) return;
   if (e.target.closest && e.target.closest("[data-x]") && editing) return;
   if (editing) location.href = p.el.dataset.detailUrl;
-  else quickRecord(p.el);
+  else tapRecord(p.el);
 });
 window.addEventListener("pointercancel", () => {
   if (!press) return;
