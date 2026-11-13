@@ -286,6 +286,65 @@ def _number_ctx(event, today) -> dict:
     return {"number": found, "number_chart": trend_chart(found.points)}
 
 
+def _season_ctx(request: HttpRequest, event, today) -> dict:
+    """季節ごとの回数（1年ぶん、または全期間）。"""
+    season_all = request.GET.get("season") == "all"
+    season_year = _int_param(request, "sy", today.year, 1900, 9999)
+    season = stats.season(event, None if season_all else season_year)
+    return {
+        "season": season,
+        "season_all": season_all,
+        "season_year": season_year,
+        "chart": season_chart(season.counts, today, None if season_all else season_year),
+    }
+
+
+def _calendar_ctx(request: HttpRequest, event, today) -> dict:
+    y = _int_param(request, "y", today.year, 1900, 9998)  # 9999年12月は、日曜始まりの週が 10000年にかかって作れない
+    m = _int_param(request, "m", today.month, 1, 12)
+    return {
+        "cal_weeks": calendar_weeks(y, m, stats.calendar_days(event, y, m), today, event.space.week_start),
+        "dow": stats.weekday_names(event.space.week_start),
+        "cal_y": y,
+        "cal_m": m,
+        "prev_m": shift_month(y, m, -1),
+        "next_m": shift_month(y, m, 1),
+    }
+
+
+def _history_ctx(request: HttpRequest, event) -> dict:
+    """記録の一覧（日付で絞れる。「もっと見る」で増やす）。"""
+    try:
+        sel_date = parse_date_or_none(request.GET.get("day"))
+    except ValidationError:
+        sel_date = None
+    logs = log_svc.history(event, sel_date)
+    shown = _int_param(request, "n", HISTORY_PAGE, HISTORY_PAGE, HISTORY_MAX)
+    left = logs.count() - shown
+    more = request.GET.copy()
+    more["n"] = min(shown + HISTORY_PAGE, HISTORY_MAX)
+    return {
+        "sel_date": sel_date,
+        "logs": logs[:shown],
+        "more_url": f"?{more.urlencode()}" if left > 0 and shown < HISTORY_MAX else "",
+        "more_left": left,
+        "latest_log": log_svc.history(event).first(),  # 「シェア」の対象（最新の記録）
+    }
+
+
+def _tendency_ctx(event) -> dict:
+    """そのイベントのくせ（決定 060）。"""
+    weekdays, times, mdays = stats.weekday_tendency(event), stats.time_tendency(event), stats.month_days(event)
+    return {
+        "weekdays": weekdays,
+        "weekday_bars": tendency_bars(weekdays),
+        "times": times,
+        "time_bars": tendency_bars(times),
+        "mdays": mdays,
+        "mday_cells": month_day_cells(mdays),
+    }
+
+
 @login_required
 @owned_or_404
 @require_GET
@@ -293,47 +352,15 @@ def _number_ctx(event, today) -> dict:
 def event_detail(request: HttpRequest, event_id) -> HttpResponse:
     event = _event(request, event_id)
     today = _today(request)
-    y = _int_param(request, "y", today.year, 1900, 9998)  # 9999年12月は、日曜始まりの週が 10000年にかかって作れない
-    m = _int_param(request, "m", today.month, 1, 12)
-    season_all = request.GET.get("season") == "all"
-    season_year = _int_param(request, "sy", today.year, 1900, 9999)
-    try:
-        sel_date = parse_date_or_none(request.GET.get("day"))
-    except ValidationError:
-        sel_date = None
-    season = stats.season(event, None if season_all else season_year)
-    logs = log_svc.history(event, sel_date)
-    shown = _int_param(request, "n", HISTORY_PAGE, HISTORY_PAGE, HISTORY_MAX)
-    left = logs.count() - shown
-    more = request.GET.copy()
-    more["n"] = min(shown + HISTORY_PAGE, HISTORY_MAX)
     ctx = {
         "event": event,
         "t": tile(event, today),
         "stats": stats.event_stats(event, today),
-        "season": season,
-        "season_all": season_all,
-        "season_year": season_year,
-        "chart": season_chart(season.counts, today, None if season_all else season_year),
-        "cal_weeks": calendar_weeks(y, m, stats.calendar_days(event, y, m), today, event.space.week_start),
-        "dow": stats.weekday_names(event.space.week_start),
-        "cal_y": y,
-        "cal_m": m,
-        "prev_m": shift_month(y, m, -1),
-        "next_m": shift_month(y, m, 1),
-        "sel_date": sel_date,
         "today": today,
-        "logs": logs[:shown],
-        "more_url": f"?{more.urlencode()}" if left > 0 and shown < HISTORY_MAX else "",
-        "more_left": left,
-        "latest_log": log_svc.history(event).first(),  # 「シェア」の対象（最新の記録）
-        # そのイベントのくせ（決定 060）
-        "weekdays": (weekdays := stats.weekday_tendency(event)),
-        "weekday_bars": tendency_bars(weekdays),
-        "times": (times := stats.time_tendency(event)),
-        "time_bars": tendency_bars(times),
-        "mdays": (mdays := stats.month_days(event)),
-        "mday_cells": month_day_cells(mdays),
+        **_season_ctx(request, event, today),
+        **_calendar_ctx(request, event, today),
+        **_history_ctx(request, event),
+        **_tendency_ctx(event),
         **_number_ctx(event, today),
     }
     template = "web/_detail.html" if request.htmx and not request.htmx.boosted else "web/detail.html"
