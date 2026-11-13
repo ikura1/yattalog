@@ -10,6 +10,13 @@
             hx-get="{% url 'web:menu' %}" hx-target="#sheet-body">⋯</button>
   </header>
   <div class="banner" id="netBanner" hidden role="status">オフラインです。つながると記録できます</div>
+  {% if legal_notices %}
+  <div class="banner" id="legalBanner" role="status">
+    <span>{% for n in legal_notices %}<a href="{% url n.url_name %}">{{ n.name }}</a>を改定しました（{{ n.revised }}）。{{ n.summary }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</span>
+    <button type="button" class="btn small" aria-label="この知らせを閉じる"
+            hx-post="{% url 'web:legal_seen' %}" hx-target="#legalBanner" hx-swap="outerHTML">閉じる</button>
+  </div>
+  {% endif %}
   <div class="banner" id="installBanner" hidden role="status">
     <span>ホーム画面に追加すると、1タップで開けます</span>
     <button type="button" class="btn small primary" id="installYes">追加する</button>

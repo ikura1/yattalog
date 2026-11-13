@@ -22,6 +22,7 @@ urlpatterns = [
     path("achievements/", views.achievements, name="achievements"),
     path("achievements/share/", views.achievement_share, name="achievement_share"),
     path("timezone/", views.set_timezone, name="timezone"),
+    path("notices/legal/", views.legal_seen, name="legal_seen"),
     path("categories/", views.categories, name="categories"),
     path("categories/new/", views.category_new, name="category_new"),
     path("categories/<uuid:category_id>/", views.category_edit, name="category_edit"),
