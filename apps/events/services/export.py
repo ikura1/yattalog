@@ -12,6 +12,7 @@ from datetime import datetime
 from apps.events.models import Category, Event, Log
 from apps.events.services import achievements as ach_svc
 from apps.events.services.dates import zone
+from apps.events.services.numbers import plain_value
 from apps.spaces.services import personal_space
 
 FORMAT = "yattalog-export"
@@ -19,8 +20,30 @@ VERSION = 1
 BOM = "﻿"  # Excel が UTF-8 と判断できるようにする
 FORMULA_STARTS = ("=", "+", "-", "@", "\t", "\r", "\n")
 
-LOG_HEADER = ["イベント名", "カテゴリ", "日付", "時刻", "タイムゾーン", "メモ", "写真のファイル名", "記録元"]
-EVENT_HEADER = ["名前", "アイコン", "色", "カテゴリ", "連続記録の単位", "アーカイブ済み", "作成日"]
+# 列は後ろに足す（前からの列の位置を変えない）。数字と単位は決定 074
+LOG_HEADER = [
+    "イベント名",
+    "カテゴリ",
+    "日付",
+    "時刻",
+    "タイムゾーン",
+    "メモ",
+    "写真のファイル名",
+    "記録元",
+    "数字",
+    "単位",
+]
+EVENT_HEADER = [
+    "名前",
+    "アイコン",
+    "色",
+    "カテゴリ",
+    "連続記録の単位",
+    "アーカイブ済み",
+    "作成日",
+    "数字の記録",
+    "数字の単位",
+]
 
 
 def csv_safe(value: str) -> str:
@@ -51,6 +74,8 @@ def _log_row(log: Log) -> list[str]:
         log.memo,
         "",  # 写真（β で追加）
         log.get_source_display(),
+        plain_value(log.value),
+        log.event.number_unit,
     ]
 
 
@@ -63,6 +88,8 @@ def _event_row(event: Event, tz) -> list[str]:
         event.get_streak_unit_display(),
         "はい" if event.is_archived else "いいえ",
         event.created_at.astimezone(tz).date().isoformat(),
+        event.get_number_kind_display(),
+        event.number_unit,
     ]
 
 
@@ -98,6 +125,8 @@ def _data(user, now: datetime, categories, events, logs) -> dict:
                 "emoji": e.emoji,
                 "color": e.color,
                 "streak_unit": e.streak_unit,
+                "number_kind": e.number_kind,
+                "number_unit": e.number_unit,
                 "category_id": str(e.category_id) if e.category_id else None,
                 "sort_key": e.sort_key,
                 "is_archived": e.is_archived,
@@ -114,6 +143,7 @@ def _data(user, now: datetime, categories, events, logs) -> dict:
                 "occurred_at": _iso(log.occurred_at),
                 "timezone": log.timezone,
                 "memo": log.memo,
+                "value": plain_value(log.value) or None,  # 文字列で出す（小数を、浮動小数の誤差なしで渡す）
                 "source": log.source,
                 "created_at": _iso(log.created_at),
             }

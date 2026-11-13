@@ -20,6 +20,8 @@ export function bindRecordForm(root) {
   const form = $("#recForm", root);
   if (!form || form.dataset.bound) return;
   form.dataset.bound = "1";
+  // 入れてある前回の数字は、触ったら丸ごと選ぶ（打てばそのまま置き換わる）
+  $('input[name="value"]', form)?.addEventListener("focus", (e) => e.target.select());
   const seg = $("[data-when-seg]", form), hidden = $('input[name="when"]', form);
   const box = $("[data-pickbox]", form), dI = $('input[name="date"]', form), tI = $('input[name="time"]', form);
   const note = $("[data-when-note]", form);
