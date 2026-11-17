@@ -129,6 +129,44 @@ def test_数字を記録しないイベントのシートには_数字の欄が�
     assert 'id="recValue"' not in page and "<summary>" not in page
 
 
+def test_よく使う数字を_押せば記録できるボタンで出す(client_in, user, run):
+    for i, value in enumerate(["5", "5", "3", "3", "5", "7.5"]):
+        record(user, run, value, days_ago=i)
+
+    page = html(client_in.get(f"/events/{run.id}/record-sheet/?compact=1"))
+
+    assert "よく使う数字" in page and "押すと、そのまま記録します" in page
+    assert page.count('name="quick"') == 2
+    assert page.index('name="quick" value="5"') < page.index('name="quick" value="3"')
+    assert 'aria-label="5km で記録"' in page
+    assert page.index('name="quick"') < page.index('id="recValue"')  # 押すだけで済むほうを先に
+
+
+def test_よく使う数字がまだなければ_ボタンは出さない(client_in, user, run):
+    record(user, run, "5", days_ago=1)
+
+    page = html(client_in.get(f"/events/{run.id}/record-sheet/?compact=1"))
+
+    assert "よく使う数字" not in page and 'name="quick"' not in page
+
+
+def test_記録の編集のシートには_よく使う数字のボタンを出さない(client_in, user, run):
+    record(user, run, "5", days_ago=1)
+    log = record(user, run, "5")
+
+    assert 'name="quick"' not in html(client_in.get(f"/logs/{log.id}/edit/"))
+
+
+def test_よく使う数字を押すと_欄の中身ではなく_その数字で記録する(client_in, run):
+    r = client_in.post(
+        f"/events/{run.id}/record-sheet/",
+        {"log_id": str(uuid.uuid4()), "when": "now", "value": "5.2", "quick": "3", "compact": "1"},
+    )
+
+    assert r.status_code == 204
+    assert Log.objects.get().value == Decimal("3")
+
+
 def test_シートから_数字を付けて記録できる(client_in, run):
     r = client_in.post(
         f"/events/{run.id}/record-sheet/",

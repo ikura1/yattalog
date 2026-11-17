@@ -159,6 +159,55 @@ def test_前回の数字は_数字の付いたいちばん新しい記録のも�
     assert numbers.last_value(weight) == Decimal("62.5")
 
 
+# --- よく使う数字（決定 075） ---------------------------------------------------
+
+
+def test_よく使う数字は_回数の多い順に出す(user, run):
+    for i, value in enumerate(["3", "5", "5", "10", "5", "3", "10", "10", "10"]):
+        record(user, run, value, days_ago=i)
+
+    assert numbers.frequent_values(run) == [Decimal("10"), Decimal("5"), Decimal("3")]
+
+
+def test_同じ回数なら_新しく使ったほうが先(user, run):
+    for i, value in enumerate(["3", "5", "5", "3"]):
+        record(user, run, value, days_ago=i)
+
+    assert numbers.frequent_values(run) == [Decimal("3"), Decimal("5")]
+
+
+def test_1回しか入れていない数字は_よく使う数字に出さない(user, run):
+    record(user, run, "5", days_ago=2)
+    record(user, run, "7.5", days_ago=1)
+    record(user, run, "", days_ago=0)
+
+    assert numbers.frequent_values(run) == []
+
+
+def test_書き方が違っても_同じ数字として数える(user, run):
+    record(user, run, "5", days_ago=1)
+    record(user, run, "5.0", days_ago=0)
+
+    assert numbers.frequent_values(run) == [Decimal("5")]
+
+
+def test_よく使う数字は_決まった数まで(user, run):
+    for i in range(numbers.QUICK_MAX + 2):
+        record(user, run, str(i + 1), days_ago=i * 2)
+        record(user, run, str(i + 1), days_ago=i * 2 + 1)
+
+    assert len(numbers.frequent_values(run)) == numbers.QUICK_MAX
+
+
+def test_よく使う数字は_新しいほうから決まった件数だけを見る(user, run):
+    record(user, run, "42", days_ago=numbers.QUICK_RECENT + 1)
+    record(user, run, "42", days_ago=numbers.QUICK_RECENT)
+    for i in range(numbers.QUICK_RECENT):
+        record(user, run, str(100 + i), days_ago=i)
+
+    assert numbers.frequent_values(run) == []
+
+
 # --- 表示 ---------------------------------------------------------------------
 
 

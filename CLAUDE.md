@@ -32,7 +32,7 @@
 - ふりかえり（1年の草）は `services/review.py` と `presenters.year_months()`。濃さは、その日にやったイベントの種類の数（決定 058）
 - イベント詳細の「そのイベントのくせ」（よくやる曜日・時間帯・日にち）は `services/stats.py` の `weekday_tendency()` などで、見出しは `_tendency()` で共通（決定 060）
 - 実績バッジは `services/achievements.py`（定義と判定）。記録・編集・イベントの追加のあとに `check()` を呼び、知らせに添える。機能より前からの人は `User.achievements_synced=False` で、最初の判定で静かに解除（決定 063）
-- 記録に付ける数字は `services/numbers.py`（受け取り方 `clean_value()` と、詳細に出す合計・推移 `number_stats()`）。イベントの `number_kind` が「なし」以外のときだけ、タイルを押すと数字のシートが開く（`data-number-url`、決定 074）
+- 記録に付ける数字は `services/numbers.py`（受け取り方 `clean_value()` と、詳細に出す合計・推移 `number_stats()`）。イベントの `number_kind` が「なし」以外のときだけ、タイルを押すと数字のシートが開く（`data-number-url`、決定 074）。よく入れる数字は `frequent_values()` でボタンにし、押すとその数字で記録する（POST の `quick`、決定 075）
 - 設定（週の始まり・見た目・震え・タイムゾーン）は `views/account.settings_sheet` と `accounts.services.save_settings`。週の始まりは `Space.week_start` に持ち、連続記録の計算（`period_index` など）とカレンダー・草・曜日の並びに渡す（決定 066）
 - シェアは、見出しと投稿文を `services/share.py` が決め、画像は `static/js/share.js` の `drawShareCard()` が端末の Canvas で作る（サーバーには送らない、決定 053）
 - レート制限は `apps/core/ratelimit.py` のミドルウェア。上限は `settings.RATE_LIMITS`、回数はプロセス内に持つ（決定 037）

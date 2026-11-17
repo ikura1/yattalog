@@ -77,6 +77,15 @@ def undo(request: HttpRequest, log_id) -> JsonResponse:
     return JsonResponse({"tile_html": _tile_html(request, event) if event else None})
 
 
+def _quick(event: Event) -> list[dict]:
+    return [{"value": numbers.plain_value(v), "text": numbers.format_value(v)} for v in numbers.frequent_values(event)]
+
+
+def _posted_value(post) -> str | None:
+    """送られた数字。よく使う数字のボタン（quick）を押したときは、欄の中身よりそちらを取る。"""
+    return post.get("quick") or post.get("value")
+
+
 def _record_ctx(request, event: Event, log: Log | None = None, **extra) -> dict:
     today = _today(request)
     form = extra.get("form")
@@ -87,6 +96,8 @@ def _record_ctx(request, event: Event, log: Log | None = None, **extra) -> dict:
         "log": log,
         "value": form.get("value", "") if form else numbers.plain_value(log.value if log else last),
         "prefilled": last is not None,
+        # よく使う数字（決定 075）。押すと、その数字でそのまま記録する。新しく記録するシートでだけ出す
+        "quick": [] if log or not event.has_number else _quick(event),
         # タイルを押して開く小さなシート。数字を先に聞き、日付とメモは畳んでおく
         "compact": event.has_number and not log and (request.GET.get("compact") or request.POST.get("compact")) == "1",
         "today": today,
@@ -111,7 +122,7 @@ def record_sheet(request: HttpRequest, event_id) -> HttpResponse:
                 parse_uuid(request.POST.get("log_id")),
                 parse_when(request.POST),
                 request.POST.get("memo", ""),
-                value=request.POST.get("value"),
+                value=_posted_value(request.POST),
             )
         except PermissionDenied as e:
             return _form_error(

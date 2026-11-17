@@ -488,6 +488,11 @@ body.sorting, body.sorting * { user-select: none !important; -webkit-user-select
 .rec-more summary { cursor: pointer; font-weight: 700; font-size: 13px; color: var(--accent); padding: 6px 0; width: fit-content; }
 .rec-more[open] summary { margin-bottom: 8px; }
 #recValue { font-family: var(--f-display); font-weight: 800; font-size: 22px; font-variant-numeric: tabular-nums; }
+/* よく使う数字（決定 075）。押すと、そのまま記録する */
+.quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 8px; }
+.quick .btn { padding: 12px 4px; border-radius: 14px; background: var(--bg); font-family: var(--f-display); font-weight: 800; font-size: 20px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; min-width: 0; }
+.quick .btn small { font-size: 11px; margin-left: 2px; }
+.quick + .note { margin: 6px 0 0; }
 .num { font-family: var(--f-display); font-weight: 800; font-size: 16px; font-variant-numeric: tabular-nums; }
 .num small { font-size: 11px; margin-left: 2px; }
 .num-card .stats { margin-bottom: 12px; }
