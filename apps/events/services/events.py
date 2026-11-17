@@ -12,6 +12,7 @@ from django.db import transaction
 from apps.events.models import COLORS, Category, Event, NumberKind, StreakUnit
 from apps.events.services import sortkeys
 from apps.events.services.access import category_for, event_for
+from apps.events.services.checks import clean_items
 from apps.events.services.dates import now_utc
 from apps.events.services.logs import When, record, refresh_event_cache
 from apps.events.services.numbers import clean_unit
@@ -112,6 +113,7 @@ def create_event(
     now: datetime | None = None,
     number_kind: str = NumberKind.NONE,
     number_unit: str = "",
+    check_items: list[str] | None = None,
 ) -> Event:
     """イベントを先頭に作る。last_done（前回やった日）があれば、時刻なしの記録を1件作る（SPEC 3.2.1）。"""
     space = personal_space(user)
@@ -124,6 +126,7 @@ def create_event(
         streak_unit=streak_unit,
         number_kind=number_kind,
         number_unit=clean_unit(number_kind, number_unit),
+        check_items=clean_items(number_kind, check_items or []),
         category=_category_or_none(user, category_id),
         sort_key=_key_between(None, _first_key(Event.objects.filter(space=space))),
         created_by=user,
@@ -146,8 +149,12 @@ def update_event(
     category_id=None,
     number_kind: str | None = None,
     number_unit: str = "",
+    check_items: list[str] | None = None,
 ) -> Event:
-    """number_kind が None なら、数字の設定はそのまま（数字の欄がない古い画面からの保存で、消さない）。"""
+    """number_kind が None なら、記録のしかたはそのまま（その欄がない古い画面からの保存で、消さない）。
+
+    check_items（チェックする項目）も、None ならそのまま。
+    """
     event = event_for(user, event_id, lock=True)
     _check(color, streak_unit)
     unit_changed = event.streak_unit != streak_unit
@@ -158,6 +165,7 @@ def update_event(
     if number_kind is not None:
         event.number_kind = number_kind
         event.number_unit = clean_unit(number_kind, number_unit)
+        event.check_items = clean_items(number_kind, event.check_items if check_items is None else check_items)
     event.category = _category_or_none(user, category_id)
     event.save()
     if unit_changed:

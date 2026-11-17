@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import date
+from decimal import Decimal
 from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import login_required
@@ -14,6 +15,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from apps.core import clock
 from apps.events.models import Event, Log
+from apps.events.services import checks as check_svc
 from apps.events.services import logs as log_svc
 from apps.events.services import numbers
 from apps.events.services import share as share_svc
@@ -49,6 +51,7 @@ def record(request: HttpRequest, event_id) -> JsonResponse:
             parse_when(request.POST),
             request.POST.get("memo", ""),
             value=request.POST.get("value"),
+            checks=request.POST.getlist("checks"),
         )
     except PermissionDenied as e:
         return JsonResponse({"error": str(e)}, status=409)
@@ -86,6 +89,43 @@ def _posted_value(post) -> str | None:
     return post.get("quick") or post.get("value")
 
 
+def _scale_ctx(event: Event, log: Log | None, form) -> dict:
+    """段階のスライダー（決定 076）。新しく記録するときは、前回の段階に合わせておく。"""
+    if not event.is_scale:
+        return {}
+    posted = numbers.scale_of(_decimal_or_none(form.get("value"))) if form else None
+    own = numbers.scale_of(log.value) if log else None
+    last = None if log or form else numbers.scale_of(numbers.last_value(event))
+    return {
+        "scale": posted or own or last or numbers.SCALE_DEFAULT,
+        "scale_steps": range(numbers.SCALE_MIN, numbers.SCALE_MAX + 1),
+        "prefilled": last is not None,
+        # スライダーは空にできない。段階として読めない記録（段階なし、前の数字）は、そのまま残せるようにする
+        "keep_value": bool(log) and own is None and (not form or form.get("keep_value") == "1"),
+    }
+
+
+def _decimal_or_none(raw) -> Decimal | None:
+    try:
+        return numbers.clean_value(raw)
+    except ValidationError:
+        return None
+
+
+def _check_ctx(event: Event, log: Log | None, form) -> dict:
+    """チェックの欄（決定 076）。新しく記録するときは、前回と同じものに印を入れておく。"""
+    if not event.is_check:
+        return {}
+    # 編集では、その記録に残っている前の名前の項目も出す（出さないと、保存したときに消える）
+    names = [*event.check_items, *(c for c in (log.checks if log else []) if c not in event.check_items)]
+    last = [] if log or form else check_svc.last_checks(event)
+    checked = set(form.getlist("checks") if form else log.checks if log else last)
+    return {
+        "check_rows": [{"name": n, "checked": n in checked} for n in names],
+        "prechecked": bool(last),
+    }
+
+
 def _record_ctx(request, event: Event, log: Log | None = None, **extra) -> dict:
     today = _today(request)
     form = extra.get("form")
@@ -97,15 +137,17 @@ def _record_ctx(request, event: Event, log: Log | None = None, **extra) -> dict:
         "value": form.get("value", "") if form else numbers.plain_value(log.value if log else last),
         "prefilled": last is not None,
         # よく使う数字（決定 075）。押すと、その数字でそのまま記録する。新しく記録するシートでだけ出す
-        "quick": [] if log or not event.has_number else _quick(event),
-        # タイルを押して開く小さなシート。数字を先に聞き、日付とメモは畳んでおく
-        "compact": event.has_number and not log and (request.GET.get("compact") or request.POST.get("compact")) == "1",
+        "quick": [] if log else _quick(event),
+        # タイルを押して開く小さなシート。聞くものを先に出し、日付とメモは畳んでおく
+        "compact": event.asks and not log and (request.GET.get("compact") or request.POST.get("compact")) == "1",
         "today": today,
         "yesterday": date.fromordinal(today.toordinal() - 1),
         "day_before": date.fromordinal(today.toordinal() - 2),
         "new_log_id": uuid.uuid7(),
         # 新しく記録するシートでだけ、さっきの記録を取り消せるようにする（編集のシートでは出さない）
         "recent": None if log else log_svc.recent_log(request.user, event.id, clock.now()),
+        **_scale_ctx(event, log, form),
+        **_check_ctx(event, log, form),
         **extra,
     }
 
@@ -123,6 +165,7 @@ def record_sheet(request: HttpRequest, event_id) -> HttpResponse:
                 parse_when(request.POST),
                 request.POST.get("memo", ""),
                 value=_posted_value(request.POST),
+                checks=request.POST.getlist("checks"),
             )
         except PermissionDenied as e:
             return _form_error(
@@ -153,6 +196,8 @@ def log_edit_sheet(request: HttpRequest, log_id) -> HttpResponse:
                 parse_when(request.POST),
                 request.POST.get("memo", ""),
                 value=request.POST.get("value"),
+                checks=request.POST.getlist("checks"),
+                keep_value=request.POST.get("keep_value") == "1",
             )
         except ValidationError as e:
             return _form_error(

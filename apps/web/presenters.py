@@ -6,6 +6,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from apps.events.models import Event
+from apps.events.services.checks import CheckStats
 from apps.events.services.dates import elapsed, now_utc
 from apps.events.services.numbers import NumberSum, format_value
 from apps.events.services.review import YearReview
@@ -268,6 +269,20 @@ class SumBar:
     @property
     def y(self) -> int:
         return 100 - self.height
+
+
+@dataclass(frozen=True)
+class CheckBar:
+    """「どれを何回」の横棒（決定 076）。"""
+
+    name: str
+    count: int
+    width: int  # いちばん多い項目を 100 とした長さ
+    is_peak: bool
+
+
+def check_bars(s: CheckStats) -> list[CheckBar]:
+    return [CheckBar(name, n, round(n * 100 / s.top) if s.top else 0, n > 0 and n == s.top) for name, n in s.rows]
 
 
 def sum_bars(s: NumberSum) -> list[SumBar]:

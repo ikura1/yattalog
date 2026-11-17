@@ -61,9 +61,10 @@ def test_logs_csv_は_1行1記録で_新しい順(exported):
             "記録元",
             "数字",
             "単位",
+            "チェック",
         ],
-        ["シーツ交換", "家事", "2026-10-10", "12:00", "Asia/Tokyo", "冬用に替えた", "", "アプリ", "", ""],
-        ["散髪", "", "2026-09-08", "", "", "", "", "アプリ", "", ""],
+        ["シーツ交換", "家事", "2026-10-10", "12:00", "Asia/Tokyo", "冬用に替えた", "", "アプリ", "", "", ""],
+        ["散髪", "", "2026-09-08", "", "", "", "", "アプリ", "", "", ""],
     ]
 
 
@@ -79,9 +80,10 @@ def test_events_csv_は_1行1イベントで_ホームの並び順_アーカイ�
             "作成日",
             "数字の記録",
             "数字の単位",
+            "チェックの項目",
         ],
-        ["散髪", "✂️", "grape", "", "毎月", "はい", "2026-10-10", "なし", ""],
-        ["シーツ交換", "🛏️", "sky", "家事", "毎週", "いいえ", "2026-10-10", "なし", ""],
+        ["散髪", "✂️", "grape", "", "毎月", "はい", "2026-10-10", "なし", "", ""],
+        ["シーツ交換", "🛏️", "sky", "家事", "毎週", "いいえ", "2026-10-10", "なし", "", ""],
     ]
 
 
@@ -93,11 +95,28 @@ def test_数字と単位も書き出す(user):
 
     out = unzip(build_export(user, NOW))
 
-    assert [row[-2:] for row in rows(out["logs.csv"])] == [["数字", "単位"], ["1200.5", "km"], ["", "km"]]
-    assert rows(out["events.csv"])[1][-2:] == ["合計を見る", "km"]
+    assert [row[8:10] for row in rows(out["logs.csv"])] == [["数字", "単位"], ["1200.5", "km"], ["", "km"]]
+    assert rows(out["events.csv"])[1][7:9] == ["合計を見る", "km"]
     data = json.loads(out["data.json"])
     assert (data["events"][0]["number_kind"], data["events"][0]["number_unit"]) == ("sum", "km")
     assert [log["value"] for log in data["logs"]] == ["1200.5", None]
+
+
+def test_チェックの項目と_チェックしたものも書き出す(user):
+    """決定 076。CSV では「・」でつなぎ、JSON では一覧のまま出す。"""
+    clean = ev_svc.create_event(
+        user, name="掃除", emoji="🧹", color="teal", number_kind="check", check_items=["床", "トイレ", "風呂"]
+    )
+    log_svc.record(user, clean.id, uuid.uuid7(), checks=["床", "風呂"])
+    log_svc.record(user, clean.id, uuid.uuid7(), When(date=TODAY - timedelta(1)))
+
+    out = unzip(build_export(user, NOW))
+
+    assert [row[-1] for row in rows(out["logs.csv"])] == ["チェック", "床・風呂", ""]
+    assert rows(out["events.csv"])[1][-3:] == ["チェックする", "", "床・トイレ・風呂"]
+    data = json.loads(out["data.json"])
+    assert data["events"][0]["check_items"] == ["床", "トイレ", "風呂"]
+    assert [log["checks"] for log in data["logs"]] == [["床", "風呂"], []]
 
 
 def test_data_json_には_取り込み直せるだけの全データが入っている(exported):

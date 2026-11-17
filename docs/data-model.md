@@ -95,8 +95,9 @@ Django のカスタムユーザー。パスワードは使わない（Google ロ
 | emoji | varchar(16) | 絵文字1つ（書記素1つ分を検証する） |
 | color | varchar(16) | パレットの名前（tomato, tangerine, sun, leaf, teal, sky, grape, pink） |
 | streak_unit | varchar(8) | `none` / `day` / `week` / `month`。初期値は `day`（決定 015） |
-| number_kind | varchar(8) | 数字の記録。`none` / `sum`（合計を見る）/ `trend`（推移を見る）。初期値は `none`（決定 074） |
-| number_unit | varchar(8) | 数字の単位（「km」など）。空でもよい。`none` のときは空 |
+| number_kind | varchar(8) | 記録のしかた。`none` / `sum`（合計を見る）/ `trend`（推移を見る）/ `scale`（段階で選ぶ）/ `check`（チェックする）。初期値は `none`（決定 074・076） |
+| number_unit | varchar(8) | 数字の単位（「km」など）。空でもよい。`sum`・`trend` のほかは空 |
+| check_items | jsonb | チェックする項目の名前の一覧（決定 076）。8個まで、1つ12文字まで。`check` のときは1つ以上。初期値は `[]`（DB 側にも初期値） |
 | sort_key | varchar(64) | ホームの並び順（分数インデックス、決定 008・013） |
 | is_archived | bool | |
 | archived_at | timestamptz null | |
@@ -131,7 +132,8 @@ Django のカスタムユーザー。パスワードは使わない（Google ロ
 | occurred_at | timestamptz null | 時刻ありの記録の瞬間（UTC） |
 | timezone | varchar(64) null | 時刻ありの記録をしたときのタイムゾーン |
 | memo | text | 1,000文字まで。空文字も可 |
-| value | numeric(12, 3) null | 記録に付けた数字（決定 074）。0 以上。数字を聞くイベントの記録だけに入る。空でもよい |
+| value | numeric(12, 3) null | 記録に付けた数字（決定 074）。0 以上。数字を聞くイベントの記録だけに入る。空でもよい。段階で選ぶイベントでは 1〜5 の整数 |
+| checks | jsonb | チェックした項目の名前の一覧（決定 076）。項目の順。名前そのものを持つので、項目を変えても変わらない。初期値は `[]`（DB 側にも初期値） |
 | source | varchar(8) | `app` / `ai` / `url`（AI から記録した印、3.9） |
 | created_by | FK → User（SET NULL）null | 共有に備えて持っておく |
 | created_at / updated_at | timestamptz | |
@@ -233,7 +235,8 @@ R2 上のファイルを確実に削除するための待ち行列。記録・�
 | よくやる時期 | `GROUP BY EXTRACT(YEAR FROM local_date), EXTRACT(MONTH FROM local_date)` |
 | カレンダー | 表示している月の `DISTINCT local_date` |
 | 数字の合計 | `SUM(value) WHERE value IS NOT NULL` を、今月・今年・全体と、今月までの12か月の月ごとに（決定 074） |
-| 数字の推移 | `value IS NOT NULL` の記録を新しい順に30件。最新・平均・最小・最大・前回との差は、その30件から |
+| 数字の推移 | `value IS NOT NULL` の記録を新しい順に30件。最新・平均・最小・最大・前回との差は、その30件から。段階で選ぶイベントも同じ |
+| どれを何回 | そのイベントの `checks` を読み、名前ごとに数える（決定 076）。いまの項目の順、いまはない名前は後ろ |
 
 ## 決めていないこと
 

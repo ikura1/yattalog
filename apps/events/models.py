@@ -35,11 +35,16 @@ class StreakUnit(models.TextChoices):
 
 
 class NumberKind(models.TextChoices):
-    """記録に付ける数字を、詳細でどう見せるか（決定 074）。"""
+    """記録のしかた（決定 074・076）。イベントごとに1つ。「なし」以外は、押すたびに聞く。"""
 
     NONE = "none", "なし"
     SUM = "sum", "合計を見る"  # 距離・金額・回数など、足して意味のあるもの
     TREND = "trend", "推移を見る"  # 体重・体温など、足しても意味のないもの
+    SCALE = "scale", "段階で選ぶ"  # 気分・体調など、1〜5 で選ぶもの
+    CHECK = "check", "チェックする"  # 掃除した場所など、決めた項目から選ぶもの
+
+
+VALUE_KINDS = (NumberKind.SUM, NumberKind.TREND, NumberKind.SCALE)  # Log.value に数字を残すもの
 
 
 class Category(BaseModel):
@@ -69,6 +74,9 @@ class Event(BaseModel):
     # 記録に付ける数字（決定 074）。イベントごとに1つ。単位は自由（「km」「円」「kg」など）
     number_kind = models.CharField(max_length=8, choices=NumberKind.choices, default=NumberKind.NONE)
     number_unit = models.CharField(max_length=8, blank=True, default="")
+    # チェックする項目の名前（決定 076）。記録のしかたを変えても、消さずに覚えておく
+    # db_default：デプロイの途中、この列を知らない古いリビジョンが行を作っても落ちないように（Log.checks も同じ）
+    check_items = models.JSONField(default=list, blank=True, db_default=models.Value([], models.JSONField()))
     sort_key = SortKeyField()
     is_archived = models.BooleanField(default=False)
     archived_at = models.DateTimeField(null=True, blank=True)
@@ -99,8 +107,21 @@ class Event(BaseModel):
         return f"{self.emoji} {self.name}"
 
     @property
-    def has_number(self) -> bool:
+    def asks(self) -> bool:
+        """タイルを押すと、記録の前にシートで聞くか。"""
         return self.number_kind != NumberKind.NONE
+
+    @property
+    def has_number(self) -> bool:
+        return self.number_kind in VALUE_KINDS
+
+    @property
+    def is_scale(self) -> bool:
+        return self.number_kind == NumberKind.SCALE
+
+    @property
+    def is_check(self) -> bool:
+        return self.number_kind == NumberKind.CHECK
 
 
 class Log(BaseModel):
@@ -120,6 +141,8 @@ class Log(BaseModel):
     memo = models.TextField(blank=True, default="")
     # 数字（決定 074）。数字を記録するイベントでも、空のまま記録できる
     value = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
+    # チェックした項目の名前（決定 076）。名前そのものを残すので、後から項目を変えても、前の記録は変わらない
+    checks = models.JSONField(default=list, blank=True, db_default=models.Value([], models.JSONField()))
     source = models.CharField(max_length=8, choices=Source.choices, default=Source.APP)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
 

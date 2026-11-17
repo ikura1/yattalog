@@ -482,8 +482,10 @@ body.sorting, body.sorting * { user-select: none !important; -webkit-user-select
 /* ---------- 数字の記録（決定 074） ---------- */
 .seg.n3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .num-field .note { margin: 8px 0 0; }
-.num-unit { margin-top: 10px; }
-.num-field:has(input[value="none"]:checked) .num-unit { display: none; }
+.num-unit, .num-items { margin-top: 10px; }
+/* 単位は「合計」「推移」、項目は「チェック」のときだけ出す（決定 076） */
+.num-field:not(:has(input[value="sum"]:checked, input[value="trend"]:checked)) .num-unit { display: none; }
+.num-field:not(:has(input[value="check"]:checked)) .num-items { display: none; }
 .rec-more { margin-bottom: 12px; }
 .rec-more summary { cursor: pointer; font-weight: 700; font-size: 13px; color: var(--accent); padding: 6px 0; width: fit-content; }
 .rec-more[open] summary { margin-bottom: 8px; }
@@ -493,6 +495,27 @@ body.sorting, body.sorting * { user-select: none !important; -webkit-user-select
 .quick .btn { padding: 12px 4px; border-radius: 14px; background: var(--bg); font-family: var(--f-display); font-weight: 800; font-size: 20px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; min-width: 0; }
 .quick .btn small { font-size: 11px; margin-left: 2px; }
 .quick + .note { margin: 6px 0 0; }
+/* 段階のスライダーとチェック（決定 076） */
+.scale-now { display: block; text-align: center; font-family: var(--f-display); font-weight: 800; font-size: 44px; line-height: 1.1; font-variant-numeric: tabular-nums; margin-bottom: 4px; }
+#recScale { display: block; width: 100%; height: 44px; margin: 0; padding: 0; border: 0; background: none; accent-color: var(--accent); }
+.scale-ticks { display: flex; justify-content: space-between; padding: 0 6px; font-family: var(--f-display); font-weight: 800; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.scale-field .note { margin: 8px 0 0; }
+.keep { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 14px; font-weight: 700; }
+.keep input { width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
+.chips.checks { gap: 8px; }
+.chips.checks input + span { padding: 10px 16px; font-size: 15px; }
+.chips.checks input:checked + span::before { content: "✓"; margin-right: 5px; }
+.chips.checks + .note { margin: 8px 0 0; }
+.logs .chk { font-weight: 700; font-size: 14px; word-break: break-word; }
+.hbars { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, max-content) minmax(40px, 1fr) max-content; gap: 8px 10px; align-items: center; }
+.hbar { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; }
+.hbar .hn { font-weight: 700; font-size: 14px; overflow-wrap: anywhere; }
+.hbar .hcol { width: 100%; height: 12px; display: block; background: var(--bg); border-radius: 6px; }
+.hbar .hcol rect { fill: var(--g2); }
+.hbar.peak .hcol rect { fill: var(--accent); }
+.hbar .hv { font-family: var(--f-display); font-weight: 800; font-size: 15px; font-variant-numeric: tabular-nums; text-align: right; }
+.hbar .hv small { font-size: 11px; margin-left: 2px; }
+.chk-card .note { margin: 10px 0 0; font-size: 12px; }
 .num { font-family: var(--f-display); font-weight: 800; font-size: 16px; font-variant-numeric: tabular-nums; }
 .num small { font-size: 11px; margin-left: 2px; }
 .num-card .stats { margin-bottom: 12px; }
