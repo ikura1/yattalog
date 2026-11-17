@@ -1,4 +1,4 @@
-"""記録に付ける数字（決定 074）。受け取り方・出し方と、詳細に出す統計（合計・推移）。
+"""記録に付ける数字（決定 074）と段階（決定 076）。受け取り方・出し方と、詳細に出す統計（合計・推移）。
 
 数字はイベントごとに1つ。単位は自由で、足して見るか（距離・金額）、移り変わりを見るか（体重・体温）を
 イベントごとに選ぶ。数字を記録するイベントでも、空のまま記録できる（空の記録は、統計に入れない）。
@@ -7,7 +7,7 @@
 import re
 import unicodedata
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 
@@ -23,6 +23,9 @@ SUM_MONTHS = 12  # 合計の棒は、今月までのこの月数
 QUICK_MAX = 4  # よく使う数字のボタンの数（決定 075）
 QUICK_RECENT = 50  # よく使う数字は、新しいほうからこの件数で数える（昔の習慣を引きずらせない）
 QUICK_MIN_COUNT = 2  # この回数から「よく使う」とみなす
+SCALE_MIN, SCALE_MAX = 1, 5  # 段階で選ぶイベントの幅（決定 076）。どのイベントでも同じ
+SCALE_DEFAULT = 3  # 前回がないときの、スライダーの位置
+QUICK_KINDS = (NumberKind.SUM, NumberKind.TREND)  # 数字を打つもの（単位と、よく使う数字がある）
 # 整数は9桁、小数は3桁まで（Log.value の桁数）。指数表記や符号は受け取らない
 _NUMBER = re.compile(r"[0-9]{1,9}(?:\.[0-9]{0,3})?")
 _ZERO = Decimal(0)
@@ -38,11 +41,35 @@ def clean_value(raw) -> Decimal | None:
     return Decimal(text)
 
 
+def scale_of(value: Decimal | None) -> int | None:
+    """段階として使える数字なら、その段階。ほかの記録のしかたで付けた数字（62.5 など）や空は None。"""
+    if value is None or value != value.to_integral_value() or not SCALE_MIN <= value <= SCALE_MAX:
+        return None
+    return int(value)
+
+
+def clean_scale(raw) -> Decimal | None:
+    """選ばれた段階。空なら None（古い画面からの1タップ）。"""
+    text = unicodedata.normalize("NFKC", "" if raw is None else str(raw)).strip()
+    if not text:
+        return None
+    if not re.fullmatch(r"[0-9]", text) or scale_of(Decimal(text)) is None:
+        raise ValidationError(f"段階は {SCALE_MIN}〜{SCALE_MAX} で選んでください", code="scale")
+    return Decimal(text)
+
+
+def clean_for(event: Event, raw) -> Decimal | None:
+    """そのイベントの記録のしかたに合わせて、数字を受け取る。数字を残さないイベントでは捨てる。"""
+    if event.is_scale:
+        return clean_scale(raw)
+    return clean_value(raw) if event.has_number else None
+
+
 def clean_unit(kind: str, unit: str) -> str:
-    """数字の見せ方を確かめ、単位を整える。数字を記録しないなら、単位は持たない。"""
+    """記録のしかたを確かめ、単位を整える。数字を打たないなら、単位は持たない。"""
     if kind not in NumberKind.values:
-        raise ValidationError("数字の記録のしかたを選んでください", code="number_kind")
-    if kind == NumberKind.NONE:
+        raise ValidationError("記録のしかたを選んでください", code="number_kind")
+    if kind not in QUICK_KINDS:
         return ""
     unit = unicodedata.normalize("NFC", (unit or "").strip())
     if len(unit) > UNIT_MAX:
@@ -77,7 +104,9 @@ def last_value(event: Event) -> Decimal | None:
 
 
 def frequent_values(event: Event) -> list[Decimal]:
-    """よく使う数字（決定 075）。回数の多い順で、同じ回数なら新しく使ったほうが先。"""
+    """よく使う数字（決定 075）。回数の多い順で、同じ回数なら新しく使ったほうが先。段階には出さない。"""
+    if event.number_kind not in QUICK_KINDS:
+        return []
     recent = list(_valued(event).values_list("value", flat=True)[:QUICK_RECENT])  # 新しい順
     counts = Counter(recent)
     # sorted は順を保つので、同じ回数なら recent に先に出たほう（新しいほう）が前に残る
@@ -114,11 +143,13 @@ class NumberTrend:
 
 
 def number_stats(event: Event, today: date) -> NumberSum | NumberTrend | None:
-    """詳細に出す数字の統計。数字を記録しないイベントなら None。"""
+    """詳細に出す数字の統計。数字を記録しないイベントなら None。段階は、推移と同じ形で見る。"""
     if event.number_kind == NumberKind.SUM:
         return _sum(event, today)
     if event.number_kind == NumberKind.TREND:
         return _trend(event)
+    if event.number_kind == NumberKind.SCALE:
+        return replace(_trend(event), kind=NumberKind.SCALE)
     return None
 
 

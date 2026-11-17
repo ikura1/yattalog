@@ -28,6 +28,7 @@
   {% if latest_log %}<button class="btn" type="button" hx-get="{% url 'web:share' latest_log.id %}" hx-target="#sheet-body">シェア</button>{% endif %}</div>
 
 {% if number %}{% include "web/_number_card.html" %}{% endif %}
+{% if check_stats %}{% include "web/_check_card.html" %}{% endif %}
 
 {% if stats.total %}
 {# よくやる（時期・曜日・時間帯・日にち）。1枚のカードで切り替える（決定 060）。最後に選んだものは端末に覚える（static/js/detail.js） #}
@@ -106,8 +107,9 @@
     {% for l in logs %}
     <li>
       <span class="when">{{ l|log_when:today }}</span>
-      <div class="body">{% if number and l.value is not None %}<b class="num">{{ l.value|num }}<small>{{ event.number_unit }}</small></b>{% endif %}
-        {% if l.memo %}<div class="c">{{ l.memo }}</div>{% elif not number or l.value is None %}<div class="c empty">メモなし</div>{% endif %}</div>
+      <div class="body">{% if number and l.value is not None %}<b class="num">{{ l.value|num }}<small>{% if event.is_scale %}/{{ scale_max }}{% else %}{{ event.number_unit }}{% endif %}</small></b>{% endif %}
+        {% if l.checks %}<div class="chk">{{ l.checks|join:"・" }}</div>{% endif %}
+        {% if l.memo %}<div class="c">{{ l.memo }}</div>{% elif l.checks %}{% elif not number or l.value is None %}<div class="c empty">メモなし</div>{% endif %}</div>
       <div class="ops">
         <button class="btn small" type="button" hx-get="{% url 'web:share' l.id %}" hx-target="#sheet-body">シェア</button>
         <button class="btn small" type="button" hx-get="{% url 'web:log_edit' l.id %}" hx-target="#sheet-body">編集</button>

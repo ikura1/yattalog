@@ -16,12 +16,25 @@ function modeFor(iso, f) {
   if (iso === f.dataset.dayBefore) return "y2";
   return "pick";
 }
+/* 段階のスライダー（決定 076）：いまの段階を大きく出す。
+   「そのままにする」に印があるあいだは「—」。スライダーを動かしたら、印を外す。 */
+function bindScale(form) {
+  const scale = $('input[type="range"][name="value"]', form), out = $("[data-scale-out]", form);
+  if (!scale || !out) return;
+  const keep = $('input[name="keep_value"]', form);
+  const show = () => { out.textContent = keep?.checked ? "—" : scale.value; };
+  scale.addEventListener("input", () => { if (keep) keep.checked = false; show(); });
+  keep?.addEventListener("change", show);
+  show();
+  out.hidden = false;
+}
 export function bindRecordForm(root) {
   const form = $("#recForm", root);
   if (!form || form.dataset.bound) return;
   form.dataset.bound = "1";
   // 入れてある前回の数字は、触ったら丸ごと選ぶ（打てばそのまま置き換わる）
   $('input[name="value"]', form)?.addEventListener("focus", (e) => e.target.select());
+  bindScale(form);
   const seg = $("[data-when-seg]", form), hidden = $('input[name="when"]', form);
   const box = $("[data-pickbox]", form), dI = $('input[name="date"]', form), tI = $('input[name="time"]', form);
   const note = $("[data-when-note]", form);

@@ -20,7 +20,8 @@ VERSION = 1
 BOM = "﻿"  # Excel が UTF-8 と判断できるようにする
 FORMULA_STARTS = ("=", "+", "-", "@", "\t", "\r", "\n")
 
-# 列は後ろに足す（前からの列の位置を変えない）。数字と単位は決定 074
+# 列は後ろに足す（前からの列の位置を変えない）。数字と単位は決定 074、チェックは決定 076
+CHECK_JOIN = "・"
 LOG_HEADER = [
     "イベント名",
     "カテゴリ",
@@ -32,6 +33,7 @@ LOG_HEADER = [
     "記録元",
     "数字",
     "単位",
+    "チェック",
 ]
 EVENT_HEADER = [
     "名前",
@@ -43,6 +45,7 @@ EVENT_HEADER = [
     "作成日",
     "数字の記録",
     "数字の単位",
+    "チェックの項目",
 ]
 
 
@@ -76,6 +79,7 @@ def _log_row(log: Log) -> list[str]:
         log.get_source_display(),
         plain_value(log.value),
         log.event.number_unit,
+        CHECK_JOIN.join(log.checks),
     ]
 
 
@@ -90,6 +94,7 @@ def _event_row(event: Event, tz) -> list[str]:
         event.created_at.astimezone(tz).date().isoformat(),
         event.get_number_kind_display(),
         event.number_unit,
+        CHECK_JOIN.join(event.check_items),
     ]
 
 
@@ -127,6 +132,7 @@ def _data(user, now: datetime, categories, events, logs) -> dict:
                 "streak_unit": e.streak_unit,
                 "number_kind": e.number_kind,
                 "number_unit": e.number_unit,
+                "check_items": e.check_items,
                 "category_id": str(e.category_id) if e.category_id else None,
                 "sort_key": e.sort_key,
                 "is_archived": e.is_archived,
@@ -144,6 +150,7 @@ def _data(user, now: datetime, categories, events, logs) -> dict:
                 "timezone": log.timezone,
                 "memo": log.memo,
                 "value": plain_value(log.value) or None,  # 文字列で出す（小数を、浮動小数の誤差なしで渡す）
+                "checks": log.checks,
                 "source": log.source,
                 "created_at": _iso(log.created_at),
             }

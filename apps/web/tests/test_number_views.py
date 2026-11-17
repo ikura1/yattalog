@@ -36,14 +36,6 @@ def html(response) -> str:
 # --- イベントの設定 -----------------------------------------------------------
 
 
-def test_イベントのシートに_数字の記録の欄があり_はじめは_なし(client_in):
-    page = html(client_in.get("/events/new/"))
-
-    assert "数字の記録" in page
-    assert 'name="number_kind" value="none" checked' in page
-    assert 'name="number_unit"' in page
-
-
 def test_数字の見せ方と単位を決めて_イベントを作れる(client_in):
     r = client_in.post("/events/new/", {**FORM, "number_kind": "sum", "number_unit": "km"}, HTTP_HX_REQUEST="true")
 

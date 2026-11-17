@@ -23,13 +23,15 @@
     <div class="seg seg-radio">{% for v, l in units %}<label><input type="radio" name="streak_unit" value="{{ v }}" {% if v == cur_unit %}checked{% endif %}><span>{{ l }}</span></label>{% endfor %}</div>
     <p class="note">期間に1回以上やると、🔥がつながります（期限や通知はありません）</p>
   </fieldset>
-  {# 数字の記録（決定 074）。「なし」のあいだは、単位の欄を隠す（CSS の :has） #}
-  <fieldset class="field num-field"><legend class="lbl">数字の記録</legend>
+  {# 記録のしかた（決定 074・076）。単位は「合計」「推移」、項目は「チェック」のときだけ出す（CSS の :has） #}
+  <fieldset class="field num-field"><legend class="lbl">記録のしかた</legend>
     <div class="seg seg-radio n3">{% for v, l in number_kinds %}<label><input type="radio" name="number_kind" value="{{ v }}" {% if v == cur_number_kind %}checked{% endif %}><span>{{ l }}</span></label>{% endfor %}</div>
-    <p class="note">距離や金額は「合計」、体重や体温は「推移」が向いています。押すたびに数字を聞きます（空のままでも記録できます）</p>
+    <p class="note">距離や金額は「合計」、体重や体温は「推移」、気分や体調は「段階」（1〜5）、やった場所や内容は「チェック」が向いています。「なし」のほかは、押すたびに聞きます</p>
     <div class="num-unit"><label for="evNumUnit">単位</label>
       <input type="text" id="evNumUnit" name="number_unit" value="{{ number_unit }}" maxlength="8" placeholder="例：km"
              autocomplete="off" autocapitalize="off"></div>
+    <div class="num-items"><label for="evItems">チェックする項目（1行に1つ、8個まで）</label>
+      <textarea id="evItems" name="check_items" rows="4" placeholder="床&#10;トイレ&#10;風呂" autocomplete="off" autocapitalize="off">{{ check_items }}</textarea></div>
   </fieldset>
   <fieldset class="field"><legend class="lbl">カテゴリ</legend>
     <div class="chips">

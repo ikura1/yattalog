@@ -9,8 +9,9 @@ from django.db import IntegrityError, transaction
 
 from apps.events.models import Event, Log
 from apps.events.services.access import event_for, log_for
+from apps.events.services.checks import clean_checks
 from apps.events.services.dates import now_utc, zone
-from apps.events.services.numbers import clean_value
+from apps.events.services.numbers import clean_for
 from apps.events.services.streaks import STREAK_MIN, compute_streak
 
 MEMO_MAX = 1000
@@ -125,10 +126,12 @@ def record(
     now: datetime | None = None,
     *,
     value=None,
+    checks=None,
 ) -> RecordResult:
     """記録を追加する。同じ log_id で何度呼んでも1件しか作らない（冪等、決定 028）。
 
-    value（数字）は、数字を記録するイベントでだけ残す（決定 074）。ほかのイベントでは捨てる。
+    value（数字・段階）と checks（チェックした項目）は、それを聞くイベントでだけ残す（決定 074・076）。
+    ほかのイベントでは捨てる。
     """
     now = now or now_utc()
     event = event_for(user, event_id, lock=True)
@@ -147,7 +150,8 @@ def record(
                 occurred_at=occurred_at,
                 timezone=tz_name,
                 memo=clean_memo(memo),
-                value=clean_value(value) if event.has_number else None,
+                value=clean_for(event, value),
+                checks=clean_checks(event, checks or []) if event.is_check else [],
                 source=source,
                 created_by=user,
             )
@@ -171,19 +175,25 @@ def undo(user, log_id) -> Event | None:
 
 
 @transaction.atomic
-def edit(user, log_id, when: When, memo: str, now: datetime | None = None, *, value=None) -> Log:
-    """記録の日付・時刻・メモ・数字を変える。日付は編集したときのタイムゾーンで決め直す（決定 026）。
+def edit(
+    user, log_id, when: When, memo: str, now: datetime | None = None, *, value=None, checks=None, keep_value=False
+) -> Log:
+    """記録の日付・時刻・メモ・数字・チェックを変える。日付は編集したときのタイムゾーンで決め直す（決定 026）。
 
-    数字を記録しないイベントでは、数字に触れない（前に付けた数字を、欄のない画面からの保存で消さない）。
+    数字やチェックを聞かないイベントでは、それに触れない（前に付けたものを、欄のない画面からの保存で消さない）。
+    keep_value なら数字はそのまま（スライダーは空にできないので、段階のない記録に、勝手に段階を付けない）。
+    checks が None なら、チェックはそのまま。
     """
     now = now or now_utc()
     log = log_for(user, log_id)
     event = event_for(user, log.event_id, lock=True)
     log.local_date, log.occurred_at, log.timezone = resolve_when(when, user.timezone, now)
     log.memo = clean_memo(memo)
-    if event.has_number:
-        log.value = clean_value(value)
-    log.save(update_fields=["local_date", "occurred_at", "timezone", "memo", "value", "updated_at"])
+    if event.has_number and not keep_value:
+        log.value = clean_for(event, value)
+    if event.is_check and checks is not None:
+        log.checks = clean_checks(event, checks, keep=log.checks)
+    log.save(update_fields=["local_date", "occurred_at", "timezone", "memo", "value", "checks", "updated_at"])
     refresh_event_cache(event)
     return log
 

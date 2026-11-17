@@ -1,0 +1,12 @@
+{# どれを何回（決定 076）。棒の長さは SVG の属性で渡す（CSP で style 属性が使えない） #}
+<section class="card chk-card">
+  <h2>どれを何回</h2>
+  {% if not check_stats.count %}
+  <p class="note">チェックを付けて記録すると、ここに回数が出ます</p>
+  {% else %}
+  <ul class="hbars">{% for b in check_bars %}
+    <li class="hbar{% if b.is_peak %} peak{% endif %}"><span class="hn">{{ b.name }}</span><svg class="hcol" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="0" width="{{ b.width }}" height="10"/></svg><b class="hv">{{ b.count }}<small>回</small></b></li>{% endfor %}
+  </ul>
+  <p class="note">チェックを付けた記録 {{ check_stats.count }}件から数えています</p>
+  {% endif %}
+</section>

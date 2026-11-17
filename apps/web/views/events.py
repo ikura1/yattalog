@@ -10,11 +10,13 @@ from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.vary import vary_on_headers
 
 from apps.events.models import COLORS, NumberKind, StreakUnit
+from apps.events.services import checks as check_svc
 from apps.events.services import emoji_hints, numbers, stats
 from apps.events.services import events as ev_svc
 from apps.events.services import logs as log_svc
 from apps.web.presenters import (
     calendar_weeks,
+    check_bars,
     month_day_cells,
     season_chart,
     shift_month,
@@ -98,9 +100,10 @@ def _event_form_ctx(request, event=None, form=None, **extra) -> dict:
         "emoji_hints_json": json.dumps(emoji_hints.hints_for_client(), ensure_ascii=False),
         "cur_color": pick("color", "sky"),
         "cur_unit": pick("streak_unit", StreakUnit.DAY),
-        # 数字の記録（決定 074）
+        # 記録のしかた（決定 074・076）
         "cur_number_kind": pick("number_kind", NumberKind.NONE),
         "number_unit": form.get("number_unit", "") if form else (event.number_unit if event else ""),
+        "check_items": form.get("check_items", "") if form else "\n".join(event.check_items if event else []),
         "number_kinds": NumberKind.choices,
         "emojis": EMOJIS,
         "colors": COLORS,
@@ -110,6 +113,12 @@ def _event_form_ctx(request, event=None, form=None, **extra) -> dict:
         "today": _today(request),
         **extra,
     }
+
+
+def _posted_items(post) -> list[str] | None:
+    """チェックする項目（1行に1つ）。欄のない古い画面からは届かないので None（そのままにする）。"""
+    raw = post.get("check_items")
+    return None if raw is None else raw.splitlines()
 
 
 def _posted_emoji(post) -> str:
@@ -132,6 +141,7 @@ def event_new(request: HttpRequest) -> HttpResponse:
                 last_done=parse_date_or_none(p.get("last_done")),
                 number_kind=p.get("number_kind", NumberKind.NONE),
                 number_unit=p.get("number_unit", ""),
+                check_items=_posted_items(p),
             )
         except ValidationError as e:
             return _form_error(request, "web/_event_sheet.html", _event_form_ctx(request, form=p), e)
@@ -156,6 +166,7 @@ def event_edit(request: HttpRequest, event_id) -> HttpResponse:
                 category_id=p.get("category") or None,
                 number_kind=p.get("number_kind"),  # 欄のない古い画面からは届かない（そのままにする）
                 number_unit=p.get("number_unit", ""),
+                check_items=_posted_items(p),
             )
         except ValidationError as e:
             return _form_error(request, "web/_event_sheet.html", _event_form_ctx(request, event, form=p), e)
@@ -277,13 +288,24 @@ def category_edit(request: HttpRequest, category_id) -> HttpResponse:
 
 
 def _number_ctx(event, today) -> dict:
-    """数字の合計・推移のカード（決定 074）。数字を記録しないイベントでは出さない。"""
+    """数字の合計・推移のカード（決定 074）。数字を記録しないイベントでは出さない。段階は推移で見る（決定 076）。"""
     found = numbers.number_stats(event, today)
     if found is None:
         return {"number": None}
     if found.kind == NumberKind.SUM:
         return {"number": found, "number_bars": sum_bars(found)}
-    return {"number": found, "number_chart": trend_chart(found.points)}
+    return {
+        "number": found,
+        "number_chart": trend_chart(found.points),
+        "number_word": "段階" if found.kind == NumberKind.SCALE else "数字",
+        "scale_max": numbers.SCALE_MAX,
+    }
+
+
+def _check_ctx(event) -> dict:
+    """「どれを何回」のカード（決定 076）。チェックしないイベントでは出さない。"""
+    found = check_svc.check_stats(event)
+    return {"check_stats": found, "check_bars": check_bars(found) if found else []}
 
 
 def _season_ctx(request: HttpRequest, event, today) -> dict:
@@ -362,6 +384,7 @@ def event_detail(request: HttpRequest, event_id) -> HttpResponse:
         **_history_ctx(request, event),
         **_tendency_ctx(event),
         **_number_ctx(event, today),
+        **_check_ctx(event),
     }
     template = "web/_detail.html" if request.htmx and not request.htmx.boosted else "web/detail.html"
     return render(request, template, ctx)

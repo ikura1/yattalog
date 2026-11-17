@@ -10,7 +10,22 @@
       {% if log %}hx-post="{% url 'web:log_edit' log.id %}"{% else %}hx-post="{% url 'web:record_sheet' event.id %}"{% endif %}
       hx-swap="none" data-today="{{ today|iso }}" data-yesterday="{{ yesterday|iso }}" data-day-before="{{ day_before|iso }}">
   {% if not log %}<input type="hidden" name="log_id" value="{{ form.log_id|default:new_log_id }}">{% endif %}
-  {% if event.has_number %}
+  {% if event.is_scale %}
+  {# 段階（決定 076）。大きな表示は record-form.js が出す（古いスクリプトのままの画面で、動かない数字を見せない） #}
+  <div class="field scale-field"><label for="recScale">段階（{{ scale_steps|first }}〜{{ scale_steps|last }}）</label>
+    <output class="scale-now" for="recScale" data-scale-out hidden></output>
+    <input type="range" id="recScale" name="value" min="{{ scale_steps|first }}" max="{{ scale_steps|last }}" step="1" value="{{ scale }}" aria-describedby="recScaleNote">
+    <div class="scale-ticks" aria-hidden="true">{% for n in scale_steps %}<span>{{ n }}</span>{% endfor %}</div>
+    <p class="note" id="recScaleNote">{% if prefilled %}前回の段階に合わせてあります。{% endif %}なぞるか、押して選びます</p>
+    {% if keep_value %}<label class="keep"><input type="checkbox" name="keep_value" value="1" checked><span>{% if log.value is None %}段階は付けない{% else %}いまの数字（{{ log.value|num }}）のままにする{% endif %}</span></label>{% endif %}
+  </div>
+  {% elif event.is_check %}
+  {# チェック（決定 076）。何も選ばなくても記録できる #}
+  <fieldset class="field"><legend class="lbl">やったもの</legend>
+    <div class="chips checks">{% for c in check_rows %}<label><input type="checkbox" name="checks" value="{{ c.name }}"{% if c.checked %} checked{% endif %}><span>{{ c.name }}</span></label>{% endfor %}</div>
+    <p class="note">{% if prechecked %}前回と同じものに、印を入れてあります。{% endif %}選ばなくても記録できます</p>
+  </fieldset>
+  {% elif event.has_number %}
   {# 数字（決定 074）。空のままでも記録できる。日付とメモより先に聞く #}
   {% if quick %}
   {# よく使う数字（決定 075）。押すと、欄の中身ではなく、その数字でそのまま記録する #}
